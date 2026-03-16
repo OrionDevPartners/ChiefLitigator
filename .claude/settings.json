@@ -10,6 +10,14 @@
       {
         "command": "bash \"/Users/bopennington/LOCAL ONLY /DEV-OPS/hooks/memory-guard.sh\"",
         "description": "Warn if writing memory files outside canonical locations"
+      },
+      {
+        "command": "bash .claude/hooks/cpaa-model-guard.sh",
+        "description": "CPAA: block hardcoded model names — all models via env mount only"
+      },
+      {
+        "command": "bash .claude/hooks/no-placeholders.sh",
+        "description": "Block fake/demo/placeholder data"
       }
     ]
   }
