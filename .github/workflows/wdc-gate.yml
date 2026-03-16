@@ -1,127 +1,38 @@
-name: WDC Merge Gate
+name: WDC Merge Gate — Trust but Verify
 
-# Blocks ALL PRs from merging unless a WDC review comment exists
-# with a passing score. Specifically targets Devin PRs but applies
-# to all external contributors.
+# BRANCHING MODEL:
+#   dev      → Devin merges freely (no WDC gate). Auto-review posts results.
+#   staging  → Requires WDC score >= 7.5 to merge from dev.
+#   main     → Requires manual approval + WDC score >= 7.5 to merge from staging.
 #
-# How it works:
-# 1. Triggered on PR comments and PR review submissions
-# 2. Searches for a comment containing "WDC REVIEW" + "COMPOSITE SCORE"
-# 3. Extracts the score and compares against threshold (7.5)
-# 4. Sets a required status check that blocks merge until passing
+# FLOW:
+#   Devin pushes → dev (free) → WDC auto-review → staging (gated) → main (manual)
 #
-# To approve a PR after WDC review, post a comment like:
-#   WDC REVIEW: feature/remaining-agents
-#   COMPOSITE SCORE: 8.2 / 10
-#   DECISION: MERGE
+# DELETION PROTECTION:
+#   Protected paths cannot be deleted in ANY PR to ANY branch.
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+    branches: [dev, staging, main]
   issue_comment:
     types: [created]
   pull_request_review:
     types: [submitted]
 
 jobs:
-  wdc-gate:
-    name: WDC Approval Required
+  # ─────────────────────────────────────────────────────────────
+  # JOB 1: Deletion protection (runs on ALL PRs to ALL branches)
+  # ─────────────────────────────────────────────────────────────
+  deletion-guard:
+    name: Deletion Protection
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || (github.event_name == 'issue_comment' && github.event.issue.pull_request)
-
+    if: github.event_name == 'pull_request'
     steps:
-      - name: Check for WDC approval comment
-        id: wdc_check
+      - name: Check for protected file deletions
         uses: actions/github-script@v7
         with:
           script: |
-            const WDC_THRESHOLD = 7.5;
-            const SECURITY_THRESHOLD = 6.0;
-
-            // Get PR number
-            let prNumber;
-            if (context.eventName === 'pull_request') {
-              prNumber = context.payload.pull_request.number;
-            } else if (context.eventName === 'issue_comment') {
-              prNumber = context.payload.issue.number;
-            } else {
-              prNumber = context.payload.pull_request.number;
-            }
-
-            // Get all comments on the PR
-            const comments = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-              per_page: 100,
-            });
-
-            // Search for a WDC review comment
-            let wdcApproved = false;
-            let wdcScore = 0;
-            let wdcDecision = 'NONE';
-            let reviewerLogin = '';
-
-            for (const comment of comments.data) {
-              const body = comment.body || '';
-
-              // Look for WDC REVIEW pattern
-              if (body.includes('WDC REVIEW') || body.includes('COMPOSITE SCORE')) {
-
-                // Extract composite score
-                const scoreMatch = body.match(/COMPOSITE\s*SCORE[:\s]*(\d+\.?\d*)\s*\/\s*10/i);
-                if (scoreMatch) {
-                  wdcScore = parseFloat(scoreMatch[1]);
-                }
-
-                // Extract decision
-                const decisionMatch = body.match(/DECISION[:\s]*(MERGE|REVISE|REJECT)/i);
-                if (decisionMatch) {
-                  wdcDecision = decisionMatch[1].toUpperCase();
-                }
-
-                // Check for security auto-reject
-                const securityMatch = body.match(/SECURITY[^:]*?[:\s]*(\d+\.?\d*)\s*\/\s*10/i);
-                if (securityMatch) {
-                  const secScore = parseFloat(securityMatch[1]);
-                  if (secScore < SECURITY_THRESHOLD) {
-                    core.setFailed(`WDC SECURITY AUTO-REJECT: Security score ${secScore} < ${SECURITY_THRESHOLD} threshold`);
-                    return;
-                  }
-                }
-
-                // Check for any agent auto-reject (below 4)
-                const agentScores = body.matchAll(/Score[:\s]*(\d+\.?\d*)\s*\/\s*10/gi);
-                for (const match of agentScores) {
-                  const agentScore = parseFloat(match[1]);
-                  if (agentScore < 4.0) {
-                    core.setFailed(`WDC AUTO-REJECT: Agent score ${agentScore} < 4.0 minimum`);
-                    return;
-                  }
-                }
-
-                // Validate composite meets threshold
-                if (wdcScore >= WDC_THRESHOLD && wdcDecision === 'MERGE') {
-                  wdcApproved = true;
-                  reviewerLogin = comment.user.login;
-                }
-              }
-            }
-
-            if (wdcApproved) {
-              core.info(`WDC APPROVED: Score ${wdcScore}/10, Decision: ${wdcDecision}, Reviewer: ${reviewerLogin}`);
-            } else if (wdcScore > 0) {
-              core.setFailed(`WDC BLOCKED: Score ${wdcScore}/10 (threshold: ${WDC_THRESHOLD}), Decision: ${wdcDecision}. Post a passing WDC review comment to unblock.`);
-            } else {
-              core.setFailed('WDC REVIEW REQUIRED: No WDC review comment found. Run a 5-agent WDC review and post the results as a PR comment before merging.');
-            }
-
-      - name: Check for deletion protection
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            // Get changed files in PR
             const files = await github.rest.pulls.listFiles({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -131,34 +42,270 @@ jobs:
 
             const deletedFiles = files.data.filter(f => f.status === 'removed');
             const protectedPaths = [
-              'DOCS/',
-              'MEMORY.md',
-              'GUARDRAILS.yml',
-              'CLAUDE.md',
-              'SECURITY.md',
-              'src/verification/citation_chain.py',
-              'src/legal/deadline_calc.py',
-              '.claude/',
+              'DOCS/', 'MEMORY.md', 'GUARDRAILS.yml', 'CLAUDE.md',
+              'SECURITY.md', 'TODO.md', 'src/verification/citation_chain.py',
+              'src/legal/deadline_calc.py', 'src/orchestrator/wdc.py',
+              'src/config/settings.py', '.claude/', '.github/workflows/',
             ];
 
             const violations = [];
             for (const file of deletedFiles) {
-              for (const protected of protectedPaths) {
-                if (file.filename.startsWith(protected) || file.filename === protected) {
-                  violations.push(`DELETION BLOCKED: ${file.filename} is a protected path`);
+              for (const p of protectedPaths) {
+                if (file.filename.startsWith(p) || file.filename === p) {
+                  violations.push(file.filename);
                 }
               }
             }
 
             if (violations.length > 0) {
               core.setFailed(
-                'CAUTION DELETION REQUEST — Protected files cannot be deleted via PR.\n' +
-                violations.join('\n') +
-                '\n\nPer @M:001: Explain what + why, get user approval before deletion.'
+                'CAUTION DELETION REQUEST — Protected files:\n' +
+                violations.map(v => `  - ${v}`).join('\n') +
+                '\n\nPer @M:001: Requires explicit user approval.'
               );
-            } else if (deletedFiles.length > 0) {
+            }
+
+            // Warn on any deletion even if not protected
+            if (deletedFiles.length > 0 && violations.length === 0) {
               core.warning(
-                `PR deletes ${deletedFiles.length} file(s): ${deletedFiles.map(f => f.filename).join(', ')}. ` +
-                'Verify these deletions are intentional.'
+                `PR deletes ${deletedFiles.length} file(s). Verify intentional.`
+              );
+            }
+
+  # ─────────────────────────────────────────────────────────────
+  # JOB 2: Auto-review on dev (informational, never blocks)
+  # ─────────────────────────────────────────────────────────────
+  dev-auto-review:
+    name: Dev Auto-Review (informational)
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.base.ref == 'dev'
+    steps:
+      - name: Post review reminder
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const author = pr.user.login;
+
+            // Check if we already posted a reminder
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              per_page: 50,
+            });
+
+            const alreadyPosted = comments.data.some(c =>
+              c.body && c.body.includes('WDC AUTO-REVIEW QUEUED')
+            );
+
+            if (!alreadyPosted) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: [
+                  '## WDC AUTO-REVIEW QUEUED',
+                  '',
+                  `PR by **${author}** targeting \`dev\` branch.`,
+                  '',
+                  '**Trust but Verify model:**',
+                  '- This PR can merge to `dev` freely (no WDC gate)',
+                  '- WDC review will run before `dev → staging` promotion',
+                  '- Deletion protection is active on all branches',
+                  '',
+                  `Files changed: ${pr.changed_files} | +${pr.additions}/-${pr.deletions}`,
+                  '',
+                  '---',
+                  '*Automated by WDC Merge Gate*',
+                ].join('\n'),
+              });
+            }
+
+            // Always pass — dev branch is free-flow
+            core.info(`Dev PR #${pr.number} by ${author}: auto-approved (Trust but Verify)`);
+
+  # ─────────────────────────────────────────────────────────────
+  # JOB 3: WDC gate on staging (blocks without passing review)
+  # ─────────────────────────────────────────────────────────────
+  staging-wdc-gate:
+    name: WDC Gate (staging)
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'staging') ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request)
+    steps:
+      - name: Require WDC approval for staging
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const WDC_THRESHOLD = 7.5;
+            const SECURITY_THRESHOLD = 6.0;
+            const AGENT_MINIMUM = 4.0;
+
+            let prNumber;
+            if (context.eventName === 'pull_request') {
+              prNumber = context.payload.pull_request.number;
+              // Check target branch
+              if (context.payload.pull_request.base.ref !== 'staging') {
+                core.info('Not targeting staging — skipping WDC gate');
+                return;
+              }
+            } else {
+              prNumber = context.payload.issue.number;
+            }
+
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              per_page: 100,
+            });
+
+            let wdcApproved = false;
+            let wdcScore = 0;
+            let wdcDecision = 'NONE';
+            let reviewerLogin = '';
+            let failReason = '';
+
+            for (const comment of comments.data) {
+              const body = comment.body || '';
+              if (!body.includes('WDC REVIEW') && !body.includes('COMPOSITE SCORE')) continue;
+
+              // Extract composite score
+              const scoreMatch = body.match(/COMPOSITE\s*SCORE[:\s]*(\d+\.?\d*)\s*\/\s*10/i);
+              if (scoreMatch) wdcScore = parseFloat(scoreMatch[1]);
+
+              // Extract decision
+              const decisionMatch = body.match(/DECISION[:\s]*(MERGE|REVISE|REJECT)/i);
+              if (decisionMatch) wdcDecision = decisionMatch[1].toUpperCase();
+
+              // Security auto-reject
+              const securityMatch = body.match(/SECURITY[^:]*?[:\s]*(\d+\.?\d*)\s*\/\s*10/i);
+              if (securityMatch && parseFloat(securityMatch[1]) < SECURITY_THRESHOLD) {
+                failReason = `Security score ${securityMatch[1]} < ${SECURITY_THRESHOLD}`;
+                core.setFailed(`WDC SECURITY AUTO-REJECT: ${failReason}`);
+                return;
+              }
+
+              // Agent minimum auto-reject
+              const agentScores = [...body.matchAll(/Score[:\s]*(\d+\.?\d*)\s*\/\s*10/gi)];
+              for (const match of agentScores) {
+                if (parseFloat(match[1]) < AGENT_MINIMUM) {
+                  failReason = `Agent score ${match[1]} < ${AGENT_MINIMUM}`;
+                  core.setFailed(`WDC AUTO-REJECT: ${failReason}`);
+                  return;
+                }
+              }
+
+              if (wdcScore >= WDC_THRESHOLD && wdcDecision === 'MERGE') {
+                wdcApproved = true;
+                reviewerLogin = comment.user.login;
+              }
+            }
+
+            if (wdcApproved) {
+              core.info(`WDC APPROVED for staging: ${wdcScore}/10 by ${reviewerLogin}`);
+            } else if (wdcScore > 0) {
+              core.setFailed(
+                `WDC BLOCKED: Score ${wdcScore}/10 (need ${WDC_THRESHOLD}+), Decision: ${wdcDecision}. ` +
+                'Post a passing WDC review to unblock.'
+              );
+            } else {
+              core.setFailed(
+                'WDC REVIEW REQUIRED for staging promotion. ' +
+                'Run a 5-agent WDC review and post results as a PR comment.'
+              );
+            }
+
+  # ─────────────────────────────────────────────────────────────
+  # JOB 4: WDC gate + manual approval on main (strictest)
+  # ─────────────────────────────────────────────────────────────
+  main-wdc-gate:
+    name: WDC Gate (main — production)
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main') ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request)
+    steps:
+      - name: Require WDC approval for main
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const WDC_THRESHOLD = 7.5;
+            const SECURITY_THRESHOLD = 6.0;
+            const AGENT_MINIMUM = 4.0;
+
+            let prNumber;
+            if (context.eventName === 'pull_request') {
+              prNumber = context.payload.pull_request.number;
+              if (context.payload.pull_request.base.ref !== 'main') {
+                core.info('Not targeting main — skipping');
+                return;
+              }
+            } else {
+              prNumber = context.payload.issue.number;
+            }
+
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              per_page: 100,
+            });
+
+            let wdcApproved = false;
+            let wdcScore = 0;
+            let wdcDecision = 'NONE';
+
+            for (const comment of comments.data) {
+              const body = comment.body || '';
+              if (!body.includes('WDC REVIEW') && !body.includes('COMPOSITE SCORE')) continue;
+
+              const scoreMatch = body.match(/COMPOSITE\s*SCORE[:\s]*(\d+\.?\d*)\s*\/\s*10/i);
+              if (scoreMatch) wdcScore = parseFloat(scoreMatch[1]);
+
+              const decisionMatch = body.match(/DECISION[:\s]*(MERGE|REVISE|REJECT)/i);
+              if (decisionMatch) wdcDecision = decisionMatch[1].toUpperCase();
+
+              const securityMatch = body.match(/SECURITY[^:]*?[:\s]*(\d+\.?\d*)\s*\/\s*10/i);
+              if (securityMatch && parseFloat(securityMatch[1]) < SECURITY_THRESHOLD) {
+                core.setFailed(`PRODUCTION SECURITY AUTO-REJECT: ${securityMatch[1]} < ${SECURITY_THRESHOLD}`);
+                return;
+              }
+
+              const agentScores = [...body.matchAll(/Score[:\s]*(\d+\.?\d*)\s*\/\s*10/gi)];
+              for (const m of agentScores) {
+                if (parseFloat(m[1]) < AGENT_MINIMUM) {
+                  core.setFailed(`PRODUCTION AUTO-REJECT: Agent score ${m[1]} < ${AGENT_MINIMUM}`);
+                  return;
+                }
+              }
+
+              if (wdcScore >= WDC_THRESHOLD && wdcDecision === 'MERGE') {
+                wdcApproved = true;
+              }
+            }
+
+            if (wdcApproved) {
+              core.info(`PRODUCTION WDC APPROVED: ${wdcScore}/10`);
+            } else if (wdcScore > 0) {
+              core.setFailed(`PRODUCTION WDC BLOCKED: ${wdcScore}/10 (need ${WDC_THRESHOLD}+)`);
+            } else {
+              core.setFailed('PRODUCTION: WDC review + manual approval required before merging to main.');
+            }
+
+      - name: Verify source is staging
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const head = context.payload.pull_request.head.ref;
+            if (head !== 'staging') {
+              core.setFailed(
+                `PRODUCTION GATE: Only \`staging\` can merge to \`main\`. ` +
+                `This PR is from \`${head}\`. Route through dev → staging → main.`
               );
             }
