@@ -1,0 +1,128 @@
+# Cyphergy Weekly Security Scan
+# Runs every Monday at 06:00 UTC and on manual dispatch
+# Scans: dependency audit, SAST, secret detection, OWASP dependency check
+
+name: Weekly Security Scan
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"  # Every Monday at 06:00 UTC
+  workflow_dispatch:       # Manual trigger
+
+env:
+  PYTHON_DEFAULT: "3.11"
+
+jobs:
+  # ──────────────────────────────────────────────
+  # Job 1: Dependency audit (pip-audit)
+  # ──────────────────────────────────────────────
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_DEFAULT }}
+
+      - name: Install dependencies
+        run: |
+          pip install -e ".[dev]"
+          pip install pip-audit
+
+      - name: Run pip-audit
+        run: pip-audit --format json --output pip-audit-report.json || true
+
+      - name: Display results
+        run: pip-audit
+
+      - name: Upload pip-audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pip-audit-report
+          path: pip-audit-report.json
+          retention-days: 90
+
+  # ──────────────────────────────────────────────
+  # Job 2: SAST scan (bandit)
+  # ──────────────────────────────────────────────
+  sast-scan:
+    name: SAST Scan (Bandit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_DEFAULT }}
+
+      - name: Install bandit
+        run: pip install bandit
+
+      - name: Run bandit (JSON report)
+        run: bandit -r src/ -f json -o bandit-report.json || true
+
+      - name: Run bandit (console output)
+        run: bandit -r src/ -ll
+
+      - name: Upload bandit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-sast-report
+          path: bandit-report.json
+          retention-days: 90
+
+  # ──────────────────────────────────────────────
+  # Job 3: Secret detection (gitleaks)
+  # ──────────────────────────────────────────────
+  secrets-scan:
+    name: Secret Detection (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ──────────────────────────────────────────────
+  # Job 4: OWASP dependency check
+  # ──────────────────────────────────────────────
+  owasp-dependency-check:
+    name: OWASP Dependency Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_DEFAULT }}
+
+      - name: Install dependencies and freeze
+        run: |
+          pip install -e ".[dev]"
+          pip freeze > requirements-frozen.txt
+
+      - name: Run OWASP Dependency-Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: "Cyphergy"
+          path: "."
+          format: "HTML"
+          args: >
+            --enableExperimental
+            --scan requirements-frozen.txt
+
+      - name: Upload OWASP report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-dependency-check-report
+          path: reports/
+          retention-days: 90

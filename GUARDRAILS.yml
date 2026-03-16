@@ -1,0 +1,381 @@
+# =============================================================================
+# GUARDRAILS.yml — Cyphergy Security & Operations Guardrails
+# Per @M:015: This file is THE LAW. Check before destructive operations.
+#
+# Owner: Bo Pennington | bo@symio.ai
+# Project: Cyphergy — AI-Powered Legal Document Analysis
+# Created: 2026-03-15
+# =============================================================================
+
+version: "1.0"
+project: cyphergy
+environment: all  # Applies to development, staging, and production
+
+# =============================================================================
+# PROTECTED PATHS
+# These paths require explicit approval before modification or deletion.
+# Risk: Accidental deletion of legal data, specs, or security config
+#        could compromise case integrity or create compliance violations.
+# =============================================================================
+protected_paths:
+  # -- Specification Documents (frozen, never auto-modify) --
+  - path: "DOCS/**"
+    protection: read_only
+    reason: "Frozen specification documents. Changes require explicit approval and versioned delta."
+    approval_required: owner
+
+  - path: "MEMORY.md"
+    protection: append_only
+    reason: "Project memory is append-only. History must never be rewritten."
+    approval_required: owner
+
+  # -- Security Configuration --
+  - path: "src/security/**"
+    protection: review_required
+    reason: "Security module changes affect all data protection controls."
+    approval_required: owner
+    min_reviewers: 1
+
+  - path: "SECURITY.md"
+    protection: review_required
+    reason: "Security policy changes affect responsible disclosure and compliance."
+    approval_required: owner
+
+  - path: "GUARDRAILS.yml"
+    protection: read_only
+    reason: "Guardrails cannot be modified without explicit owner approval. This prevents circumvention."
+    approval_required: owner
+
+  - path: "infrastructure/**"
+    protection: review_required
+    reason: "Infrastructure changes (WAF, CDN, networking) affect production security posture."
+    approval_required: owner
+
+  # -- Environment & Secrets --
+  - path: ".env"
+    protection: never_commit
+    reason: "Contains secrets. Must never enter version control."
+
+  - path: ".env.*"
+    protection: never_commit
+    reason: "Environment variants may contain secrets."
+    exceptions: [".env.example"]
+
+  # -- Legal Data --
+  - path: "case_structure/**"
+    protection: never_commit
+    reason: "Client case files are privileged attorney-client material. Never in version control."
+
+  # -- Core Business Logic --
+  - path: "src/verification/citation_chain.py"
+    protection: review_required
+    reason: "Citation verification is a legal liability control. Changes require review + adversarial testing."
+    approval_required: owner
+    min_reviewers: 1
+
+  - path: "src/legal/deadline_calc.py"
+    protection: review_required
+    reason: "Deadline miscalculation = missed court dates = malpractice. Changes require 100% test coverage."
+    approval_required: owner
+    min_reviewers: 1
+
+  - path: "src/orchestrator/wdc.py"
+    protection: review_required
+    reason: "WDC scoring determines legal output certification. Threshold changes are high-risk."
+    approval_required: owner
+
+# =============================================================================
+# RISK SCORES
+# Operations are scored 0-100. Per @M:016, risk >= 50 requires approval.
+# =============================================================================
+risk_scores:
+  # -- File Operations --
+  delete_file:
+    base_score: 40
+    modifiers:
+      - condition: "path matches src/security/**"
+        add: 50
+        reason: "Deleting security code removes protection controls."
+      - condition: "path matches src/verification/**"
+        add: 50
+        reason: "Deleting verification code removes citation integrity checks."
+      - condition: "path matches DOCS/**"
+        add: 60
+        reason: "Deleting frozen specs destroys project documentation."
+      - condition: "path matches *.py"
+        add: 10
+        reason: "Python source deletion may break imports."
+
+  modify_file:
+    base_score: 10
+    modifiers:
+      - condition: "path matches src/security/**"
+        add: 30
+        reason: "Security code modifications require careful review."
+      - condition: "path matches GUARDRAILS.yml"
+        add: 90
+        reason: "Guardrails modifications can disable all protections."
+      - condition: "path matches .github/workflows/**"
+        add: 40
+        reason: "CI/CD changes affect deployment safety."
+      - condition: "path matches pyproject.toml"
+        add: 20
+        reason: "Dependency changes may introduce vulnerabilities."
+
+  # -- Git Operations --
+  git_force_push:
+    base_score: 90
+    reason: "Force push rewrites history. Can destroy audit trail required for HIPAA compliance."
+
+  git_reset_hard:
+    base_score: 80
+    reason: "Hard reset destroys uncommitted work. May include unsaved security fixes."
+
+  git_branch_delete:
+    base_score: 50
+    modifiers:
+      - condition: "branch is main or master"
+        add: 50
+        reason: "Deleting main branch is catastrophic."
+
+  # -- Deployment Operations --
+  deploy_production:
+    base_score: 60
+    modifiers:
+      - condition: "tests not passing"
+        add: 40
+        reason: "Deploying without green tests risks production failures."
+      - condition: "security scan has findings"
+        add: 30
+        reason: "Deploying with known vulnerabilities."
+
+  # -- Data Operations --
+  database_migration:
+    base_score: 50
+    modifiers:
+      - condition: "migration is destructive (DROP, DELETE, TRUNCATE)"
+        add: 40
+        reason: "Destructive migrations may cause irreversible data loss."
+      - condition: "migration affects audit tables"
+        add: 30
+        reason: "Audit table modifications may violate HIPAA logging requirements."
+
+  environment_variable_change:
+    base_score: 20
+    modifiers:
+      - condition: "variable is ENCRYPTION_KEY"
+        add: 70
+        reason: "Changing encryption key without re-encryption causes data loss."
+      - condition: "variable is EXTERNAL_RETRIEVAL_REQUIRED"
+        add: 80
+        reason: "Disabling external retrieval breaks citation verification (hard constraint)."
+
+# =============================================================================
+# REQUIRED REVIEW
+# Changes to these areas require specific review criteria before merge.
+# =============================================================================
+required_review:
+  security_changes:
+    paths:
+      - "src/security/**"
+      - "SECURITY.md"
+      - "GUARDRAILS.yml"
+      - "infrastructure/**"
+      - ".github/workflows/**"
+    requirements:
+      - type: approval
+        count: 1
+        from: owner
+      - type: test_coverage
+        minimum: 90
+      - type: security_scan
+        tool: "pip-audit"
+        max_findings: 0
+        severity: "high"
+
+  legal_logic_changes:
+    paths:
+      - "src/legal/**"
+      - "src/verification/**"
+      - "src/orchestrator/wdc.py"
+    requirements:
+      - type: approval
+        count: 1
+        from: owner
+      - type: test_coverage
+        minimum: 100
+      - type: adversarial_tests
+        minimum: 3
+        description: "At least 3 adversarial test cases targeting the changed logic."
+
+  dependency_changes:
+    paths:
+      - "pyproject.toml"
+      - "requirements*.txt"
+      - "poetry.lock"
+      - "Pipfile.lock"
+    requirements:
+      - type: approval
+        count: 1
+      - type: security_scan
+        tool: "pip-audit"
+        max_findings: 0
+        severity: "medium"
+      - type: license_check
+        prohibited: ["AGPL-3.0", "GPL-3.0"]
+        reason: "Copyleft licenses incompatible with proprietary legal platform."
+
+  ci_cd_changes:
+    paths:
+      - ".github/workflows/**"
+      - "Dockerfile*"
+      - "docker-compose*"
+      - "infrastructure/**"
+    requirements:
+      - type: approval
+        count: 1
+        from: owner
+      - type: dry_run
+        description: "CI/CD changes must be tested in a non-production environment first."
+
+# =============================================================================
+# PROHIBITED OPERATIONS
+# These are NEVER allowed. No approval can override these rules.
+# Violation = immediate investigation.
+# =============================================================================
+prohibited_operations:
+  - id: "PROHIB-001"
+    name: "No secrets in source code"
+    description: "API keys, passwords, tokens, and connection strings must NEVER appear in source files."
+    detection:
+      patterns:
+        - "sk-ant-[a-zA-Z0-9\\-]{20,}"     # Anthropic API key format
+        - "sk-[a-zA-Z0-9]{20,}"             # OpenAI-style API key format
+        - "AKIA[0-9A-Z]{16}"                # AWS access key
+        - "password\\s*=\\s*[\"'][^\"']+[\"']"  # Hardcoded password assignment
+        - "secret\\s*=\\s*[\"'][^\"']+[\"']"    # Hardcoded secret assignment
+      exclude_paths:
+        - "*.md"          # Documentation may reference patterns
+        - "*.example"     # Example files use placeholders
+        - "GUARDRAILS.yml" # This file references patterns for detection
+        - "tests/**"      # Test files may use fake values
+    severity: critical
+
+  - id: "PROHIB-002"
+    name: "No public S3 buckets"
+    description: "All S3 buckets must be private. Legal case data must never be publicly accessible."
+    detection:
+      patterns:
+        - "acl.*public-read"
+        - "PublicAccessBlockConfiguration.*false"
+        - "BlockPublicAcls.*false"
+    severity: critical
+
+  - id: "PROHIB-003"
+    name: "No disabled authentication"
+    description: "Authentication must never be disabled on API endpoints, even temporarily."
+    detection:
+      patterns:
+        - "authenticate\\s*=\\s*False"
+        - "auth_required\\s*=\\s*False"
+        - "skip_auth"
+        - "no_auth"
+        - "@public_endpoint"   # Custom decorator that bypasses auth
+      exclude_paths:
+        - "src/security/**"   # Security module may reference these for detection
+        - "tests/**"          # Tests may mock auth
+    severity: critical
+
+  - id: "PROHIB-004"
+    name: "No external retrieval bypass"
+    description: "Citation verification Step 3 (external retrieval) must NEVER be disabled. This is a legal integrity hard constraint."
+    detection:
+      patterns:
+        - "external_retrieval_required\\s*=\\s*False"
+        - "skip_external_retrieval"
+        - "mock_court_opinion"  # In production code only
+      exclude_paths:
+        - "tests/**"
+    severity: critical
+
+  - id: "PROHIB-005"
+    name: "No unencrypted PII storage"
+    description: "Personally Identifiable Information and Protected Health Information must always be encrypted at rest."
+    detection:
+      patterns:
+        - "store_plaintext"
+        - "encrypt\\s*=\\s*False"
+        - "skip_encryption"
+    severity: critical
+
+  - id: "PROHIB-006"
+    name: "No WDC threshold reduction below 7.0"
+    description: "WDC certification threshold must never drop below 7.0. Legal outputs below this quality bar are unreliable."
+    detection:
+      patterns:
+        - "wdc_certification_threshold.*[0-6]\\."
+        - "wdc_notes_threshold.*[0-4]\\."
+    severity: high
+
+  - id: "PROHIB-007"
+    name: "No AI attribution in commits"
+    description: "Per @M:014 and @M:030, commits must never attribute work to AI. All work is the user's work."
+    detection:
+      patterns:
+        - "Co-Authored-By.*Claude"
+        - "Co-Authored-By.*AI"
+        - "Co-Authored-By.*Anthropic"
+        - "Generated by.*Claude"
+        - "Generated by.*AI"
+        - "Co-Authored-By.*GPT"
+        - "Co-Authored-By.*OpenAI"
+    severity: high
+
+  - id: "PROHIB-008"
+    name: "No logging of request bodies"
+    description: "HTTP request bodies may contain case data, PII, or legal documents. Logging body content violates HIPAA and GDPR."
+    detection:
+      patterns:
+        - "log.*request\\.body"
+        - "log.*request\\.json"
+        - "log.*request\\.text"
+        - "print.*request\\.body"
+        - "logger.*body="
+    severity: high
+
+# =============================================================================
+# ENFORCEMENT
+# How guardrails are checked and enforced.
+# =============================================================================
+enforcement:
+  pre_commit:
+    enabled: true
+    checks:
+      - prohibited_operations
+      - risk_scores
+    block_on: "risk >= 50 or any prohibited violation"
+
+  ci_pipeline:
+    enabled: true
+    checks:
+      - prohibited_operations
+      - required_review
+      - risk_scores
+    block_on: "any prohibited violation or missing required review"
+
+  manual_override:
+    allowed: false
+    reason: "Guardrails exist to protect legal data integrity. No override mechanism exists by design."
+    exception_process: "Contact bo@symio.ai with justification. Guardrails.yml must be updated (with approval) to change rules."
+
+# =============================================================================
+# AUDIT
+# =============================================================================
+audit:
+  log_all_checks: true
+  log_location: "structured logging (stdout in JSON format)"
+  retention: "90 days minimum (HIPAA requirement)"
+  alert_on:
+    - prohibited_violation
+    - risk_score_override_attempt
+    - guardrails_modification_attempt

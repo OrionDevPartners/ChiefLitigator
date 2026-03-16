@@ -1,0 +1,92 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cyphergy"
+version = "0.1.0"
+description = "AI-powered legal document analysis and motion drafting with weighted debate consensus validation"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "Proprietary"}
+authors = [
+    {name = "Bo Pennington", email = "bo@symio.ai"}
+]
+keywords = ["legal", "ai", "document-analysis", "motion-drafting", "courtlistener"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Legal Industry",
+    "License :: Other/Proprietary License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "anthropic>=0.28.0",
+    "httpx>=0.25.0",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0",
+    "pip-audit>=2.6.0",
+    "bandit>=1.7.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/OrionDevPartners/Cyphergy"
+Repository = "https://github.com/OrionDevPartners/Cyphergy.git"
+"Bug Tracker" = "https://github.com/OrionDevPartners/Cyphergy/issues"
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
+[tool.setuptools.package-data]
+src = ["py.typed"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+exclude = [".git", "__pycache__", ".venv", "venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]  # Line too long (handled by formatter)
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+markers = [
+    "integration: tests requiring external API keys (ANTHROPIC_API_KEY)",
+]

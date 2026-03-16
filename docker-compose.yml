@@ -1,0 +1,90 @@
+# =============================================================================
+# Cyphergy — Local Development Stack
+# FastAPI + PostgreSQL 16 (pgvector) + Redis 7
+# =============================================================================
+
+services:
+
+  # ── FastAPI Application ───────────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cyphergy-api
+    ports:
+      - "${API_PORT:-8000}:8000"
+    env_file:
+      - .env
+    environment:
+      - APP_ENV=development
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-cyphergy}:${POSTGRES_PASSWORD:-cyphergy_dev}@postgres:5432/${POSTGRES_DB:-cyphergy}
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./src:/app/src:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    networks:
+      - cyphergy-net
+    restart: unless-stopped
+
+  # ── PostgreSQL 16 with pgvector ───────────────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: cyphergy-postgres
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cyphergy}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cyphergy_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-cyphergy}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cyphergy}"]
+      interval: 10s
+      timeout: 5s
+      start_period: 15s
+      retries: 5
+    networks:
+      - cyphergy-net
+    restart: unless-stopped
+
+  # ── Redis 7 ───────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: cyphergy-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+    networks:
+      - cyphergy-net
+    restart: unless-stopped
+
+# ── Volumes ───────────────────────────────────────────────────────────────
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+
+# ── Network ───────────────────────────────────────────────────────────────
+networks:
+  cyphergy-net:
+    driver: bridge
