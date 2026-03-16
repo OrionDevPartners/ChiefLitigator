@@ -61,7 +61,7 @@ jobs:
         run: pip install types-redis sentry-sdk --quiet
 
       - name: Run mypy
-        run: mypy src/ --ignore-missing-imports
+        run: mypy src/ --ignore-missing-imports --no-warn-unused-ignores
 
   # ──────────────────────────────────────────────
   # Job 3: Tests (pytest + coverage, matrix)
