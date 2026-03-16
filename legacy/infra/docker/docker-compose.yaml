@@ -1,0 +1,60 @@
+version: "3.9"
+
+services:
+  ciphergy-api:
+    build:
+      context: ../../
+      dockerfile: infra/docker/Dockerfile
+    container_name: ciphergy-api
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      - CIPHERGY_BASE=/app
+      - CIPHERGY_API_KEY=${CIPHERGY_API_KEY:-}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-east-1}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+    volumes:
+      - ciphergy-data:/app/versions
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  ciphergy-dashboard:
+    build:
+      context: ../../
+      dockerfile: infra/docker/Dockerfile
+    container_name: ciphergy-dashboard
+    command: ["python", "-m", "ciphergy.dashboard.app"]
+    ports:
+      - "${DASHBOARD_PORT:-5050}:5050"
+    environment:
+      - CIPHERGY_BASE=/app
+      - CIPHERGY_SECRET=${CIPHERGY_SECRET:-ciphergy-dashboard-secret}
+    volumes:
+      - ciphergy-data:/app/versions
+    restart: unless-stopped
+    depends_on:
+      ciphergy-api:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    container_name: ciphergy-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  ciphergy-data:
+  redis-data:

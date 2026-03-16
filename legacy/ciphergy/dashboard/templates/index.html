@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DuelAI Pipeline Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>DuelAI Pipeline</h1>
+            <div class="header-status">
+                <span id="connection-status" class="badge badge-offline">Disconnected</span>
+                <span id="clock"></span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Status Cards -->
+        <section class="cards">
+            <div class="card">
+                <div class="card-label">Registry Version</div>
+                <div class="card-value" id="reg-version">--</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Tracked Files</div>
+                <div class="card-value" id="file-count">--</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Active Agents</div>
+                <div class="card-value" id="agent-count">--</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Connectors</div>
+                <div class="card-value" id="connector-count">--</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Monitored</div>
+                <div class="card-value" id="monitored-count">--</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Last Sync</div>
+                <div class="card-value card-value-sm" id="last-sync">--</div>
+            </div>
+        </section>
+
+        <!-- RED Alerts -->
+        <section class="panel" id="alerts-panel">
+            <h2>RED Alerts</h2>
+            <div id="alerts-list" class="alert-list">
+                <div class="empty-state">No active alerts</div>
+            </div>
+        </section>
+
+        <!-- Version Registry Table -->
+        <section class="panel">
+            <h2>Version Registry</h2>
+            <table id="registry-table">
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Version</th>
+                        <th>Type</th>
+                        <th>Score</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="registry-body">
+                    <tr><td colspan="5" class="empty-state">Loading...</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Sync Pipeline -->
+        <section class="panel">
+            <h2>Sync Pipeline</h2>
+            <div class="pipeline">
+                <div class="pipeline-step" id="step-detect">Detect</div>
+                <div class="pipeline-arrow">&rarr;</div>
+                <div class="pipeline-step" id="step-classify">Classify</div>
+                <div class="pipeline-arrow">&rarr;</div>
+                <div class="pipeline-step" id="step-update">Update</div>
+                <div class="pipeline-arrow">&rarr;</div>
+                <div class="pipeline-step" id="step-score">Re-Score</div>
+                <div class="pipeline-arrow">&rarr;</div>
+                <div class="pipeline-step" id="step-threshold">Threshold</div>
+                <div class="pipeline-arrow">&rarr;</div>
+                <div class="pipeline-step" id="step-sync">Sync</div>
+                <div class="pipeline-arrow">&rarr;</div>
+                <div class="pipeline-step" id="step-notify">Notify</div>
+            </div>
+        </section>
+
+        <!-- Agent Monitor -->
+        <section class="panel">
+            <h2>Agent Monitor</h2>
+            <div id="agent-list" class="agent-grid">
+                <div class="empty-state">No active agents</div>
+            </div>
+        </section>
+
+        <!-- Connectors -->
+        <section class="panel">
+            <h2>Connector Status</h2>
+            <div id="connector-list" class="connector-grid">
+                <div class="empty-state">No connectors configured</div>
+            </div>
+        </section>
+
+        <!-- Audit Log -->
+        <section class="panel">
+            <h2>Recent Activity</h2>
+            <div id="audit-log" class="log-list">
+                <div class="empty-state">No recent activity</div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // WebSocket connection
+        let socket;
+        try {
+            socket = io();
+            socket.on('connect', () => {
+                document.getElementById('connection-status').textContent = 'Connected';
+                document.getElementById('connection-status').className = 'badge badge-online';
+            });
+            socket.on('disconnect', () => {
+                document.getElementById('connection-status').textContent = 'Disconnected';
+                document.getElementById('connection-status').className = 'badge badge-offline';
+            });
+            socket.on('status_update', (data) => {
+                updateStatusCards(data);
+            });
+        } catch(e) {
+            console.log('WebSocket not available, using polling');
+        }
+
+        // Clock
+        setInterval(() => {
+            document.getElementById('clock').textContent = new Date().toLocaleTimeString();
+        }, 1000);
+
+        // Polling fallback
+        async function fetchData() {
+            try {
+                const [statusRes, filesRes, agentsRes, alertsRes, connectorsRes, auditRes] = await Promise.all([
+                    fetch('/api/status'),
+                    fetch('/api/files'),
+                    fetch('/api/agents'),
+                    fetch('/api/alerts'),
+                    fetch('/api/connectors'),
+                    fetch('/api/audit'),
+                ]);
+                const status = await statusRes.json();
+                const files = await filesRes.json();
+                const agents = await agentsRes.json();
+                const alerts = await alertsRes.json();
+                const connectors = await connectorsRes.json();
+                const audit = await auditRes.json();
+
+                updateStatusCards(status);
+                updateRegistryTable(files.files);
+                updateAgents(agents.agents);
+                updateAlerts(alerts.alerts);
+                updateConnectors(connectors.connectors);
+                updateAuditLog(audit.audit_log);
+            } catch(e) {
+                console.error('Fetch error:', e);
+            }
+        }
+
+        function updateStatusCards(data) {
+            if (data.registry_version !== undefined) document.getElementById('reg-version').textContent = 'v' + data.registry_version;
+            if (data.file_count !== undefined) document.getElementById('file-count').textContent = data.file_count;
+            if (data.agent_count !== undefined) document.getElementById('agent-count').textContent = data.agent_count;
+            if (data.connector_count !== undefined) document.getElementById('connector-count').textContent = data.connector_count;
+            if (data.monitored_count !== undefined) document.getElementById('monitored-count').textContent = data.monitored_count;
+            if (data.last_sync) {
+                document.getElementById('last-sync').textContent = new Date(data.last_sync * 1000).toLocaleString();
+            } else {
+                document.getElementById('last-sync').textContent = 'Never';
+            }
+        }
+
+        function updateRegistryTable(files) {
+            const tbody = document.getElementById('registry-body');
+            if (!files || Object.keys(files).length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No files tracked</td></tr>';
+                return;
+            }
+            tbody.innerHTML = '';
+            for (const [name, info] of Object.entries(files)) {
+                const locked = info.locked ? 'Locked' : 'Active';
+                const statusClass = info.locked ? 'status-locked' : (info.score >= 0.5 ? 'status-ok' : 'status-warn');
+                const scoreClass = info.score >= 0.7 ? 'score-high' : (info.score >= 0.5 ? 'score-mid' : 'score-low');
+                tbody.innerHTML += `<tr>
+                    <td>${name}</td>
+                    <td>v${info.version || 1}</td>
+                    <td>${info.type || 'unknown'}</td>
+                    <td class="${scoreClass}">${(info.score || 0).toFixed(2)}</td>
+                    <td><span class="status-badge ${statusClass}">${locked}</span></td>
+                </tr>`;
+            }
+        }
+
+        function updateAgents(agents) {
+            const container = document.getElementById('agent-list');
+            if (!agents || Object.keys(agents).length === 0) {
+                container.innerHTML = '<div class="empty-state">No active agents</div>';
+                return;
+            }
+            container.innerHTML = '';
+            for (const [id, agent] of Object.entries(agents)) {
+                const statusClass = agent.status === 'running' ? 'agent-running' : 'agent-stopped';
+                container.innerHTML += `<div class="agent-card ${statusClass}">
+                    <div class="agent-name">${agent.name || id}</div>
+                    <div class="agent-role">${agent.role || 'general'}</div>
+                    <div class="agent-status">${agent.status || 'unknown'}</div>
+                </div>`;
+            }
+        }
+
+        function updateAlerts(alerts) {
+            const container = document.getElementById('alerts-list');
+            if (!alerts || alerts.length === 0) {
+                container.innerHTML = '<div class="empty-state">No active alerts</div>';
+                document.getElementById('alerts-panel').classList.remove('has-alerts');
+                return;
+            }
+            document.getElementById('alerts-panel').classList.add('has-alerts');
+            container.innerHTML = '';
+            for (const alert of alerts) {
+                container.innerHTML += `<div class="alert-item">
+                    <span class="alert-level">RED</span>
+                    <span class="alert-msg">${alert.message || alert.msg || JSON.stringify(alert)}</span>
+                </div>`;
+            }
+        }
+
+        function updateConnectors(connectors) {
+            const container = document.getElementById('connector-list');
+            if (!connectors || Object.keys(connectors).length === 0) {
+                container.innerHTML = '<div class="empty-state">No connectors configured</div>';
+                return;
+            }
+            container.innerHTML = '';
+            for (const [name, info] of Object.entries(connectors)) {
+                const statusClass = info.status === 'connected' ? 'conn-active' : 'conn-inactive';
+                container.innerHTML += `<div class="connector-card ${statusClass}">
+                    <div class="conn-name">${name}</div>
+                    <div class="conn-status">${info.status || 'unknown'}</div>
+                </div>`;
+            }
+        }
+
+        function updateAuditLog(log) {
+            const container = document.getElementById('audit-log');
+            if (!log || log.length === 0) {
+                container.innerHTML = '<div class="empty-state">No recent activity</div>';
+                return;
+            }
+            container.innerHTML = '';
+            for (const entry of log.reverse().slice(0, 20)) {
+                const ts = entry.ts ? new Date(entry.ts * 1000).toLocaleTimeString() : '';
+                container.innerHTML += `<div class="log-entry">
+                    <span class="log-time">${ts}</span>
+                    <span class="log-action">${entry.action}</span>
+                    <span class="log-detail">${entry.file || entry.trigger || ''}</span>
+                </div>`;
+            }
+        }
+
+        // Initial fetch + polling every 5s
+        fetchData();
+        setInterval(fetchData, 5000);
+    </script>
+</body>
+</html>

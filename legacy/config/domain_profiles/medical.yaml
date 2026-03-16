@@ -1,0 +1,72 @@
+# ================================================================
+# MEDICAL DOMAIN PROFILE — Clinical / Insurance / Malpractice
+# ================================================================
+
+domain:
+  name: "medical"
+  display_name: "Medical Analysis"
+  description: "Signal extraction for clinical disputes, insurance denials, malpractice, peer review"
+
+vocabulary:
+  entity: "Patient / Provider / Facility"
+  entity_plural: "Entities"
+  hypothesis: "Diagnosis / Differential"
+  hypothesis_plural: "Differential Diagnoses"
+  evidence: "Clinical Finding / Lab Result / Imaging"
+  evidence_plural: "Clinical Evidence"
+  adversary: "Insurance Defense / Peer Reviewer / Opposing Expert"
+  adversary_plural: "Adversaries"
+  advocate: "Treating Physician / Expert Witness"
+  advocate_plural: "Clinical Allies"
+  source: "Witness / Medical Record"
+  source_plural: "Sources"
+  deliverable: "Clinical Report / Appeal / Submission"
+  deliverable_plural: "Deliverables"
+  milestone: "Appeal Deadline / Treatment Window"
+  milestone_plural: "Milestones"
+  standard: "Standard of Care / Clinical Guideline / Protocol"
+  standard_plural: "Standards of Care"
+  impact: "Patient Outcome / Harm"
+  output_discipline: "Clinical Precision"
+  review_panel: "Tumor Board"
+  review_agent_1: "Primary Clinician"
+  review_agent_2: "Devil's Advocate (Opposing Reviewer)"
+  review_agent_3: "Medical Director (Quality)"
+  intake_folder: "New-Data"
+  confidence_monitor: "Diagnostic Confidence Monitor"
+
+scoring:
+  weights:
+    review_agent_1: 0.40
+    review_agent_2: 0.35
+    review_agent_3: 0.25
+  scale: "percentage"
+  labels:
+    90_100: "Confirmed. Proceed with treatment/action."
+    75_89: "Probable. Standard of care supports intervention."
+    60_74: "Possible. Additional workup recommended."
+    45_59: "Uncertain. Differential remains broad."
+    below_45: "Unlikely. Consider alternative diagnoses."
+
+quality_gates:
+  - name: "Classify"
+    description: "Objective finding, clinical impression, patient report, or imaging?"
+  - name: "Evidence Check"
+    description: "Lab confirmed? Imaging reviewed? History corroborated?"
+  - name: "Standards Verification"
+    description: "Consistent with current clinical guidelines?"
+  - name: "Precision Check"
+    description: "Clinically precise? No speculative language?"
+  - name: "Separation Check"
+    description: "Treatment vs. billing vs. legal separated?"
+  - name: "Safety Check"
+    description: "Contraindications? Allergies? Drug interactions?"
+  - name: "Threshold Check"
+    description: "Vital signs? Lab values? Worsening trend?"
+
+features:
+  jurisdiction_aware: true  # State medical boards, insurance regs
+  guideline_verification: true
+  peer_review_prep: true
+  insurance_appeal: true
+  expert_witness_prep: true

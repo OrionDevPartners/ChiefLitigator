@@ -164,15 +164,12 @@ class LeadCounsel(BaseAgent):
 
         messages = self._build_messages(classification_prompt, None)
 
-        response = await self._client.messages.create(
-            model=self._settings.llm_model,
+        raw = await self._call_model(
+            messages,
             max_tokens=512,
             temperature=0.1,
-            system=self.config.system_prompt,
-            messages=messages,
         )
 
-        raw = self._extract_text(response)
         return self._parse_classification(raw)
 
     async def aggregate_responses(
@@ -205,8 +202,7 @@ class LeadCounsel(BaseAgent):
 
         for resp in responses:
             agent_summaries.append(
-                f"--- {resp.role.value.upper()} (confidence: {resp.confidence:.2f}) ---\n"
-                f"{resp.content}\n"
+                f"--- {resp.role.value.upper()} (confidence: {resp.confidence:.2f}) ---\n{resp.content}\n"
             )
             all_citations.extend(resp.citations_used)
             all_flags.extend(resp.flags)

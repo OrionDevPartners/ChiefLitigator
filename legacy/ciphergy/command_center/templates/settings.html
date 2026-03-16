@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- SYSTEM CONFIGURATION -->
+<section class="section">
+    <h2 class="section-heading">System Configuration</h2>
+    <div class="card">
+        <table class="data-table">
+            <tbody>
+                <tr>
+                    <td class="settings-label">Case Data Directory</td>
+                    <td class="mono">{{ data_dir }}</td>
+                </tr>
+                <tr>
+                    <td class="settings-label">Bind Address</td>
+                    <td class="mono">127.0.0.1:5000 (localhost only)</td>
+                </tr>
+                <tr>
+                    <td class="settings-label">Application Version</td>
+                    <td>v{{ app_version }}</td>
+                </tr>
+                <tr>
+                    <td class="settings-label">Server Time</td>
+                    <td class="mono">{{ now.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- ENCRYPTION STATUS -->
+<section class="section">
+    <h2 class="section-heading">Encryption Status</h2>
+    <div class="card">
+        <table class="data-table">
+            <tbody>
+                <tr>
+                    <td class="settings-label">Encryption Key</td>
+                    <td>
+                        {% if key_exists %}
+                        <span class="badge-green">AES-256 Key Present</span>
+                        {% else %}
+                        <span class="badge-red">No Key Found</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="settings-label">Key Location</td>
+                    <td class="mono">{{ data_dir }}/.keys/comm.key</td>
+                </tr>
+                <tr>
+                    <td class="settings-label">Status</td>
+                    <td>{{ encryption_status }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- ACTIVE HOOKS -->
+<section class="section">
+    <h2 class="section-heading">Active Hooks</h2>
+    <div class="card">
+        {% if hooks %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Hook Name</th>
+                    <th>Executable</th>
+                    <th>Path</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for hook in hooks %}
+                <tr>
+                    <td>{{ hook.name }}</td>
+                    <td>
+                        {% if hook.executable %}
+                        <span class="badge-green">Yes</span>
+                        {% else %}
+                        <span class="badge-yellow">No (chmod +x needed)</span>
+                        {% endif %}
+                    </td>
+                    <td class="mono" style="font-size: 0.8rem;">{{ hook.path }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty-state">No hooks found in {{ data_dir }}/.claude/hooks/. Hook scripts (.sh files) will appear here when added.</p>
+        {% endif %}
+    </div>
+</section>
+
+<!-- DOMAIN PROFILE -->
+<section class="section">
+    <h2 class="section-heading">Domain Profile</h2>
+    <div class="card">
+        <table class="data-table">
+            <tbody>
+                <tr>
+                    <td class="settings-label">Project</td>
+                    <td>{{ project_name }}</td>
+                </tr>
+                <tr>
+                    <td class="settings-label">Classification</td>
+                    <td><span class="badge-red">ATTORNEY WORK PRODUCT / CONFIDENTIAL</span></td>
+                </tr>
+                <tr>
+                    <td class="settings-label">Access</td>
+                    <td>Localhost only. No external network access.</td>
+                </tr>
+                <tr>
+                    <td class="settings-label">Active Matters</td>
+                    <td>{{ matters_count }}</td>
+                </tr>
+                <tr>
+                    <td class="settings-label">Tracked Entities</td>
+                    <td>{{ entities_count }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- DATA CACHE -->
+<section class="section">
+    <h2 class="section-heading">Data Cache</h2>
+    <div class="card">
+        <p>The data layer caches parsed files and refreshes automatically when source files change.</p>
+        <div style="margin-top: 0.75rem;">
+            <button class="btn btn-outline" data-action="clear-cache">Clear All Caches</button>
+            <span id="cache-status" style="margin-left: 0.5rem;"></span>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block page_scripts %}
+<script nonce="{{ csp_nonce }}">
+function clearCache() {
+    fetch('/api/refresh')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var el = document.getElementById('cache-status');
+            el.innerHTML = '<span class="badge-green">Cache cleared at ' + data.timestamp + '</span>';
+        })
+        .catch(function() {
+            document.getElementById('cache-status').innerHTML = '<span class="badge-red">Error clearing cache</span>';
+        });
+}
+</script>
+{% endblock %}

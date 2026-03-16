@@ -1,0 +1,84 @@
+# ============================================================
+# Ciphergy Pipeline -- Configuration Template
+# ============================================================
+# Copy this file to ciphergy.yaml and populate with your values.
+# All [PLACEHOLDER] values must be replaced before use.
+# ============================================================
+
+# --- Project Definition ---
+project:
+  name: "My Project"                    # Human-readable project name
+  domain: "custom"                      # Domain identifier (e.g., "legal", "research", "engineering")
+  root: "/path/to/project"             # Absolute path to project root directory
+  description: ""                       # Optional project description
+
+# --- Asana Message Bus ---
+asana:
+  pat: "YOUR_ASANA_PAT"               # Asana Personal Access Token
+  workspace_gid: "YOUR_WORKSPACE_GID"  # Asana workspace GID (optional, for validation)
+  project_gid: "YOUR_PROJECT_GID"      # Asana project GID containing agent tasks
+  section_gid: "YOUR_SECTION_GID"      # Asana section GID for pipeline tasks
+  agent_local_task_gid: "YOUR_LOCAL_TASK_GID"    # Task GID: AGENT LOCAL outbox
+  agent_cloud_task_gid: "YOUR_CLOUD_TASK_GID"    # Task GID: AGENT CLOUD outbox
+  poll_on_startup: true                # Check for messages on session start
+  max_message_length: 4000             # Character limit per Asana comment
+  stale_threshold_days: 7              # Days before unacknowledged messages are stale
+
+# --- Version Control & Registry ---
+version_control:
+  registry: ".ciphergy/registry.json"    # Path to version registry (relative to project root)
+  hash_algorithm: "md5"                # Hash algorithm: md5, sha256
+  auto_cascade: true                   # Automatically run cascades on monitored file changes
+  lock_indicators:                     # Filename patterns that indicate locked documents
+    - "_FINAL"
+    - "_LOCKED"
+    - "_FILED"
+    - "_SEALED"
+
+# --- File Synchronization ---
+sync:
+  folder: "sync/"                      # Folder for sync artifacts (relative to project root)
+  monitored_files: []                  # Populated during init -- list of files to track
+  auto_push: false                     # Automatically push sync changes (use with caution)
+  pending_queue: "sync/pending_messages.json"  # Queue for failed Asana posts
+
+# --- Confidence & Alerts ---
+alerts:
+  confidence_threshold: 75             # Minimum confidence (0-100) before alert triggers
+  alert_file: "_RED_ALERTS.md"         # Path to active alerts file (relative to project root)
+  questions_file: "_QUESTIONS.md"      # Path to running questions file
+  confidence_file: "_CONFIDENCE.md"    # Path to confidence monitor file
+
+# --- WDC Panel ---
+wdc:
+  enabled: true                        # Master toggle for WDC certification
+  strategist_weight: 0.40              # The Strategist -- "Does this advance the objective?"
+  red_team_weight: 0.35                # The Red Team -- "How would an adversary exploit this?"
+  evaluator_weight: 0.25               # The Evaluator -- "Is this procedurally sound?"
+  certification_threshold: 8.0         # Minimum score for full certification
+  conditional_threshold: 6.0           # Minimum score for conditional certification
+  revision_threshold: 4.0              # Below this = revision required; below that = rejected
+
+# --- Input Gates ---
+input_gates:
+  enabled: true                        # Master toggle for input gate filtering
+  log_gate_results: true               # Log gate results for each input
+  emotion_dampening: true              # Acknowledge but do not amplify emotional inputs
+  scope_enforcement: strict            # strict | permissive -- how to handle cross-project refs
+
+# --- Known Traps (domain-specific) ---
+known_traps: []
+  # Populate with domain-specific traps. Example:
+  # - id: "TRAP_001"
+  #   description: "Assuming dates without verification"
+  #   guardrail: "Constraint 1"
+  #   mitigation: "Always verify dates against source documents"
+
+# --- Agent Identities (for logging) ---
+agents:
+  local:
+    name: "AGENT LOCAL"
+    platform: "Claude Code"            # Or other local agent platform
+  cloud:
+    name: "AGENT CLOUD"
+    platform: "Claude.ai"             # Or other cloud agent platform

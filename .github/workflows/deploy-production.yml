@@ -1,0 +1,130 @@
+name: Deploy to Production
+
+# Triggers ONLY on merge to main (which requires staging source + WDC gate)
+on:
+  push:
+    branches: [main]
+
+# Cancel in-progress deploys if a new push arrives
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false  # Never cancel a production deploy mid-flight
+
+jobs:
+  # ── BACKEND: Build + Push to ECR + Deploy to ECS Fargate ──
+  deploy-backend:
+    name: Deploy Backend (ECS Fargate)
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, push to ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/cyphergy-api:$IMAGE_TAG .
+          docker build -t $ECR_REGISTRY/cyphergy-api:latest .
+          docker push $ECR_REGISTRY/cyphergy-api:$IMAGE_TAG
+          docker push $ECR_REGISTRY/cyphergy-api:latest
+          echo "image=$ECR_REGISTRY/cyphergy-api:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Update ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: infrastructure/ecs-task-definition.json
+          container-name: cyphergy-api
+          image: ${{ steps.build-image.outputs.image }}
+
+      - name: Deploy to ECS Fargate
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: cyphergy-api
+          cluster: cyphergy
+          wait-for-service-stability: true
+
+      - name: Post-deploy smoke test
+        run: |
+          echo "Waiting 30s for service to stabilize..."
+          sleep 30
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://api.cyphergy.ai/health || echo "000")
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "SMOKE TEST FAILED: /health returned $HTTP_CODE"
+            exit 1
+          fi
+          echo "SMOKE TEST PASSED: /health returned 200"
+
+  # ── FRONTEND: Build + Deploy to Cloudflare Pages ──
+  deploy-frontend:
+    name: Deploy Frontend (Cloudflare Pages)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install and build frontend
+        working-directory: ./frontend
+        env:
+          NEXT_PUBLIC_API_URL: https://api.cyphergy.ai
+        run: |
+          npm ci
+          npm run build
+          # CPAA: purge source maps — users cannot see source code
+          find .next/ out/ -name "*.map" -delete 2>/dev/null || true
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy frontend/out --project-name=cyphergy
+
+  # ── ADMIN: Build + Deploy admin panel separately ──
+  deploy-admin:
+    name: Deploy Admin Panel (Cloudflare Pages)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install and build admin frontend
+        working-directory: ./admin-frontend
+        env:
+          NEXT_PUBLIC_API_URL: https://api.cyphergy.ai
+        run: |
+          npm ci
+          npm run build
+          find .next/ out/ -name "*.map" -delete 2>/dev/null || true
+
+      - name: Deploy to Cloudflare Pages (admin)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy admin-frontend/out --project-name=admin-cyphergy
