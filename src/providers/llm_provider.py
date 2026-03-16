@@ -273,50 +273,69 @@ class BedrockProvider(LLMProvider):
         system: str,
         messages: list[dict[str, Any]],
     ) -> LLMProviderResponse:
-        """Invoke a model through AWS Bedrock Runtime.
+        """Invoke a model through AWS Bedrock Runtime using the Converse API.
 
-        Bedrock's ``invoke_model`` is synchronous. This method wraps it
-        in ``asyncio.to_thread`` so it integrates cleanly with async
+        The Converse API is the recommended interface for newer Bedrock models
+        (Opus 4.6, Sonnet 4.6, etc.). It provides a unified format across all
+        model providers on Bedrock.
+
+        Bedrock's API is synchronous. This method wraps it in
+        ``asyncio.to_thread`` so it integrates cleanly with async
         agent code without blocking the event loop.
         """
         import asyncio
 
         bedrock_model_id = _resolve_bedrock_model_id(model)
 
-        request_body = {
-            "anthropic_version": "bedrock-2023-10-16",
-            "max_tokens": max_tokens,
-            "temperature": temperature,
-            "system": system,
-            "messages": messages,
-        }
+        # Convert messages from Anthropic format to Bedrock Converse format
+        converse_messages = []
+        for msg in messages:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            if isinstance(content, str):
+                converse_messages.append({
+                    "role": role,
+                    "content": [{"text": content}],
+                })
+            elif isinstance(content, list):
+                # Already in block format
+                converse_messages.append({
+                    "role": role,
+                    "content": content if all(isinstance(b, dict) for b in content) else [{"text": str(content)}],
+                })
+
+        # Build system prompt in Converse format
+        system_blocks = [{"text": system}] if system else []
 
         raw_response = await asyncio.to_thread(
-            self._client.invoke_model,
+            self._client.converse,
             modelId=bedrock_model_id,
-            contentType="application/json",
-            accept="application/json",
-            body=json.dumps(request_body),
+            messages=converse_messages,
+            system=system_blocks,
+            inferenceConfig={
+                "maxTokens": max_tokens,
+                "temperature": temperature,
+            },
         )
 
-        response_body = json.loads(raw_response["body"].read())
-
+        # Extract text from Converse response format
+        output_message = raw_response.get("output", {}).get("message", {})
         text_parts: list[str] = []
-        for block in response_body.get("content", []):
-            if block.get("type") == "text":
+        for block in output_message.get("content", []):
+            if "text" in block:
                 text_parts.append(block["text"])
 
-        usage = response_body.get("usage", {})
-        input_tokens = usage.get("input_tokens", 0)
-        output_tokens = usage.get("output_tokens", 0)
-        stop_reason = response_body.get("stop_reason", "")
+        usage = raw_response.get("usage", {})
+        input_tokens = usage.get("inputTokens", 0)
+        output_tokens = usage.get("outputTokens", 0)
+        stop_reason = raw_response.get("stopReason", "")
 
         return LLMProviderResponse(
             text="\n".join(text_parts),
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             stop_reason=stop_reason,
-            raw=response_body,
+            raw=raw_response,
         )
 
 
