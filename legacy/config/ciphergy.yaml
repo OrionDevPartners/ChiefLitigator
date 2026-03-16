@@ -1,0 +1,77 @@
+# ================================================================
+# CIPHERGY.AI — Master Configuration
+# Signal extraction platform for complex adversarial domains
+# ================================================================
+
+project:
+  name: "Ciphergy"
+  version: "1.0.0"
+  tagline: "The key that turns noise into signal"
+  born: "2026-03-07"
+
+# Active domain profile — determines vocabulary throughout the system
+# Options: legal, medical, investigation, engineering, project_management, default
+domain: "default"
+domain_config: "config/domain_profiles/default.yaml"
+
+# Jurisdiction config — for regulatory/statutory domains (legal, medical, engineering)
+# Set to null for non-jurisdictional domains
+jurisdiction: null
+jurisdiction_config: null
+
+# Agent identities — the two AI environments
+agents:
+  local:
+    name: "Agent Local"
+    environment: "Claude Code (terminal, filesystem, execution)"
+    asana_task_gid: null  # Set during onboarding
+    role: "Execution — file operations, evidence monitoring, automation, cascade engine"
+  cloud:
+    name: "Agent Cloud"
+    environment: "Claude.ai Desktop (memory, web, persistence)"
+    asana_task_gid: null  # Set during onboarding
+    role: "Strategy — analysis, drafting, research, adversarial review"
+
+# Communication bus
+bus:
+  provider: "asana"
+  project_gid: null  # Set during onboarding
+  section_gid: null
+  pat_env_var: "ASANA_PAT"
+  pat_source: null  # Path to .env file with PAT
+
+# Confidence scoring thresholds
+thresholds:
+  action_threshold: 0.75      # Above this = actionable (file, plead, treat, deploy)
+  caution_threshold: 0.60     # Above this = viable but needs strengthening
+  discovery_threshold: 0.45   # Above this = worth pursuing in investigation
+  danger_threshold: 0.45      # Below this = do not act, risk of sanctions/harm
+
+# Cascade engine
+cascade:
+  auto_update_dashboard: true
+  auto_update_confidence: true
+  auto_log_diffs: true
+  auto_check_deadlines: true
+  auto_read_comms: true
+
+# Quality gates — number and names configurable per domain
+quality_gates:
+  enabled: true
+  gate_config: "core/QUALITY_GATES.md"
+
+# Review panel — multi-agent adversarial review
+review_panel:
+  enabled: true
+  panel_config: "core/REVIEW_PANEL.md"
+
+# Paths
+paths:
+  scripts: "scripts/"
+  templates: "templates/"
+  core: "core/"
+  config: "config/"
+  agents: "agents/"
+  tests: "tests/"
+  hooks: ".claude/hooks/"
+  diffs: "DIFF/"

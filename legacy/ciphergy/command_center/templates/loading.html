@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIPHERGY — Initializing</title>
+    <meta http-equiv="refresh" content="1;url=/">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='12' fill='%231B2A4A'/><text x='50' y='68' font-size='52' font-weight='bold' fill='white' text-anchor='middle' font-family='system-ui'>C</text></svg>">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #F2F4F7;
+            color: #1B2A4A;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+
+        .splash-brand {
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: 6px;
+            color: #1B2A4A;
+            margin-bottom: 24px;
+        }
+
+        .splash-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.7;
+        }
+
+        .splash-status {
+            font-size: 14px;
+            color: #6B7280;
+            letter-spacing: 0.5px;
+            margin-bottom: 32px;
+        }
+
+        .splash-loader {
+            width: 200px;
+            height: 3px;
+            background: #D1D5DB;
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .splash-loader::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -50%;
+            width: 50%;
+            height: 100%;
+            background: #1B2A4A;
+            border-radius: 3px;
+            animation: loader-slide 1s ease-in-out infinite;
+        }
+
+        @keyframes loader-slide {
+            0%   { left: -50%; }
+            100% { left: 100%; }
+        }
+
+        .splash-footer {
+            position: fixed;
+            bottom: 24px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(107, 114, 128, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="splash-icon">&#9878;</div>
+    <div class="splash-brand">CIPHERGY</div>
+    <div class="splash-status">Initializing Command Center...</div>
+    <div class="splash-loader"></div>
+    <div class="splash-footer">Confidential &mdash; Attorney Work Product</div>
+
+    <script nonce="{{ csp_nonce }}">
+        setTimeout(function() { window.location.href = '/'; }, 1000);
+    </script>
+</body>
+</html>

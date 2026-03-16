@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- OVERALL POSTURE -->
+<div class="summary-strip">
+    <div class="summary-card">
+        <div class="summary-value {% if evidence.overall.score|default(0) >= 80 %}text-green{% elif evidence.overall.score|default(0) >= 60 %}text-yellow{% else %}text-critical{% endif %}">
+            {{ evidence.overall.score|default('--') }}%
+        </div>
+        <div class="summary-label">Overall Confidence</div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-value">{{ evidence.overall.rating|default('N/A') }}</div>
+        <div class="summary-label">Case Rating</div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-value">{{ evidence.locked_claims|default([])|length }}</div>
+        <div class="summary-label">Locked Claims</div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-value">{{ evidence.building_claims|default([])|length }}</div>
+        <div class="summary-label">Building Claims</div>
+    </div>
+</div>
+
+<!-- LOCKED CLAIMS: CONFIDENCE POSTURE -->
+<section class="section">
+    <h2 class="section-heading">Locked Claim Confidence Posture</h2>
+    <div class="card">
+        {% if evidence.locked_claims %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Count</th>
+                    <th>Claim</th>
+                    <th>Confidence</th>
+                    <th>Rating</th>
+                    <th>Trend</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for claim in evidence.locked_claims %}
+                <tr>
+                    <td class="mono">{{ claim.count }}</td>
+                    <td>{{ claim.name }}</td>
+                    <td>
+                        <div class="confidence-bar-container">
+                            <div class="confidence-bar" style="width: {{ claim.score }}%; background: {% if claim.score >= 80 %}#2e7d32{% elif claim.score >= 60 %}#f9a825{% else %}#8B0000{% endif %};">
+                                <span class="confidence-label">{{ claim.score }}%</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge-{% if 'VERY STRONG' in claim.rating|upper or 'STRONG' in claim.rating|upper %}green{% elif 'MODERATE' in claim.rating|upper %}yellow{% else %}red{% endif %}">
+                            {{ claim.rating }}
+                        </span>
+                    </td>
+                    <td>{{ claim.trend }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty-state">No locked claims found. Run the evidence confidence monitor to populate.</p>
+        {% endif %}
+    </div>
+</section>
+
+<!-- BUILDING CLAIMS: THRESHOLD MONITOR -->
+<section class="section">
+    <h2 class="section-heading">Building Claim Threshold Monitor</h2>
+    <div class="card">
+        {% if evidence.building_claims %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Claim</th>
+                    <th>Current</th>
+                    <th>Threshold</th>
+                    <th>Gap</th>
+                    <th>Projected Trigger</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bc in evidence.building_claims %}
+                <tr>
+                    <td>{{ bc.name }}</td>
+                    <td>
+                        <div class="confidence-bar-container">
+                            <div class="confidence-bar" style="width: {{ bc.score }}%; background: {% if bc.score >= bc.threshold %}#2e7d32{% elif bc.score >= bc.threshold - 15 %}#f9a825{% else %}#8B0000{% endif %};">
+                                <span class="confidence-label">{{ bc.score }}%</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="mono">{{ bc.threshold }}%</td>
+                    <td>
+                        <span class="badge-{% if bc.gap <= 10 %}yellow{% else %}red{% endif %}">
+                            {{ bc.gap }}% gap
+                        </span>
+                    </td>
+                    <td>{{ bc.trigger }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty-state">No building claims tracked. Claims below filing threshold will appear here.</p>
+        {% endif %}
+    </div>
+</section>
+
+<!-- EVIDENCE COLLECTION TABS -->
+<div class="tab-bar">
+    <button class="tab-btn tab-active" data-tab-btn="ev" data-tab-target="in-hand">In Hand</button>
+    <button class="tab-btn" data-tab-btn="ev" data-tab-target="obtainable">Obtainable</button>
+    <button class="tab-btn" data-tab-btn="ev" data-tab-target="discovery">Discovery Dependent</button>
+    <button class="tab-btn" data-tab-btn="ev" data-tab-target="witness">Witness Dependent</button>
+</div>
+
+<!-- IN HAND -->
+<div data-tab-group="ev" data-tab="in-hand" style="display: block;">
+    <section class="section">
+        <h2 class="section-heading">Evidence In Hand</h2>
+        <div class="card">
+            {% if evidence.evidence_in_hand %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        {% for key in evidence.evidence_in_hand[0].keys() %}
+                        <th>{{ key|replace('_', ' ')|title }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in evidence.evidence_in_hand %}
+                    <tr>
+                        {% for key, val in item.items() %}
+                        <td>{{ val }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty-state">No evidence cataloged as in-hand. Update EVIDENCE_CONFIDENCE_MONITOR.md to populate.</p>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+<!-- OBTAINABLE -->
+<div data-tab-group="ev" data-tab="obtainable" style="display: none;">
+    <section class="section">
+        <h2 class="section-heading">Obtainable Evidence</h2>
+        <div class="card">
+            {% if evidence.obtainable %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        {% for key in evidence.obtainable[0].keys() %}
+                        <th>{{ key|replace('_', ' ')|title }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in evidence.obtainable %}
+                    <tr>
+                        {% for key, val in item.items() %}
+                        <td>{{ val }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty-state">No obtainable evidence items tracked.</p>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+<!-- DISCOVERY DEPENDENT -->
+<div data-tab-group="ev" data-tab="discovery" style="display: none;">
+    <section class="section">
+        <h2 class="section-heading">Discovery-Dependent Evidence</h2>
+        <div class="card">
+            {% if evidence.discovery_dependent %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        {% for key in evidence.discovery_dependent[0].keys() %}
+                        <th>{{ key|replace('_', ' ')|title }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in evidence.discovery_dependent %}
+                    <tr>
+                        {% for key, val in item.items() %}
+                        <td>{{ val }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty-state">No discovery-dependent evidence items tracked.</p>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+<!-- WITNESS DEPENDENT -->
+<div data-tab-group="ev" data-tab="witness" style="display: none;">
+    <section class="section">
+        <h2 class="section-heading">Witness-Dependent Evidence</h2>
+        <div class="card">
+            {% if evidence.witness_dependent %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        {% for key in evidence.witness_dependent[0].keys() %}
+                        <th>{{ key|replace('_', ' ')|title }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in evidence.witness_dependent %}
+                    <tr>
+                        {% for key, val in item.items() %}
+                        <td>{{ val }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty-state">No witness-dependent evidence items tracked.</p>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+<!-- THRESHOLD RULES -->
+{% if evidence.threshold_rules %}
+<section class="section">
+    <h2 class="section-heading">Threshold Rules</h2>
+    <div class="card">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    {% for key in evidence.threshold_rules[0].keys() %}
+                    <th>{{ key|replace('_', ' ')|title }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for rule in evidence.threshold_rules %}
+                <tr>
+                    {% for key, val in rule.items() %}
+                    <td>{{ val }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+
+{% endblock %}

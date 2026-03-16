@@ -1,0 +1,74 @@
+# ================================================================
+# LEGAL DOMAIN PROFILE — Litigation / Pro Se / Legal Defense
+# ================================================================
+
+domain:
+  name: "legal"
+  display_name: "Legal Litigation"
+  description: "Signal extraction for civil/criminal litigation, pro se or represented"
+
+vocabulary:
+  entity: "Person of Interest"
+  entity_plural: "Persons of Interest"
+  hypothesis: "Claim / Count"
+  hypothesis_plural: "Claims and Counts"
+  evidence: "Exhibit / Evidence"
+  evidence_plural: "Exhibits and Evidence"
+  adversary: "Opposing Counsel"
+  adversary_plural: "Opposing Counsel / Adverse Parties"
+  advocate: "Co-Counsel / Allied Witness"
+  advocate_plural: "Allies"
+  source: "Witness"
+  source_plural: "Witnesses"
+  deliverable: "Court Filing"
+  deliverable_plural: "Court Filings"
+  milestone: "Filing Deadline"
+  milestone_plural: "Filing Deadlines"
+  standard: "Statute / Case Law"
+  standard_plural: "Statutes and Case Law"
+  impact: "Damages"
+  output_discipline: "Glacier Mode"
+  review_panel: "WDC Panel (Weighted Debate Consensus)"
+  review_agent_1: "Strategist (Senior Plaintiff's Counsel)"
+  review_agent_2: "Red Team (Defense Counsel)"
+  review_agent_3: "Bench (Circuit Court Judge)"
+  intake_folder: "Bos-New-context"
+  confidence_monitor: "Evidence Confidence Monitor"
+
+scoring:
+  weights:
+    review_agent_1: 0.40
+    review_agent_2: 0.35
+    review_agent_3: 0.25
+  scale: "percentage"
+  labels:
+    90_100: "Near-certain. Survives all motions. Prevails at trial."
+    75_89: "Strong. Survives MTD. Likely survives summary judgment."
+    60_74: "Viable but vulnerable. Shore up evidence before filing."
+    45_59: "Needs discovery. Do not plead until evidence strengthens."
+    below_45: "Speculative. Risk of § 57.105 sanctions if pleaded."
+
+quality_gates:
+  - name: "Classify"
+    description: "Fact, assertion, instruction, evidence, emotion, question, or update?"
+  - name: "Evidence Check"
+    description: "In hand, to obtain, or unverified?"
+  - name: "Legal Verification"
+    description: "Statute verified on official source? Case law real?"
+  - name: "Glacier Check"
+    description: "Zero emotion? Would this look good as a jury exhibit?"
+  - name: "Matter Separation"
+    description: "Cross-contamination between matters?"
+  - name: "Guardrails"
+    description: "Fabricated citations? Timing traps? Wrong addresses?"
+  - name: "Trigger Check"
+    description: "Threshold crossed? Deadline approaching? Escalation detected?"
+
+# Legal-specific features
+features:
+  jurisdiction_aware: true
+  statute_verification: true
+  case_law_verification: true
+  pre_filing_checklist: true
+  deposition_prep: true
+  settlement_calculus: true

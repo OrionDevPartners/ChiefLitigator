@@ -19,8 +19,13 @@ class Settings(BaseSettings):
     """
 
     # ── LLM Provider (CPAA — all from env) ──────────────────────────
+    # LLM_PROVIDER controls which backend the provider layer uses.
+    # "anthropic" (default): direct Anthropic API — for development.
+    # "bedrock": AWS Bedrock Runtime — for production.
+    # The actual switching logic lives in src/providers/llm_provider.py.
     llm_provider: str = "anthropic"
     anthropic_api_key: str = ""
+    aws_default_region: str = "us-east-1"
     llm_model: str = "claude-opus-4-6"
     llm_max_tokens: int = 4096
     llm_temperature: float = 0.0  # Deterministic for legal — non-negotiable
@@ -58,6 +63,16 @@ class Settings(BaseSettings):
     }
 
     # ── Validators ──────────────────────────────────────────────────
+
+    @field_validator("llm_provider")
+    @classmethod
+    def llm_provider_must_be_valid(cls, v: str) -> str:
+        allowed = {"anthropic", "bedrock"}
+        if v.lower().strip() not in allowed:
+            raise ValueError(
+                f"llm_provider must be one of {allowed}, got '{v}'"
+            )
+        return v.lower().strip()
 
     @field_validator("llm_temperature")
     @classmethod

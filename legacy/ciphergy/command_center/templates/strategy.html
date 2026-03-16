@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- SUMMARY STRIP -->
+<div class="summary-strip">
+    <div class="summary-card">
+        <div class="summary-value">{{ entities|length }}</div>
+        <div class="summary-label">Tracked Entities</div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-value {% if evidence.overall.score|default(0) >= 80 %}text-green{% elif evidence.overall.score|default(0) >= 60 %}text-yellow{% else %}text-critical{% endif %}">
+            {{ evidence.overall.score|default('--') }}%
+        </div>
+        <div class="summary-label">Overall Confidence</div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-value">{{ evidence.overall.rating|default('N/A') }}</div>
+        <div class="summary-label">Case Rating</div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-value">{{ evidence.locked_claims|default([])|length }}</div>
+        <div class="summary-label">Active Claims</div>
+    </div>
+</div>
+
+<!-- ENTITY CONFIDENCE CARDS -->
+<section class="section">
+    <h2 class="section-heading">Entity Analysis Summary</h2>
+    {% if entities %}
+    <div class="card-row">
+        {% for ent in entities %}
+        <div class="card" style="flex: 0 0 280px;">
+            <div class="card-title">
+                <a href="/entities/{{ ent.id }}">{{ ent.name }}</a>
+            </div>
+            <div class="card-body">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <span>Entity Score</span>
+                    <span class="badge-{% if ent.score >= 8 %}red{% elif ent.score >= 5 %}yellow{% else %}green{% endif %}" style="font-size: 1.1rem; font-weight: bold;">
+                        {{ ent.score }}
+                    </span>
+                </div>
+                <div style="font-size: 0.85rem; color: var(--muted, #888); margin-bottom: 0.5rem;">
+                    Matter: {{ ent.matter|title }}
+                </div>
+                {% if ent.claims %}
+                <div style="font-size: 0.85rem;">
+                    <strong>{{ ent.claims|length }}</strong> claim{{ 's' if ent.claims|length != 1 }} analyzed
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card">
+        <p class="empty-state">No entity analysis reports found. Run Person Analysis Reports to populate.</p>
+    </div>
+    {% endif %}
+</section>
+
+<!-- CLAIM STRENGTH TABLE -->
+<section class="section">
+    <h2 class="section-heading">Claim Strength by Entity</h2>
+    <div class="card">
+        {% set has_claims = false %}
+        {% for ent in entities %}
+            {% if ent.claims %}
+                {% set has_claims = true %}
+            {% endif %}
+        {% endfor %}
+
+        {% if entities and has_claims %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Entity</th>
+                    <th>Claim</th>
+                    <th>Confidence</th>
+                    <th>Matter</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ent in entities %}
+                    {% for claim in ent.claims %}
+                    <tr>
+                        {% if loop.first %}
+                        <td rowspan="{{ ent.claims|length }}">
+                            <a href="/entities/{{ ent.id }}">{{ ent.name }}</a>
+                        </td>
+                        {% endif %}
+                        <td>{{ claim.name }}</td>
+                        <td>
+                            <div class="confidence-bar-container">
+                                <div class="confidence-bar" style="width: {{ claim.score }}%; background: {% if claim.score >= 80 %}#2e7d32{% elif claim.score >= 60 %}#f9a825{% else %}#8B0000{% endif %};">
+                                    <span class="confidence-label">{{ claim.score }}%</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ ent.matter|title }}</td>
+                    </tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty-state">No claim scores found. Claim data is extracted from Person Analysis Reports.</p>
+        {% endif %}
+    </div>
+</section>
+
+<!-- LOCKED CLAIMS POSTURE -->
+{% if evidence.locked_claims %}
+<section class="section">
+    <h2 class="section-heading">Filed Claim Confidence Posture</h2>
+    <div class="card">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Count</th>
+                    <th>Claim</th>
+                    <th>Confidence</th>
+                    <th>Rating</th>
+                    <th>Trend</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for claim in evidence.locked_claims %}
+                <tr>
+                    <td class="mono">{{ claim.count }}</td>
+                    <td>{{ claim.name }}</td>
+                    <td>
+                        <div class="confidence-bar-container">
+                            <div class="confidence-bar" style="width: {{ claim.score }}%; background: {% if claim.score >= 80 %}#2e7d32{% elif claim.score >= 60 %}#f9a825{% else %}#8B0000{% endif %};">
+                                <span class="confidence-label">{{ claim.score }}%</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge-{% if 'STRONG' in claim.rating|upper %}green{% elif 'MODERATE' in claim.rating|upper %}yellow{% else %}red{% endif %}">
+                            {{ claim.rating }}
+                        </span>
+                    </td>
+                    <td>{{ claim.trend }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+
+<!-- BUILDING CLAIMS -->
+{% if evidence.building_claims %}
+<section class="section">
+    <h2 class="section-heading">Building Claims (Below Filing Threshold)</h2>
+    <div class="card">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Claim</th>
+                    <th>Current</th>
+                    <th>Threshold</th>
+                    <th>Gap</th>
+                    <th>Trigger</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bc in evidence.building_claims %}
+                <tr>
+                    <td>{{ bc.name }}</td>
+                    <td>{{ bc.score }}%</td>
+                    <td>{{ bc.threshold }}%</td>
+                    <td><span class="badge-{% if bc.gap <= 10 %}yellow{% else %}red{% endif %}">{{ bc.gap }}%</span></td>
+                    <td>{{ bc.trigger }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+
+<!-- RED TEAM / SETTLEMENT SECTION -->
+<div class="two-col">
+    <section class="section col-left">
+        <h2 class="section-heading">Red Team Assessment</h2>
+        <div class="card">
+            <p>The red team stress-tests every claim by arguing the opposing side. Key outputs:</p>
+            <ul style="padding-left: 1.5rem; margin: 0.5rem 0;">
+                <li>Weakest element analysis per claim</li>
+                <li>Opposing counsel likely arguments</li>
+                <li>Evidence vulnerability map</li>
+                <li>Witness credibility challenges</li>
+            </ul>
+            <p style="margin-top: 0.75rem;">
+                Review full red team analysis in each
+                <a href="/entities">Entity Analysis Report</a> (Section 4: Stress Test).
+            </p>
+        </div>
+    </section>
+
+    <section class="section col-right">
+        <h2 class="section-heading">Settlement Calculus</h2>
+        <div class="card">
+            <p>Settlement evaluation factors:</p>
+            <table class="data-table compact">
+                <tbody>
+                    <tr>
+                        <td class="settings-label">Overall Case Strength</td>
+                        <td>
+                            <span class="badge-{% if evidence.overall.score|default(0) >= 80 %}green{% elif evidence.overall.score|default(0) >= 60 %}yellow{% else %}red{% endif %}">
+                                {{ evidence.overall.score|default('--') }}%
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="settings-label">Filed Claims</td>
+                        <td>{{ evidence.locked_claims|default([])|length }}</td>
+                    </tr>
+                    <tr>
+                        <td class="settings-label">Building Claims</td>
+                        <td>{{ evidence.building_claims|default([])|length }}</td>
+                    </tr>
+                    <tr>
+                        <td class="settings-label">Entities Under Analysis</td>
+                        <td>{{ entities|length }}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p style="margin-top: 0.75rem; font-size: 0.85rem; color: var(--muted, #888);">
+                Full damages analysis available in each entity's Section 7.
+                See <a href="/evidence">Evidence Vault</a> for gap analysis.
+            </p>
+        </div>
+    </section>
+</div>
+
+{% endblock %}

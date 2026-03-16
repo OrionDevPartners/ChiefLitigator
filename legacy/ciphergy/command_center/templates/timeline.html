@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- SUMMARY STRIP -->
+<div class="summary-strip">
+    <div class="summary-card">
+        <div class="summary-value">{{ deadlines|length }}</div>
+        <div class="summary-label">Total Deadlines</div>
+    </div>
+    <div class="summary-card">
+        {% set overdue = deadlines|selectattr('is_overdue')|list|length %}
+        <div class="summary-value {% if overdue > 0 %}text-critical{% endif %}">{{ overdue }}</div>
+        <div class="summary-label">Overdue</div>
+    </div>
+    <div class="summary-card">
+        {% set urgent = deadlines|selectattr('is_urgent')|list|length %}
+        <div class="summary-value {% if urgent > 0 %}text-critical{% endif %}">{{ urgent }}</div>
+        <div class="summary-label">Urgent (7 days)</div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-value">{{ cascade|length }}</div>
+        <div class="summary-label">Recent Changes</div>
+    </div>
+</div>
+
+<!-- TABS -->
+<div class="tab-bar">
+    <button class="tab-btn tab-active" data-tab-btn="tl" data-tab-target="deadlines">Deadlines</button>
+    <button class="tab-btn" data-tab-btn="tl" data-tab-target="cascade">Cascade Log</button>
+</div>
+
+<!-- DEADLINES TIMELINE -->
+<div data-tab-group="tl" data-tab="deadlines" style="display: block;">
+    <section class="section">
+        <h2 class="section-heading">Deadline Timeline</h2>
+        <div class="card">
+            {% if deadlines %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Days</th>
+                        <th>Description</th>
+                        <th>Matter</th>
+                        <th>Status</th>
+                        <th>Action Required</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in deadlines %}
+                    <tr class="{% if d.is_overdue %}row-critical{% elif d.is_urgent %}row-warning{% endif %}">
+                        <td class="mono">{{ d.date }}</td>
+                        <td>
+                            {% if d.days_remaining is not none %}
+                                {% if d.days_remaining < 0 %}
+                                    <span class="badge-red">{{ d.days_remaining|abs }}d overdue</span>
+                                {% elif d.days_remaining == 0 %}
+                                    <span class="badge-red">TODAY</span>
+                                {% elif d.days_remaining <= 7 %}
+                                    <span class="badge-yellow">{{ d.days_remaining }}d</span>
+                                {% else %}
+                                    <span class="badge-green">{{ d.days_remaining }}d</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge-muted">TBD</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ d.description|default(d.get('title', '')) }}</td>
+                        <td>{{ d.matter|default('') }}</td>
+                        <td>
+                            <span class="badge-{% if d.status|default('') == 'complete' %}green{% elif d.is_overdue %}red{% elif d.is_urgent %}yellow{% else %}green{% endif %}">
+                                {{ d.status|default(deadline_status(d.days_remaining|default(999)))|upper }}
+                            </span>
+                        </td>
+                        <td>{{ d.action_required|default('') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty-state">No deadlines found. Add deadlines to CASE_MANIFEST.json to populate this view.</p>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+<!-- CASCADE LOG -->
+<div data-tab-group="tl" data-tab="cascade" style="display: none;">
+    <section class="section">
+        <h2 class="section-heading">Cascade Change Log</h2>
+        <div class="card">
+            {% if cascade %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Session Date</th>
+                        <th>File</th>
+                        <th>Action</th>
+                        <th>What Changed</th>
+                        <th>Reason</th>
+                        <th>Effect</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in cascade %}
+                    <tr>
+                        <td class="mono">{{ entry.session_date }}</td>
+                        <td class="mono" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ entry.file|default('') }}">{{ entry.file|default('') }}</td>
+                        <td>
+                            <span class="badge-{% if entry.action|default('')|lower in ['created', 'added'] %}green{% elif entry.action|default('')|lower in ['deleted', 'removed'] %}red{% else %}yellow{% endif %}">
+                                {{ entry.action|default('MODIFIED') }}
+                            </span>
+                        </td>
+                        <td>{{ entry.what_changed|default('') }}</td>
+                        <td>{{ entry.reason|default('') }}</td>
+                        <td>{{ entry.effect|default('') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty-state">No cascade log entries found. Session diffs from the DIFF/ directory will appear here.</p>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+{% endblock %}

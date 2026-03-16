@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="section">
+    <h2 class="section-heading">Persons of Interest</h2>
+    {% if entities %}
+    <div class="entity-grid">
+        {% for ent in entities %}
+        <a href="/entities/{{ ent.id }}" class="entity-card">
+            <div class="entity-card-header">
+                <div class="entity-avatar threat-{{ ent.threat_level|default('medium') }}">{{ ent.name[0] }}</div>
+                <div class="entity-card-title">
+                    <div class="entity-name">{{ ent.name }}</div>
+                    <div class="entity-role">{{ ent.matter|default('unknown')|title }} Matter</div>
+                </div>
+            </div>
+
+            <!-- Entity Score Gauge -->
+            <div class="gauge-container">
+                {% set score_pct = ((ent.score_num|default(ent.score|default(0))) * 10)|int %}
+                {% set gauge_color = '#8B0000' if ent.score|default(0) >= 7 else '#f9a825' if ent.score|default(0) >= 4 else '#2e7d32' %}
+                <div class="gauge" style="--score: {{ score_pct }}; --gauge-color: {{ gauge_color }};">
+                    <div class="gauge-fill"></div>
+                    <div class="gauge-center">
+                        <span class="gauge-value">{{ ent.score }}</span>
+                        <span class="gauge-label">Entity Score</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="entity-card-meta">
+                <span class="threat-badge threat-badge-{{ ent.threat_level|default('medium') }}">{{ ent.threat_level|default('medium')|upper }} THREAT</span>
+                <span class="entity-matter">{{ ent.matter|default('unknown')|title }}</span>
+            </div>
+
+            <div class="entity-card-footer">
+                <span>{{ ent.claims|length }} claim{{ 's' if ent.claims|length != 1 }}</span>
+                <span>Score: {{ ent.score }}/10</span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card">
+        <p class="empty-state">No entity reports found. Run Person Analysis Reports (07_STRATEGY/PERSON_ANALYSIS_REPORT_*.md) to populate.</p>
+    </div>
+    {% endif %}
+</section>
+
+{% endblock %}

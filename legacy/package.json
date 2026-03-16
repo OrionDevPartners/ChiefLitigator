@@ -1,0 +1,27 @@
+{
+  "name": "ciphergy-pipeline",
+  "version": "1.0.0",
+  "description": "Domain-agnostic dual-environment AI orchestration platform",
+  "private": true,
+  "scripts": {
+    "dashboard": "python dashboard/dashboard.py",
+    "init": "bash scripts/ciphergy.sh init",
+    "status": "bash scripts/ciphergy.sh status",
+    "check": "bash scripts/ciphergy.sh check",
+    "sync": "bash scripts/ciphergy.sh sync-check"
+  },
+  "keywords": [
+    "ai",
+    "orchestration",
+    "pipeline",
+    "dual-environment",
+    "sync"
+  ],
+  "author": "Ciphergy",
+  "license": "SEE LICENSE IN LICENSE",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

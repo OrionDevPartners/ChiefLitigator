@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- ENTITY HEADER -->
+<div class="entity-detail-header">
+    <div class="entity-detail-avatar threat-{{ entity.threat_level|default('medium') }}">{{ entity.name[0] }}</div>
+    <div class="entity-detail-info">
+        <h2 class="entity-detail-name">{{ entity.name }}</h2>
+        <span class="entity-detail-role">{{ entity.matter|default('unknown')|title }} Matter</span>
+        <span class="threat-badge threat-badge-{{ entity.threat_level|default('medium') }}">{{ entity.threat_level|default('medium')|upper }} THREAT</span>
+        <span class="entity-detail-matter">Entity Score: {{ entity.score|default(0) }}</span>
+    </div>
+    <div class="entity-detail-gauge">
+        {% set score_pct = ((entity.score_num|default(entity.score|default(0))) * 10)|int %}
+        {% set gauge_color = '#8B0000' if entity.score|default(0) >= 7 else '#f9a825' if entity.score|default(0) >= 4 else '#2e7d32' %}
+        <div class="gauge gauge-lg" style="--score: {{ score_pct }}; --gauge-color: {{ gauge_color }};">
+            <div class="gauge-fill"></div>
+            <div class="gauge-center">
+                <span class="gauge-value">{{ entity.score|default(0) }}</span>
+                <span class="gauge-label">Entity Score</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CLAIMS WITH CONFIDENCE -->
+<section class="section">
+    <h3 class="section-heading">Claims Analysis</h3>
+    <div class="card">
+        {% if entity.claims %}
+        {% for claim in entity.claims %}
+        <div class="claim-row">
+            <div class="claim-text">{{ claim.name }}</div>
+            <div class="confidence-bar-container">
+                <div class="confidence-bar" style="width: {{ claim.score }}%; background: {% if claim.score >= 75 %}#2e7d32{% elif claim.score >= 50 %}#f9a825{% else %}#8B0000{% endif %};">
+                    <span class="confidence-label">{{ claim.score }}%</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="empty-state">No claims extracted from this report.</p>
+        {% endif %}
+    </div>
+</section>
+
+<!-- TIMELINE (Section 0) -->
+{% if entity.timeline %}
+<section class="section">
+    <h3 class="section-heading">Timeline</h3>
+    <div class="card">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    {% for key in entity.timeline[0].keys() %}
+                    <th>{{ key|replace('_', ' ')|title }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in entity.timeline %}
+                <tr>
+                    {% for key, val in row.items() %}
+                    <td>{{ val }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+
+<!-- EVIDENCE IN HAND (Section 3) -->
+{% if entity.evidence_in_hand %}
+<section class="section">
+    <h3 class="section-heading">Evidence In Hand</h3>
+    <div class="card">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    {% for key in entity.evidence_in_hand[0].keys() %}
+                    <th>{{ key|replace('_', ' ')|title }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in entity.evidence_in_hand %}
+                <tr>
+                    {% for key, val in row.items() %}
+                    <td>{{ val }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+
+<!-- CONTRADICTIONS (Section 4A) -->
+<section class="section">
+    <h3 class="section-heading">Contradictions</h3>
+    <div class="card">
+        {% if entity.contradictions %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    {% for key in entity.contradictions[0].keys() %}
+                    <th>{{ key|replace('_', ' ')|title }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in entity.contradictions %}
+                <tr>
+                    {% for key, val in row.items() %}
+                    <td>{{ val }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty-state">No contradictions detected.</p>
+        {% endif %}
+    </div>
+</section>
+
+<!-- CREDIBILITY MATRIX (Section 4B) -->
+{% if entity.credibility_matrix %}
+<section class="section">
+    <h3 class="section-heading">Credibility Matrix</h3>
+    <div class="card">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    {% for key in entity.credibility_matrix[0].keys() %}
+                    <th>{{ key|replace('_', ' ')|title }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in entity.credibility_matrix %}
+                <tr>
+                    {% for key, val in row.items() %}
+                    <td>{{ val }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+
+<!-- DAMAGES (Section 7) -->
+{% if entity.damages_tables %}
+<section class="section">
+    <h3 class="section-heading">Damages Analysis</h3>
+    {% for table in entity.damages_tables %}
+    <div class="card" style="margin-bottom: 1rem;">
+        {% if table %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    {% for key in table[0].keys() %}
+                    <th>{{ key|replace('_', ' ')|title }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in table %}
+                <tr>
+                    {% for key, val in row.items() %}
+                    <td>{{ val }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+    {% endfor %}
+</section>
+{% endif %}
+
+<!-- CRIMINAL EXPOSURE (Section 8) -->
+{% if entity.criminal_exposure %}
+<section class="section">
+    <h3 class="section-heading">Criminal Exposure</h3>
+    <div class="card">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    {% for key in entity.criminal_exposure[0].keys() %}
+                    <th>{{ key|replace('_', ' ')|title }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in entity.criminal_exposure %}
+                <tr>
+                    {% for key, val in row.items() %}
+                    <td>{{ val }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+
+<!-- CONNECTIONS MAP -->
+{% if entity.connections_map %}
+<section class="section">
+    <h3 class="section-heading">Connections Map</h3>
+    <div class="card">
+        <pre class="mono" style="white-space: pre; overflow-x: auto; padding: 1rem; background: var(--bg-dark, #1a1a2e); color: var(--text-light, #e0e0e0); border-radius: 4px;">{{ entity.connections_map }}</pre>
+    </div>
+</section>
+{% endif %}
+
+<!-- DEPOSITION QUESTIONS (Section 10A) -->
+{% if entity.deposition_questions %}
+<section class="section">
+    <h3 class="section-heading">Deposition Questions</h3>
+    <div class="card">
+        <ol class="deposition-questions">
+            {% for q in entity.deposition_questions %}
+            <li>{{ q }}</li>
+            {% endfor %}
+        </ol>
+    </div>
+</section>
+{% endif %}
+
+<!-- ACTION ITEMS (Section 10) -->
+{% if entity.action_tables %}
+<section class="section">
+    <h3 class="section-heading">Recommended Actions</h3>
+    {% for table in entity.action_tables %}
+    <div class="card" style="margin-bottom: 1rem;">
+        {% if table %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    {% for key in table[0].keys() %}
+                    <th>{{ key|replace('_', ' ')|title }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in table %}
+                <tr>
+                    {% for key, val in row.items() %}
+                    <td>{{ val }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+    {% endfor %}
+</section>
+{% endif %}
+
+<!-- WITNESSES -->
+{% if entity.witnesses %}
+<section class="section">
+    <h3 class="section-heading">Witness Reliability</h3>
+    <div class="card">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    {% for key in entity.witnesses[0].keys() %}
+                    <th>{{ key|replace('_', ' ')|title }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in entity.witnesses %}
+                <tr>
+                    {% for key, val in row.items() %}
+                    <td>{{ val }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+
+<!-- REPORT SECTIONS (raw parsed) -->
+{% if entity.sections %}
+<section class="section">
+    <h3 class="section-heading">Full Report Sections</h3>
+    {% for key, section in entity.sections.items() %}
+    <div class="card collapsible-card" style="margin-bottom: 0.5rem;">
+        <div class="collapsible-header" data-collapse-target="section-{{ loop.index }}">
+            <span class="collapsible-title">{{ key|replace('_', ' ')|title }}</span>
+            <span class="collapsible-icon">+</span>
+        </div>
+        <div class="collapsible-body" id="section-{{ loop.index }}" style="display: none;">
+            {% if section is mapping %}
+                {% for subkey, subval in section.items() %}
+                    {% if subkey != '_content' %}
+                    <div style="margin-bottom: 0.5rem;">
+                        <strong>{{ subkey|replace('_', ' ')|title }}:</strong>
+                        {% if subval is string %}
+                            {{ subval }}
+                        {% elif subval is mapping %}
+                            <pre class="mono" style="white-space: pre-wrap;">{{ subval|tojson(indent=2) }}</pre>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+                {% if section._content is defined %}
+                <div style="white-space: pre-wrap; font-size: 0.9rem;">{{ section._content }}</div>
+                {% endif %}
+            {% elif section is string %}
+                <div style="white-space: pre-wrap; font-size: 0.9rem;">{{ section }}</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</section>
+{% endif %}
+
+<div class="back-link-row">
+    <a href="/entities" class="back-link">&larr; Back to Entity Hub</a>
+</div>
+
+{% endblock %}

@@ -1,0 +1,66 @@
+# ================================================================
+# CIPHERGY DATA CLASSIFICATION — Confidentiality Tags
+# What can and cannot leave the local machine
+# ================================================================
+#
+# Configure project-specific forbidden patterns during onboarding.
+# The comm system enforces these automatically.
+# ================================================================
+
+classifications:
+
+  LOCAL_ONLY:
+    label: "LOCAL ONLY"
+    icon: "🔴"
+    description: "Sensitive work product. Never transmit to any external service."
+    transmission: "BLOCKED"
+    default_patterns:
+      - "Entity names (people, organizations under analysis)"
+      - "Addresses and locations"
+      - "Contact information (emails, phones)"
+      - "Financial figures"
+      - "Confidence scores and strength assessments"
+      - "Strategy and adversarial analysis"
+      - "Evidence descriptions"
+      - "Source/witness strategy"
+      - "Encryption keys and authentication tokens"
+
+  SIGNAL_OK:
+    label: "SIGNAL OK"
+    icon: "🟡"
+    description: "Operational signals only. Metadata, zero content."
+    transmission: "External bus permitted — SIGNAL FORMAT ONLY"
+    allowed_fields:
+      - "Task status"
+      - "File path (relative)"
+      - "Timestamp"
+      - "Agent identity"
+      - "Signal type"
+      - "Priority level"
+      - "Matter identifier (generic — matter_1, matter_2)"
+      - "Milestone date (date only, no description)"
+      - "Action verb"
+      - "Count of items"
+
+  ENCRYPTED_TRANSIT:
+    label: "ENCRYPTED TRANSIT"
+    icon: "🟠"
+    description: "Sensitive content via AES-256-GCM. Rare."
+    transmission: "AES encrypted only — never plaintext"
+
+  PUBLIC:
+    label: "PUBLIC"
+    icon: "🟢"
+    description: "Non-sensitive. Can be transmitted freely."
+    transmission: "Any channel"
+
+# Project-specific forbidden patterns (populated during onboarding)
+forbidden_patterns:
+  names: []       # e.g., ["Smith", "Jones", "AcmeCorp"]
+  addresses: []   # e.g., ["123 Main St", "Springfield"]
+  emails: []      # e.g., ["john@example.com"]
+  phones: []      # e.g., ["555-123-4567"]
+  custom: []      # Any additional patterns
+
+# Signal format
+signal_format: "[SIGNAL] TYPE | agent: NAME | time: TIMESTAMP | key: value"

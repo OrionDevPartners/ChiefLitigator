@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- TABS -->
+<div class="tab-bar">
+    <button class="tab-btn tab-active" data-tab-btn="assistant" data-tab-target="templates">Template Runner</button>
+    <button class="tab-btn" data-tab-btn="assistant" data-tab-target="guardian">Draft Guardian</button>
+    <button class="tab-btn" data-tab-btn="assistant" data-tab-target="evidence">Evidence Coach</button>
+    <button class="tab-btn" data-tab-btn="assistant" data-tab-target="history">Execution Log</button>
+</div>
+
+<!-- TEMPLATE RUNNER -->
+<div data-tab-group="assistant" data-tab="templates" style="display: block;">
+    <div class="two-col">
+        <!-- Template Selector -->
+        <section class="section col-left">
+            <h2 class="section-heading">Select Template</h2>
+            <div class="card">
+                <div class="form-group">
+                    <label class="form-label">Template</label>
+                    <select id="template-select" class="form-select">
+                        <option value="">-- Choose a template --</option>
+                    </select>
+                </div>
+
+                <div id="template-description" class="info-box" style="display:none;">
+                    <p id="template-desc-text"></p>
+                    <div id="template-triggers" class="tag-list"></div>
+                </div>
+
+                <!-- Dynamic parameter form -->
+                <form id="template-params-form" style="display:none;">
+                    <div id="params-container"></div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" id="generate-prompt-btn">Generate Prompt</button>
+                        <button type="button" class="btn btn-outline" id="clear-params-btn">Clear</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Generated Prompt Output -->
+        <section class="section col-right">
+            <h2 class="section-heading">
+                Generated Prompt
+                <button id="copy-prompt-btn" class="btn btn-sm" style="display:none; float:right;">Copy to Clipboard</button>
+            </h2>
+            <div class="card">
+                <div id="prompt-output" class="prompt-output-block">
+                    <p class="empty-state">Select a template and fill in parameters to generate a prompt for Claude Code.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<!-- DRAFT GUARDIAN -->
+<div data-tab-group="assistant" data-tab="guardian" style="display: none;">
+    <div class="two-col">
+        <!-- Draft Input -->
+        <section class="section col-left">
+            <h2 class="section-heading">Draft Text</h2>
+            <div class="card">
+                <div class="form-group">
+                    <label class="form-label">Communication Draft</label>
+                    <textarea id="draft-text" class="form-textarea" rows="12"
+                        placeholder="Paste draft communication here for quality review..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Recipient Type</label>
+                    <select id="recipient-type" class="form-select">
+                        <option value="internal">Internal</option>
+                        <option value="external-adversary">External - Adversary</option>
+                        <option value="external-ally">External - Ally</option>
+                        <option value="submission">Court Submission</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" id="check-gates-btn">Run 7-Gate Check</button>
+                    <span id="guardian-status" class="badge-on-track" style="margin-left:0.5rem;">Idle</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Gate Results -->
+        <section class="section col-right">
+            <h2 class="section-heading">Gate Results</h2>
+            <div class="card">
+                <div id="gates-results">
+                    <p class="empty-state">Gate check results will appear here.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<!-- EVIDENCE COACH -->
+<div data-tab-group="assistant" data-tab="evidence" style="display: none;">
+    <section class="section">
+        <h2 class="section-heading">Evidence Coach &mdash; Quick Upload</h2>
+        <div class="card">
+            <div class="upload-zone" id="evidence-drop-zone">
+                <div class="upload-icon">+</div>
+                <p>Drop evidence files here or click to upload</p>
+                <input type="file" id="evidence-file-input" multiple style="display:none;" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt,.eml">
+                <p class="upload-hint">PDF, DOC, images, or email files</p>
+            </div>
+            <div id="evidence-file-list" class="file-list"></div>
+        </div>
+    </section>
+</div>
+
+<!-- EXECUTION LOG -->
+<div data-tab-group="assistant" data-tab="history" style="display: none;">
+    <section class="section">
+        <h2 class="section-heading">Recent Template Executions</h2>
+        <div class="card">
+            <table class="data-table" id="executions-table">
+                <thead>
+                    <tr>
+                        <th>Template</th>
+                        <th>Parameters</th>
+                        <th>Generated</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="executions-body">
+                    <tr><td colspan="4" class="empty-state">No recent executions</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+{% block page_scripts %}
+<script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/assistant.min.js') }}"></script>
+{% endblock %}
+
+{% endblock %}

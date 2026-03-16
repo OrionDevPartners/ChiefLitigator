@@ -1,0 +1,17 @@
+# Ciphergy Pipeline — Python Dependencies
+# Install: pip install -r requirements.txt
+
+# Configuration parsing
+pyyaml>=6.0,<7.0
+
+# Web dashboard
+flask>=3.0,<4.0
+
+# Standard library modules used (no install needed):
+# - json
+# - hashlib
+# - os, sys, shutil
+# - argparse
+# - urllib.request, urllib.error
+# - datetime
+# - time

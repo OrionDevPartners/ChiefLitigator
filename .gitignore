@@ -213,3 +213,14 @@ CIPHERGY-REPO/
 *.docx
 *.zip
 *.pdf
+
+# === SENSITIVE DIRECTORIES (never commit) ===
+.keys/
+.ciphergy/
+New-Data/
+
+# === SESSION CONTINUATION FILES (ephemeral, large) ===
+2026-*.txt
+
+# === BINARY / PIPELINE DOCS ===
+DualAI_PIPELINE.docx
