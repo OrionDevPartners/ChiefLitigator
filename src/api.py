@@ -30,6 +30,7 @@ from src.api_models import (
     VerifyCitationRequest,
     VerifyCitationResponse,
 )
+from src.auth.middleware import JWTAuthMiddleware
 from src.legal.deadline_calc import (
     DeadlineCalculator,
     DeadlineType,
@@ -37,7 +38,7 @@ from src.legal.deadline_calc import (
     ServiceMethod,
 )
 from src.security.middleware import SecurityMiddleware, configure_cors
-from src.security.rate_limiter import RateLimiter, RateLimitResult
+from src.security.rate_limiter import RateLimiter, RateLimitResult  # noqa: I001
 
 logger = logging.getLogger("cyphergy.api")
 
@@ -56,6 +57,7 @@ def _get_lead_counsel():
     global _lead_counsel
     if _lead_counsel is None:
         from src.agents.lead_counsel import LeadCounsel
+
         _lead_counsel = LeadCounsel()
     return _lead_counsel
 
@@ -65,6 +67,7 @@ def _get_citation_verifier():
     global _citation_verifier
     if _citation_verifier is None:
         from src.verification.citation_chain import CitationVerifier
+
         _citation_verifier = CitationVerifier()
     return _citation_verifier
 
@@ -152,10 +155,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(
     title="Cyphergy Legal AI",
-    description=(
-        "Multi-agent legal co-counsel platform. "
-        "5 specialized agents with WDC-certified output quality."
-    ),
+    description=("Multi-agent legal co-counsel platform. 5 specialized agents with WDC-certified output quality."),
     version="0.1.0",
     docs_url="/docs" if os.getenv("APP_ENV", "development") != "production" else None,
     redoc_url="/redoc" if os.getenv("APP_ENV", "development") != "production" else None,
@@ -165,7 +165,10 @@ app = FastAPI(
 # --- Middleware stack (order matters: last added = first executed) ---
 # 1. Security headers + request tracing (outermost)
 app.add_middleware(SecurityMiddleware)
-# 2. CORS (must be before SecurityMiddleware in execution order)
+# 2. JWT authentication (after security headers, before CORS)
+if os.getenv("JWT_SECRET_KEY"):
+    app.add_middleware(JWTAuthMiddleware)
+# 3. CORS (must be before SecurityMiddleware in execution order)
 configure_cors(app)
 
 
@@ -190,9 +193,7 @@ async def rate_limit_middleware(request: Request, call_next):
     # but this middleware may run before it in some configurations.
     client_ip = "unknown"
     try:
-        client_ip = getattr(request.state, "client_ip", None) or (
-            request.client.host if request.client else "unknown"
-        )
+        client_ip = getattr(request.state, "client_ip", None) or (request.client.host if request.client else "unknown")
     except Exception:
         pass
 
