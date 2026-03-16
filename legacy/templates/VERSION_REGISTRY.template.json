@@ -1,0 +1,75 @@
+{
+  "_metadata": {
+    "project_name": "[PROJECT_NAME]",
+    "created_date": "[YYYY-MM-DDTHH:MM:SSZ]",
+    "schema_version": "1.0.0",
+    "pipeline_version": "Ciphergy v1.0",
+    "hash_algorithm": "md5",
+    "description": "Version registry for all tracked documents and monitored files."
+  },
+  "tracked_documents": {
+    "_comment": "Populated during project initialization. Each entry tracks a document's version history.",
+    "files": []
+  },
+  "monitored_files": {
+    "_comment": "Populated during project initialization. Files in this list trigger cascades on change.",
+    "files": []
+  },
+  "claude_ai_sync": {
+    "last_sync_timestamp": null,
+    "stale_files": [],
+    "pending_uploads": [],
+    "sync_status": "NOT_INITIALIZED"
+  },
+  "version_history": [],
+  "wdc_reviews": [],
+  "guardrail_violations": [],
+  "_schema": {
+    "tracked_documents.files[]": {
+      "file": "string — relative path from project root",
+      "version": "string — semantic version (e.g., 1.0.0)",
+      "hash": "string — computed hash of file contents",
+      "last_modified": "string — ISO 8601 timestamp",
+      "modified_by": "string — AGENT_LOCAL | AGENT_CLOUD | HUMAN",
+      "change_summary": "string — brief description of last change",
+      "locked": "boolean — whether the document is locked for editing",
+      "created_date": "string — ISO 8601 timestamp of first tracking"
+    },
+    "monitored_files.files[]": {
+      "file": "string — relative path from project root",
+      "hash": "string — current computed hash",
+      "last_checked": "string — ISO 8601 timestamp of last hash verification",
+      "cascade_enabled": "boolean — whether changes trigger automatic cascades"
+    },
+    "version_history[]": {
+      "file": "string — relative path",
+      "from_version": "string — previous version",
+      "to_version": "string — new version",
+      "timestamp": "string — ISO 8601",
+      "changed_by": "string — AGENT_LOCAL | AGENT_CLOUD | HUMAN",
+      "change_summary": "string — what changed",
+      "old_hash": "string — hash before change",
+      "new_hash": "string — hash after change"
+    },
+    "wdc_reviews[]": {
+      "file": "string — relative path",
+      "review_date": "string — ISO 8601",
+      "review_type": "string — FULL | LIGHT",
+      "strategist_score": "number — 0.0 to 10.0",
+      "red_team_score": "number — 0.0 to 10.0",
+      "evaluator_score": "number — 0.0 to 10.0",
+      "weighted_score": "number — computed weighted average",
+      "result": "string — CERTIFIED | CONDITIONAL | REVISION REQUIRED | REJECTED",
+      "caveats": "array of strings"
+    },
+    "guardrail_violations[]": {
+      "violation_id": "string — V_NNN format",
+      "timestamp": "string — ISO 8601",
+      "constraint": "string — constraint number",
+      "severity": "string — CRITICAL | HIGH | MEDIUM",
+      "description": "string — what happened",
+      "detected_by": "string — AGENT_LOCAL | AGENT_CLOUD | HUMAN",
+      "resolution": "string — how it was resolved"
+    }
+  }
+}

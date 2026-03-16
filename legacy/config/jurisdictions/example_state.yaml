@@ -1,0 +1,56 @@
+# ================================================================
+# JURISDICTION: Example State
+# Statute database, court system, regulatory bodies
+# ================================================================
+
+jurisdiction:
+  name: "Example State"
+  abbreviation: "XX"
+  type: "state"
+
+statutes:
+  database_url: "https://www.flsenate.gov/Laws/Statutes/{year}/{statute}"
+  current_year: 2024
+  search_url: "http://www.leg.state.fl.us/statutes/"
+  format: "Fla. Stat. § {section}"
+
+court_system:
+  trial_court: "Circuit Court"
+  appellate_court: "District Court of Appeal"
+  supreme_court: "Example State Supreme Court"
+  rules:
+    civil_procedure: "Example State Rules of Civil Procedure"
+    evidence: "Example State Evidence Code"
+    appellate: "Example State Rules of Appellate Procedure"
+  rules_url: "https://www.flcourts.gov/Example State-Courts/Court-Rules-Procedures"
+
+regulatory_bodies:
+  - name: "DBPR"
+    full_name: "Department of Business and Professional Regulation"
+    url: "https://www.myexample_statelicense.com"
+  - name: "DOH"
+    full_name: "Department of Health"
+    url: "https://www.example_statehealth.gov"
+
+key_statutes:
+  defamation: "Common law — Richard v. Gray, 62 So. 2d 597 (Fla. 1953)"
+  construction_defect_notice: "§ 558.004"
+  punitive_damages_procedure: "§ 768.72"
+  punitive_damages_cap: "§ 768.73"
+  civil_theft: "§ 772.11"
+  elder_exploitation: "§ 415.1111"
+  extortion: "§ 836.05"
+  frivolous_claims: "§ 57.105"
+  penalty_imprisonment: "§ 775.082"
+  penalty_fines: "§ 775.083"
+  declarations: "§ 92.525"
+  anti_slapp: "§ 768.295"
+
+filing:
+  e_filing_required: true
+  e_filing_portal: "https://www.myflcourtaccess.com"
+  format:
+    font: "Times New Roman 12pt"
+    margins: "1 inch"
+    spacing: "Double (or 276)"
+    paper: "US Letter"

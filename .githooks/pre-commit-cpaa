@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# CPAA PRE-COMMIT HOOK — Blocks commits with hardwired model names.
+#
+# Install: git config core.hooksPath .githooks
+# Or add to .pre-commit-config.yaml
+#
+# MANDATE: All models attach via env mount only.
+# This hook scans ALL staged Python files for hardcoded model references.
+
+set -e
+
+VIOLATIONS=0
+EXEMPT_FILES="settings.py|model_router.py|llm_provider.py|test_|conftest.py"
+
+# Get all staged Python files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$' || true)
+
+if [ -z "$STAGED_FILES" ]; then
+    exit 0
+fi
+
+for file in $STAGED_FILES; do
+    # Skip exempt files
+    if echo "$file" | grep -qE "$EXEMPT_FILES"; then
+        continue
+    fi
+
+    # Get staged content (not working tree — what will actually be committed)
+    CONTENT=$(git show ":$file" 2>/dev/null || true)
+    if [ -z "$CONTENT" ]; then
+        continue
+    fi
+
+    # Check for hardcoded model names in string literals
+    FOUND=""
+
+    # Claude models
+    if echo "$CONTENT" | grep -nE '"claude-(opus|sonnet|haiku)-[0-9]|'\''claude-(opus|sonnet|haiku)-[0-9]' | grep -v "^#\|# " | head -3; then
+        FOUND="yes"
+    fi
+
+    # Bedrock ARNs outside model_router
+    if echo "$CONTENT" | grep -nE '"anthropic\.claude|'\''anthropic\.claude|"meta\.llama|'\''meta\.llama|"cohere\.|'\''cohere\.' | head -3; then
+        FOUND="yes"
+    fi
+
+    # OpenAI models
+    if echo "$CONTENT" | grep -nE '"gpt-[34]|'\''gpt-[34]|"o1-|'\''o1-' | head -3; then
+        FOUND="yes"
+    fi
+
+    # Gemini models
+    if echo "$CONTENT" | grep -nE '"gemini-|'\''gemini-' | head -3; then
+        FOUND="yes"
+    fi
+
+    if [ -n "$FOUND" ]; then
+        echo ""
+        echo "CPAA VIOLATION: $file"
+        echo "  Hardcoded model name detected in source code."
+        echo "  Models must attach via env mount only."
+        echo "  Use: os.getenv('LLM_MODEL'), ModelRouter.get_model(), or MODEL_OVERRIDE_*"
+        echo ""
+        VIOLATIONS=$((VIOLATIONS + 1))
+    fi
+done
+
+if [ "$VIOLATIONS" -gt 0 ]; then
+    echo ""
+    echo "=============================="
+    echo "CPAA MODEL GUARD: $VIOLATIONS file(s) with hardcoded models."
+    echo "COMMIT BLOCKED."
+    echo ""
+    echo "Fix: Replace hardcoded model names with env-based selection."
+    echo "Exempt: settings.py, model_router.py, llm_provider.py, test files"
+    echo "=============================="
+    exit 1
+fi
+
+exit 0

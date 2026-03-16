@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} — {{ project_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='12' fill='%231B2A4A'/><text x='50' y='68' font-size='52' font-weight='bold' fill='white' text-anchor='middle' font-family='system-ui'>C</text></svg>">
+</head>
+<body>
+
+    <!-- ============================================================= -->
+    <!-- SIDEBAR                                                        -->
+    <!-- ============================================================= -->
+    <nav id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-brand">
+                <span class="brand-icon">&#9878;</span>
+                <span class="brand-text">CIPHERGY</span>
+            </div>
+            <button class="sidebar-toggle" title="Collapse sidebar">&laquo;</button>
+        </div>
+
+        <ul class="sidebar-nav">
+            {% for item in nav_items %}
+            <li class="nav-item{% if active_page == item.href %} active{% endif %}">
+                <a href="{{ item.href }}">
+                    <span class="nav-icon">{{ item.label[0] }}</span>
+                    <span class="nav-label">{{ item.label }}</span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+
+        <div class="sidebar-footer">
+            <div class="sidebar-footer-line">CONFIDENTIAL</div>
+            <div class="sidebar-footer-line">Attorney Work Product</div>
+        </div>
+    </nav>
+
+    <!-- ============================================================= -->
+    <!-- MAIN WRAPPER                                                   -->
+    <!-- ============================================================= -->
+    <div id="main-wrapper" class="main-wrapper">
+
+        <!-- TOP HEADER BAR -->
+        <header class="top-bar">
+            <div class="top-bar-left">
+                <button class="menu-btn" title="Toggle sidebar">&#9776;</button>
+                <h1 class="page-heading">{{ page_title }}</h1>
+            </div>
+            <div class="top-bar-right">
+                <span class="status-pill status-green" title="System operational">SYSTEM OK</span>
+                <span class="status-pill status-blue" title="Encryption active">{{ encryption_status }}</span>
+                <span class="top-bar-date">{{ now.strftime('%B %d, %Y') }}</span>
+            </div>
+        </header>
+
+        <!-- CONTENT AREA -->
+        <main class="content-area">
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- AI ASSISTANT DRAWER -->
+        <div id="ai-drawer" class="ai-drawer collapsed">
+            <div class="ai-drawer-handle">
+                <span class="drawer-title">&#9889; AI Assistant</span>
+                <span class="drawer-chevron" id="drawer-chevron">&#9650;</span>
+            </div>
+            <div class="ai-drawer-body">
+
+                <!-- TAB BUTTONS -->
+                <div class="ai-tabs">
+                    <button class="tab-btn tab-active" data-tab-btn="ai" data-tab-target="templates">Templates</button>
+                    <button class="tab-btn" data-tab-btn="ai" data-tab-target="guardian">Draft Guardian</button>
+                    <button class="tab-btn" data-tab-btn="ai" data-tab-target="coach">Evidence Coach</button>
+                </div>
+
+                <!-- TAB: TEMPLATE RUNNER -->
+                <div data-tab-group="ai" data-tab="templates" style="display:block;">
+                    <div class="ai-section">
+                        <label class="form-label">Select Template:</label>
+                        <select id="template-select" class="form-select">
+                            <option value="">-- Choose a template --</option>
+                            <option value="entity_analysis">Entity Analysis (Person/POI Report)</option>
+                            <option value="output_draft">Output Draft (Communication)</option>
+                            <option value="source_prep">Source Prep (Witness Declaration)</option>
+                            <option value="evidence_intake">Evidence Intake Scoring</option>
+                            <option value="deliverable_checklist">Deliverable Checklist (Filing QA)</option>
+                            <option value="adversary_playbook">Adversary Playbook</option>
+                        </select>
+                        <div id="template-info" class="ai-template-info" style="display:none;">
+                            <label class="form-label">Subject / Entity Name:</label>
+                            <input type="text" id="template-subject" class="form-input" placeholder="e.g., Jim Palmisano">
+                            <label class="form-label">Matter:</label>
+                            <select id="template-matter" class="form-select">
+                                <option value="">Select matter</option>
+                                <option value="campenni">Pennington v. Campenni</option>
+                                <option value="palmisano">Pennington v. Palmisano</option>
+                            </select>
+                            <button class="btn btn-primary" data-action="generate-prompt" style="margin-top:8px;">Generate Claude Prompt</button>
+                        </div>
+                        <div id="prompt-output" class="ai-prompt-output" style="display:none;">
+                            <label class="form-label">Copy this prompt into Claude Code:</label>
+                            <textarea id="prompt-text" class="form-textarea" rows="6" readonly></textarea>
+                            <button class="btn btn-secondary" data-action="copy-prompt">Copy to Clipboard</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: DRAFT GUARDIAN -->
+                <div data-tab-group="ai" data-tab="guardian" style="display:none;">
+                    <div class="ai-section">
+                        <label class="form-label">Paste your draft communication:</label>
+                        <textarea id="draft-text" class="form-textarea" rows="5" placeholder="Paste email, letter, or filing text here..."></textarea>
+                        <div class="ai-row" style="margin-top:8px;">
+                            <select id="recipient-type" class="form-select" style="width:auto;">
+                                <option value="external-adversary">External — Adversary</option>
+                                <option value="external-ally">External — Ally</option>
+                                <option value="internal">Internal</option>
+                                <option value="submission">Court Submission</option>
+                            </select>
+                            <button class="btn btn-primary" data-action="run-draft-check">Run 7-Gate Check</button>
+                        </div>
+                        <div id="gate-results" style="display:none; margin-top:12px;">
+                            <div id="gate-list"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: EVIDENCE COACH -->
+                <div data-tab-group="ai" data-tab="coach" style="display:none;">
+                    <div class="ai-section">
+                        <div class="ai-coach-zone">
+                            <p><strong>Evidence Coach</strong></p>
+                            <p>Drop new evidence into the <code>Bos-New-context/</code> folder, then run:</p>
+                            <code style="display:block;background:#f5f5f5;padding:8px;border-radius:4px;margin:8px 0;">python3 scripts/nerve_center.py intake</code>
+                            <p>The nerve center will score it against all active claims and cascade updates through the system.</p>
+                            <p style="margin-top:12px;"><strong>Quick score from Claude Code:</strong></p>
+                            <code style="display:block;background:#f5f5f5;padding:8px;border-radius:4px;">"Score this evidence against all claims"</code>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- STATUS BAR -->
+        <footer class="status-bar">
+            <span>Matters: {{ matters_count | default(1) }}</span>
+            <span class="status-bar-sep">|</span>
+            <span>Entities: {{ entities_count | default('--') }}</span>
+            <span class="status-bar-sep">|</span>
+            <span>
+                {% if deadlines is defined %}
+                    {% set critical = deadlines | selectattr('status', 'equalto', 'critical') | list | length %}
+                    {% if critical > 0 %}
+                        <span class="status-bar-alert">{{ critical }} deadline alert{{ 's' if critical != 1 }}</span>
+                    {% else %}
+                        No deadline alerts
+                    {% endif %}
+                {% else %}
+                    Deadlines: --
+                {% endif %}
+            </span>
+            <span class="status-bar-sep">|</span>
+            <span>{{ encryption_status }}</span>
+            <span class="status-bar-right">v{{ app_version }}</span>
+        </footer>
+
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- ============================================================= -->
+    <!-- JS — loaded from external file, CSP-nonce protected            -->
+    <!-- ============================================================= -->
+    <script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/app.min.js') }}"></script>
+    {% block page_scripts %}{% endblock %}
+
+</body>
+</html>

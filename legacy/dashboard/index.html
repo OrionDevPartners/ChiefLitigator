@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DuelAI Pipeline Dashboard</title>
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-card: #1c2128;
+            --border: #30363d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --green: #3fb950;
+            --yellow: #d29922;
+            --red: #f85149;
+            --cyan: #58a6ff;
+            --purple: #bc8cff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+
+        header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        header h1 span { color: var(--cyan); }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .card h2 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .stat {
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        .stat.green { color: var(--green); }
+        .stat.yellow { color: var(--yellow); }
+        .stat.red { color: var(--red); }
+        .stat.cyan { color: var(--cyan); }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .section h2 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th {
+            text-align: left;
+            padding: 8px 12px;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-synced { background: rgba(63, 185, 80, 0.15); color: var(--green); }
+        .badge-stale { background: rgba(210, 153, 34, 0.15); color: var(--yellow); }
+        .badge-new { background: rgba(88, 166, 255, 0.15); color: var(--cyan); }
+        .badge-missing { background: rgba(248, 81, 73, 0.15); color: var(--red); }
+        .badge-active { background: rgba(63, 185, 80, 0.15); color: var(--green); }
+        .badge-idle { background: rgba(210, 153, 34, 0.15); color: var(--yellow); }
+
+        .alerts-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 16px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 13px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .version-entry {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .version-entry:last-child { border-bottom: none; }
+
+        .version-tag {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-family: monospace;
+            font-size: 12px;
+            color: var(--cyan);
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .version-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .agent-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .agent-row:last-child { border-bottom: none; }
+
+        .refresh-bar {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-secondary);
+            padding: 16px 0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 24px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><span>DuelAI</span> Pipeline Dashboard</h1>
+            <div class="status-indicator">
+                <div class="status-dot" id="liveDot"></div>
+                <span id="projectName">Loading...</span>
+            </div>
+        </header>
+
+        <!-- Overview Cards -->
+        <div class="grid" id="overviewGrid">
+            <div class="card">
+                <h2>Total Files</h2>
+                <div class="stat cyan" id="totalFiles">--</div>
+                <div class="stat-label">Tracked in registry</div>
+            </div>
+            <div class="card">
+                <h2>In Sync</h2>
+                <div class="stat green" id="syncedCount">--</div>
+                <div class="stat-label">Files match cloud agent</div>
+            </div>
+            <div class="card">
+                <h2>Stale</h2>
+                <div class="stat yellow" id="staleCount">--</div>
+                <div class="stat-label">Need re-upload</div>
+            </div>
+            <div class="card">
+                <h2>Alerts</h2>
+                <div class="stat red" id="alertCount">--</div>
+                <div class="stat-label">Active RED alerts</div>
+            </div>
+        </div>
+
+        <!-- Agents -->
+        <div class="section">
+            <h2>Agent Status</h2>
+            <div id="agentList">
+                <div class="empty-state">Loading agent data...</div>
+            </div>
+        </div>
+
+        <!-- File Registry -->
+        <div class="section">
+            <h2>Version Registry</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Category</th>
+                        <th>Hash</th>
+                        <th>State</th>
+                    </tr>
+                </thead>
+                <tbody id="fileTable">
+                    <tr><td colspan="4" class="empty-state">Loading file data...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Sync State -->
+        <div class="section">
+            <h2>Sync State</h2>
+            <div style="display: flex; gap: 24px; margin-bottom: 16px;">
+                <div>
+                    <span style="color: var(--text-secondary);">Current Version:</span>
+                    <strong id="currentVersion">--</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-secondary);">Last Synced:</span>
+                    <strong id="lastSynced">--</strong>
+                </div>
+            </div>
+            <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--text-secondary);">Version History</h3>
+            <div id="versionHistory">
+                <div class="empty-state">Loading version history...</div>
+            </div>
+        </div>
+
+        <!-- RED Alerts -->
+        <div class="section">
+            <h2 style="color: var(--red);">RED Alerts</h2>
+            <div class="alerts-content" id="alertsContent">Loading alerts...</div>
+        </div>
+
+        <div class="refresh-bar">
+            Auto-refresh every 30 seconds | Last updated: <span id="lastUpdate">--</span>
+        </div>
+    </div>
+
+    <script>
+        const REFRESH_INTERVAL = 30000;
+
+        async function fetchStatus() {
+            try {
+                const resp = await fetch('/api/status');
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                return await resp.json();
+            } catch (err) {
+                console.error('Failed to fetch status:', err);
+                return null;
+            }
+        }
+
+        function updateDashboard(data) {
+            if (!data) return;
+
+            // Project name
+            const projName = data.project?.name || 'Unknown';
+            document.getElementById('projectName').textContent = projName;
+            document.title = `${projName} | DuelAI Dashboard`;
+
+            // Overview stats
+            document.getElementById('totalFiles').textContent = data.file_count || 0;
+            document.getElementById('syncedCount').textContent = data.sync?.counts?.synced || 0;
+            document.getElementById('staleCount').textContent =
+                (data.sync?.counts?.stale || 0) + (data.sync?.counts?.new || 0);
+
+            // Count alerts (lines starting with | that aren't headers)
+            const alertLines = (data.alerts || '').split('\n')
+                .filter(l => l.trim().startsWith('|') && !l.trim().startsWith('| #') && !l.trim().startsWith('|---') && !l.trim().startsWith('| Alert'));
+            document.getElementById('alertCount').textContent = alertLines.length;
+
+            // Agents
+            const agentContainer = document.getElementById('agentList');
+            const agents = data.agents || {};
+            if (Object.keys(agents).length === 0) {
+                agentContainer.innerHTML = '<div class="empty-state">No agents configured.</div>';
+            } else {
+                agentContainer.innerHTML = Object.entries(agents).map(([name, info]) => `
+                    <div class="agent-row">
+                        <div>
+                            <strong>${name}</strong>
+                            <span style="color: var(--text-secondary); margin-left: 8px;">${info.type || 'unknown'}</span>
+                        </div>
+                        <span class="badge badge-${info.status || 'idle'}">${info.status || 'idle'}</span>
+                    </div>
+                `).join('');
+            }
+
+            // File table
+            const fileTable = document.getElementById('fileTable');
+            const files = data.files || [];
+            if (files.length === 0) {
+                fileTable.innerHTML = '<tr><td colspan="4" class="empty-state">No files tracked.</td></tr>';
+            } else {
+                fileTable.innerHTML = files.map(f => `
+                    <tr>
+                        <td style="font-family: monospace; font-size: 12px;">${f.path}</td>
+                        <td>${f.category}</td>
+                        <td style="font-family: monospace; font-size: 12px; color: var(--text-secondary);">${f.hash}</td>
+                        <td><span class="badge badge-${f.state}">${f.state}</span></td>
+                    </tr>
+                `).join('');
+            }
+
+            // Sync state
+            document.getElementById('currentVersion').textContent = data.sync?.current_version || 'v0';
+            document.getElementById('lastSynced').textContent = data.sync?.last_synced || 'never';
+
+            // Version history
+            const historyContainer = document.getElementById('versionHistory');
+            const history = data.version_history || [];
+            if (history.length === 0) {
+                historyContainer.innerHTML = '<div class="empty-state">No version history.</div>';
+            } else {
+                historyContainer.innerHTML = history.reverse().map(h => `
+                    <div class="version-entry">
+                        <span class="version-tag">${h.version}</span>
+                        <span>${h.trigger}</span>
+                        <span class="version-meta">${h.date} | ${h.files_changed} file(s)</span>
+                    </div>
+                `).join('');
+            }
+
+            // Alerts
+            document.getElementById('alertsContent').textContent = data.alerts || 'No alerts.';
+
+            // Timestamp
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+        }
+
+        async function refresh() {
+            const data = await fetchStatus();
+            updateDashboard(data);
+        }
+
+        // Initial load
+        refresh();
+
+        // Auto-refresh
+        setInterval(refresh, REFRESH_INTERVAL);
+    </script>
+</body>
+</html>

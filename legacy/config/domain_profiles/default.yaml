@@ -1,0 +1,69 @@
+# ================================================================
+# DEFAULT DOMAIN PROFILE — Generic / Project Management
+# Used when no specific domain is configured
+# ================================================================
+
+domain:
+  name: "default"
+  display_name: "General Analysis"
+  description: "Generic signal extraction for complex multi-stakeholder situations"
+
+# Vocabulary mapping — these terms are used throughout all templates
+vocabulary:
+  entity: "Entity"                          # Person, org, system under analysis
+  entity_plural: "Entities"
+  hypothesis: "Hypothesis"                  # Assertion that needs evidence
+  hypothesis_plural: "Hypotheses"
+  evidence: "Evidence"                      # Data supporting/contradicting hypotheses
+  evidence_plural: "Evidence Items"
+  adversary: "Adversary"                    # Opposing party / threat actor
+  adversary_plural: "Adversaries"
+  advocate: "Advocate"                      # Friendly party / ally
+  advocate_plural: "Advocates"
+  source: "Source"                          # Witness / informant / data provider
+  source_plural: "Sources"
+  deliverable: "Deliverable"               # Filing / report / output
+  deliverable_plural: "Deliverables"
+  milestone: "Milestone"                    # Deadline / target date
+  milestone_plural: "Milestones"
+  standard: "Standard"                      # Rule / statute / regulation / spec
+  standard_plural: "Standards"
+  impact: "Impact"                          # Damages / harm / consequence
+  output_discipline: "Professional Precision"  # Tone control for outbound comms
+  review_panel: "Review Panel"              # Multi-agent adversarial review
+  review_agent_1: "Strategist"             # Offensive / advocacy agent
+  review_agent_2: "Red Team"               # Adversarial / attack agent
+  review_agent_3: "Evaluator"              # Neutral / quality agent
+  intake_folder: "New-Data"                # Where user drops new files
+  confidence_monitor: "Confidence Monitor" # Scoring tracker
+
+# Scoring methodology
+scoring:
+  weights:
+    review_agent_1: 0.40
+    review_agent_2: 0.35
+    review_agent_3: 0.25
+  scale: "percentage"  # 0-100%
+  labels:
+    90_100: "Near-certain. Act with confidence."
+    75_89: "Strong. Actionable."
+    60_74: "Viable but vulnerable. Strengthen before acting."
+    45_59: "Needs investigation. Do not act yet."
+    below_45: "Speculative. Pursue only in discovery/research."
+
+# Quality gate names (7 gates — override in domain profile)
+quality_gates:
+  - name: "Classify"
+    description: "What type of input is this?"
+  - name: "Evidence Check"
+    description: "What data supports this?"
+  - name: "Standards Verification"
+    description: "Are all referenced standards/rules verified?"
+  - name: "Discipline Check"
+    description: "Does the output maintain professional composure?"
+  - name: "Separation Check"
+    description: "Does this cross-contaminate separate matters?"
+  - name: "Guardrails Check"
+    description: "Does this violate any hard prohibition?"
+  - name: "Trigger Check"
+    description: "Does this cross an alarm threshold?"

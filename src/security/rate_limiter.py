@@ -35,6 +35,7 @@ logger = logging.getLogger("cyphergy.security.rate_limiter")
 # Configuration (CPAA -- all from environment variables)
 # ---------------------------------------------------------------------------
 
+
 def _env_int(name: str, default: int) -> int:
     """Read an integer from env with a safe default."""
     try:
@@ -67,46 +68,29 @@ class RateLimitConfig:
     """
 
     # Layer 1: Per-IP
-    ip_max_requests: int = field(
-        default_factory=lambda: _env_int("RATE_LIMIT_IP_MAX", 100)
-    )
-    ip_window_seconds: int = field(
-        default_factory=lambda: _env_int("RATE_LIMIT_IP_WINDOW", 60)
-    )
+    ip_max_requests: int = field(default_factory=lambda: _env_int("RATE_LIMIT_IP_MAX", 100))
+    ip_window_seconds: int = field(default_factory=lambda: _env_int("RATE_LIMIT_IP_WINDOW", 60))
 
     # Layer 2: Per-User (after authentication)
-    user_max_requests: int = field(
-        default_factory=lambda: _env_int("RATE_LIMIT_USER_MAX", 300)
-    )
-    user_window_seconds: int = field(
-        default_factory=lambda: _env_int("RATE_LIMIT_USER_WINDOW", 60)
-    )
+    user_max_requests: int = field(default_factory=lambda: _env_int("RATE_LIMIT_USER_MAX", 300))
+    user_window_seconds: int = field(default_factory=lambda: _env_int("RATE_LIMIT_USER_WINDOW", 60))
 
     # Layer 3: Per-Tenant (aggregate across all users in a tenant)
-    tenant_max_requests: int = field(
-        default_factory=lambda: _env_int("RATE_LIMIT_TENANT_MAX", 1000)
-    )
-    tenant_window_seconds: int = field(
-        default_factory=lambda: _env_int("RATE_LIMIT_TENANT_WINDOW", 60)
-    )
+    tenant_max_requests: int = field(default_factory=lambda: _env_int("RATE_LIMIT_TENANT_MAX", 1000))
+    tenant_window_seconds: int = field(default_factory=lambda: _env_int("RATE_LIMIT_TENANT_WINDOW", 60))
 
     # Layer 4: Global circuit breaker
-    global_max_requests: int = field(
-        default_factory=lambda: _env_int("RATE_LIMIT_GLOBAL_MAX", 5000)
-    )
-    global_window_seconds: int = field(
-        default_factory=lambda: _env_int("RATE_LIMIT_GLOBAL_WINDOW", 60)
-    )
+    global_max_requests: int = field(default_factory=lambda: _env_int("RATE_LIMIT_GLOBAL_MAX", 5000))
+    global_window_seconds: int = field(default_factory=lambda: _env_int("RATE_LIMIT_GLOBAL_WINDOW", 60))
 
     # Circuit breaker recovery time (seconds before retrying after trip)
-    circuit_breaker_cooldown: float = field(
-        default_factory=lambda: _env_float("RATE_LIMIT_CB_COOLDOWN", 30.0)
-    )
+    circuit_breaker_cooldown: float = field(default_factory=lambda: _env_float("RATE_LIMIT_CB_COOLDOWN", 30.0))
 
 
 # ---------------------------------------------------------------------------
 # Rate Limit Result
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class RateLimitResult:
@@ -119,6 +103,7 @@ class RateLimitResult:
         retry_after: Seconds until the client should retry (0 if allowed).
         message: Human-readable explanation for the client.
     """
+
     allowed: bool
     layer: Optional[str] = None
     remaining: int = 0
@@ -129,6 +114,7 @@ class RateLimitResult:
 # ---------------------------------------------------------------------------
 # In-Memory Sliding Window Counter
 # ---------------------------------------------------------------------------
+
 
 class _SlidingWindowCounter:
     """Thread-safe sliding window rate counter.
@@ -146,9 +132,7 @@ class _SlidingWindowCounter:
         self._windows: dict[str, list[float]] = defaultdict(list)
         self._lock = Lock()
 
-    def check_and_increment(
-        self, key: str, max_requests: int, window_seconds: int
-    ) -> tuple[bool, int]:
+    def check_and_increment(self, key: str, max_requests: int, window_seconds: int) -> tuple[bool, int]:
         """Check if key is within limits and record the request.
 
         Returns:
@@ -208,6 +192,7 @@ class _SlidingWindowCounter:
 # Redis Backend (optional, preferred in production)
 # ---------------------------------------------------------------------------
 
+
 class _RedisBackend:
     """Redis-backed sliding window using sorted sets.
 
@@ -228,6 +213,7 @@ class _RedisBackend:
         """Attempt to connect to Redis. Fail silently for graceful degradation."""
         try:
             import redis
+
             self._client = redis.from_url(
                 self._redis_url,
                 socket_timeout=2.0,
@@ -250,9 +236,7 @@ class _RedisBackend:
     def is_available(self) -> bool:
         return self._available
 
-    def check_and_increment(
-        self, key: str, max_requests: int, window_seconds: int
-    ) -> tuple[bool, int]:
+    def check_and_increment(self, key: str, max_requests: int, window_seconds: int) -> tuple[bool, int]:
         """Sorted-set sliding window in Redis.
 
         Each request is stored as a member with its timestamp as the score.
@@ -318,6 +302,7 @@ def _mask_url(url: str) -> str:
 # Circuit Breaker (Layer 4)
 # ---------------------------------------------------------------------------
 
+
 class _CircuitBreaker:
     """Global circuit breaker to protect downstream services.
 
@@ -372,9 +357,7 @@ class _CircuitBreaker:
                 # Circuit recovered between is_open check and here
                 pass
 
-        allowed, _ = self._counter.check_and_increment(
-            "global", self._max_requests, self._window_seconds
-        )
+        allowed, _ = self._counter.check_and_increment("global", self._max_requests, self._window_seconds)
 
         if not allowed:
             with self._lock:
@@ -399,6 +382,7 @@ class _CircuitBreaker:
 # ---------------------------------------------------------------------------
 # RateLimiter (public API)
 # ---------------------------------------------------------------------------
+
 
 class RateLimiter:
     """4-layer rate limiter for the Cyphergy platform.
@@ -454,9 +438,7 @@ class RateLimiter:
             self._config.global_window_seconds,
         )
 
-    def _check_layer(
-        self, key: str, max_requests: int, window_seconds: int
-    ) -> tuple[bool, int]:
+    def _check_layer(self, key: str, max_requests: int, window_seconds: int) -> tuple[bool, int]:
         """Check a single rate limit layer, using Redis or in-memory.
 
         Justification for dual-backend: Redis provides cross-instance
@@ -508,9 +490,7 @@ class RateLimiter:
             self._config.ip_window_seconds,
         )
         if not ip_allowed:
-            retry = self._memory.get_retry_after(
-                ip_key, self._config.ip_window_seconds
-            )
+            retry = self._memory.get_retry_after(ip_key, self._config.ip_window_seconds)
             logger.warning("rate_limit_denied | layer=ip ip=%s", ip)
             return RateLimitResult(
                 allowed=False,
@@ -530,12 +510,11 @@ class RateLimiter:
                 self._config.user_window_seconds,
             )
             if not user_allowed:
-                retry = self._memory.get_retry_after(
-                    user_key, self._config.user_window_seconds
-                )
+                retry = self._memory.get_retry_after(user_key, self._config.user_window_seconds)
                 logger.warning(
                     "rate_limit_denied | layer=user user_id=%s ip=%s",
-                    user_id, ip,
+                    user_id,
+                    ip,
                 )
                 return RateLimitResult(
                     allowed=False,
@@ -555,12 +534,11 @@ class RateLimiter:
                 self._config.tenant_window_seconds,
             )
             if not tenant_allowed:
-                retry = self._memory.get_retry_after(
-                    tenant_key, self._config.tenant_window_seconds
-                )
+                retry = self._memory.get_retry_after(tenant_key, self._config.tenant_window_seconds)
                 logger.warning(
                     "rate_limit_denied | layer=tenant tenant_id=%s ip=%s",
-                    tenant_id, ip,
+                    tenant_id,
+                    ip,
                 )
                 return RateLimitResult(
                     allowed=False,

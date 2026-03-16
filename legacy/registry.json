@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "files": {},
+  "monitored_files": [],
+  "last_sync": null,
+  "agents": {},
+  "connectors": {},
+  "audit_log": [
+    {
+      "action": "init",
+      "ts": 1772932666.68655
+    },
+    {
+      "action": "cascade",
+      "trigger": "cli-cascade",
+      "status": "complete",
+      "ts": 1772932673.0844748,
+      "duration_s": 0.0,
+      "steps_run": 7
+    }
+  ]
+}

@@ -1,7 +1,11 @@
 # =============================================================================
 # Cyphergy — Local Development Stack
 # FastAPI + PostgreSQL 16 (pgvector) + Redis 7
+# ISOLATION: All containers, volumes, networks prefixed with cyphergy-
+# Per MULTI_PROJECT_DOCKER_ISOLATION.md — Cyphergy ports: 8000, 5432, 6379, 5173
 # =============================================================================
+
+name: cyphergy
 
 services:
 
@@ -47,7 +51,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cyphergy_dev}
       POSTGRES_DB: ${POSTGRES_DB:-cyphergy}
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - cyphergy-pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cyphergy}"]
       interval: 10s
@@ -66,7 +70,7 @@ services:
       - "${REDIS_PORT:-6379}:6379"
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
-      - redis-data:/data
+      - cyphergy-redis-data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -79,12 +83,13 @@ services:
 
 # ── Volumes ───────────────────────────────────────────────────────────────
 volumes:
-  postgres-data:
+  cyphergy-pgdata:
     driver: local
-  redis-data:
+  cyphergy-redis-data:
     driver: local
 
 # ── Network ───────────────────────────────────────────────────────────────
 networks:
   cyphergy-net:
+    name: cyphergy-network
     driver: bridge

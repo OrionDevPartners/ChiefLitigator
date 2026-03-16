@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- SUMMARY STRIP -->
+<div class="summary-strip">
+    <div class="summary-card">
+        <div class="summary-value">{{ library.statutes|default([])|length }}</div>
+        <div class="summary-label">Statutes</div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-value">{{ library.case_law|default([])|length }}</div>
+        <div class="summary-label">Case Law</div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-value">{{ library.bar_rules|default([])|length }}</div>
+        <div class="summary-label">Bar Rules</div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-value">{{ library.procedures|default([])|length }}</div>
+        <div class="summary-label">Procedures</div>
+    </div>
+</div>
+
+{% if not library %}
+<section class="section">
+    <div class="card">
+        <p class="empty-state">Legal library directory (THE_LAW/) not found. Create subdirectories STATUTES/, CASE_LAW/, BAR_RULES/, CLAIMS/, and PROCEDURES/ to populate.</p>
+    </div>
+</section>
+{% else %}
+
+<!-- TABS -->
+<div class="tab-bar">
+    <button class="tab-btn tab-active" data-tab-btn="law" data-tab-target="statutes">Statutes ({{ library.statutes|default([])|length }})</button>
+    <button class="tab-btn" data-tab-btn="law" data-tab-target="caselaw">Case Law ({{ library.case_law|default([])|length }})</button>
+    <button class="tab-btn" data-tab-btn="law" data-tab-target="barrules">Bar Rules ({{ library.bar_rules|default([])|length }})</button>
+    <button class="tab-btn" data-tab-btn="law" data-tab-target="claims">Claims</button>
+    <button class="tab-btn" data-tab-btn="law" data-tab-target="procedures">Procedures ({{ library.procedures|default([])|length }})</button>
+</div>
+
+<!-- STATUTES -->
+<div data-tab-group="law" data-tab="statutes" style="display: block;">
+    <section class="section">
+        <h2 class="section-heading">Florida Statutes</h2>
+        <div class="card">
+            {% if library.statutes %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Statute Number</th>
+                        <th>Name</th>
+                        <th>File</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in library.statutes %}
+                    <tr>
+                        <td class="mono">{{ s.statute_number }}</td>
+                        <td>{{ s.name }}</td>
+                        <td class="mono" style="font-size: 0.8rem;">{{ s.path|replace(data_dir|default(''), '')|truncate(60) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty-state">No statutes found. Add .md files to THE_LAW/STATUTES/ to populate.</p>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+<!-- CASE LAW -->
+<div data-tab-group="law" data-tab="caselaw" style="display: none;">
+    <section class="section">
+        <h2 class="section-heading">Case Law References</h2>
+        <div class="card">
+            {% if library.case_law %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Case Name</th>
+                        <th>File</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in library.case_law %}
+                    <tr>
+                        <td>{{ c.case_name }}</td>
+                        <td class="mono" style="font-size: 0.8rem;">{{ c.path|replace(data_dir|default(''), '')|truncate(60) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty-state">No case law found. Add .md files to THE_LAW/CASE_LAW/ to populate.</p>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+<!-- BAR RULES -->
+<div data-tab-group="law" data-tab="barrules" style="display: none;">
+    <section class="section">
+        <h2 class="section-heading">Florida Bar Rules</h2>
+        <div class="card">
+            {% if library.bar_rules %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Rule Number</th>
+                        <th>Name</th>
+                        <th>File</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in library.bar_rules %}
+                    <tr>
+                        <td class="mono">{{ r.rule_number }}</td>
+                        <td>{{ r.name }}</td>
+                        <td class="mono" style="font-size: 0.8rem;">{{ r.path|replace(data_dir|default(''), '')|truncate(60) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty-state">No bar rules found. Add .md files to THE_LAW/BAR_RULES/ to populate.</p>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+<!-- CLAIMS (PER MATTER) -->
+<div data-tab-group="law" data-tab="claims" style="display: none;">
+    <section class="section">
+        <h2 class="section-heading">Claim Legal Foundations by Matter</h2>
+        {% if library.claims %}
+            {% for matter_name, files in library.claims.items() %}
+            <div class="card" style="margin-bottom: 1rem;">
+                <div class="card-title">{{ matter_name|replace('_', ' ')|title }}</div>
+                <div class="card-body">
+                    <table class="data-table compact">
+                        <thead>
+                            <tr>
+                                <th>Document</th>
+                                <th>File</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for f in files %}
+                            <tr>
+                                <td>{{ f.name }}</td>
+                                <td class="mono" style="font-size: 0.8rem;">{{ f.path|replace(data_dir|default(''), '')|truncate(60) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="card">
+            <p class="empty-state">No claim legal foundations found. Add matter subdirectories to THE_LAW/CLAIMS/ to populate.</p>
+        </div>
+        {% endif %}
+    </section>
+</div>
+
+<!-- PROCEDURES -->
+<div data-tab-group="law" data-tab="procedures" style="display: none;">
+    <section class="section">
+        <h2 class="section-heading">Procedural References</h2>
+        <div class="card">
+            {% if library.procedures %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>File</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in library.procedures %}
+                    <tr>
+                        <td>{{ p.name }}</td>
+                        <td class="mono" style="font-size: 0.8rem;">{{ p.path|replace(data_dir|default(''), '')|truncate(60) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty-state">No procedures found. Add .md files to THE_LAW/PROCEDURES/ to populate.</p>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+{% endif %}
+
+{% endblock %}

@@ -145,6 +145,17 @@ Run 5 review passes on every Devin submission. Composite score below 7.5 = no me
 
 ---
 
+## UI/UX MANDATE
+
+**ALL new UI/UX must be made using V0 (v0.dev) — no exceptions.**
+- V0 designs INTERFACE (React components, styling, UX)
+- Devin builds FUNCTIONALITY (backend, API, logic)
+- Claude builds ARCHITECTURE (orchestration, reviews, infra)
+- Never hand-write UI components — always V0
+- Never let Devin design UI — only V0
+
+---
+
 ## MANDATES (inherited from global)
 
 - @M:010 Never log secrets

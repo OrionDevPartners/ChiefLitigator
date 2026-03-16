@@ -21,11 +21,11 @@ import time
 import uuid
 from typing import Callable
 
+from fastapi import FastAPI
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
-from starlette.middleware.cors import CORSMiddleware
-from fastapi import FastAPI
 
 logger = logging.getLogger("cyphergy.security.middleware")
 
@@ -33,6 +33,7 @@ logger = logging.getLogger("cyphergy.security.middleware")
 # ---------------------------------------------------------------------------
 # Configuration from environment (CPAA-compliant -- zero hardcoding)
 # ---------------------------------------------------------------------------
+
 
 def _get_allowed_origins() -> list[str]:
     """Read allowed CORS origins from env.
@@ -65,7 +66,7 @@ def _get_csp_policy() -> str:
         "connect-src 'self'; "
         "frame-ancestors 'none'; "
         "base-uri 'self'; "
-        "form-action 'self'"
+        "form-action 'self'",
     )
 
 
@@ -117,6 +118,7 @@ def _generate_request_id() -> str:
 # IP Extraction
 # ---------------------------------------------------------------------------
 
+
 def extract_client_ip(request: Request) -> str:
     """Extract the real client IP from the request.
 
@@ -152,6 +154,7 @@ def extract_client_ip(request: Request) -> str:
 # Middleware
 # ---------------------------------------------------------------------------
 
+
 class SecurityMiddleware(BaseHTTPMiddleware):
     """Production security middleware for Cyphergy.
 
@@ -163,9 +166,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         app.add_middleware(SecurityMiddleware)
     """
 
-    async def dispatch(
-        self, request: Request, call_next: Callable
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # --- Request phase ---
         request_id = _generate_request_id()
         # Attach request ID to request state so downstream handlers can access it
@@ -212,8 +213,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         # We log method, path, status, duration, and IP. We NEVER log
         # request body, query parameters with PII, or response body.
         logger.info(
-            "request_completed | request_id=%s method=%s path=%s status=%d "
-            "duration_ms=%.1f ip=%s",
+            "request_completed | request_id=%s method=%s path=%s status=%d duration_ms=%.1f ip=%s",
             request_id,
             request.method,
             request.url.path,
@@ -228,6 +228,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 # ---------------------------------------------------------------------------
 # CORS Configuration Helper
 # ---------------------------------------------------------------------------
+
 
 def configure_cors(app: FastAPI) -> None:
     """Apply strict CORS configuration to the FastAPI app.

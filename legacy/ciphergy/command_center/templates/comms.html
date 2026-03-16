@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- TABS -->
+<div class="tab-bar">
+    <button class="tab-btn tab-active" data-tab-btn="comms" data-tab-target="signals">Signal Log</button>
+    <button class="tab-btn" data-tab-btn="comms" data-tab-target="compose">Draft Composer</button>
+    <button class="tab-btn" data-tab-btn="comms" data-tab-target="mail">Mail Tracking</button>
+    <button class="tab-btn" data-tab-btn="comms" data-tab-target="encrypted">Encrypted Messages</button>
+</div>
+
+<!-- SIGNAL LOG -->
+<div data-tab-group="comms" data-tab="signals" style="display: block;">
+    <section class="section">
+        <h2 class="section-heading">Signal Log</h2>
+        <div class="card">
+            {% if signals %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Type</th>
+                        <th>Message</th>
+                        <th>Source</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sig in signals %}
+                    <tr>
+                        <td class="mono">{{ sig.timestamp }}</td>
+                        <td><span class="badge-{% if sig.type|lower in ['alert', 'critical', 'red'] %}red{% elif sig.type|lower in ['warning', 'caution'] %}yellow{% else %}green{% endif %}">{{ sig.type }}</span></td>
+                        <td>{{ sig.message }}</td>
+                        <td>{{ sig.source }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty-state">No signals recorded. Add entries to CIPHERGY_SIGNALS.md to populate.</p>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+<!-- DRAFT COMPOSER -->
+<div data-tab-group="comms" data-tab="compose" style="display: none;">
+    <section class="section">
+        <h2 class="section-heading">Draft Composer</h2>
+        <div class="card">
+            <form class="composer-form" onsubmit="return false;">
+                <div class="form-group">
+                    <label class="form-label">Recipient</label>
+                    <input type="text" class="form-input" placeholder="Name or address">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Subject / Re:</label>
+                    <input type="text" class="form-input" placeholder="Subject line">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Channel</label>
+                    <select class="form-select">
+                        <option>Certified Mail</option>
+                        <option>Court E-Filing</option>
+                        <option>Email</option>
+                        <option>Hand Delivery</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Body</label>
+                    <textarea class="form-textarea" rows="10" placeholder="Draft your communication..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" disabled>Save Draft</button>
+                    <button class="btn btn-outline" disabled>Generate from Template</button>
+                </div>
+            </form>
+        </div>
+    </section>
+</div>
+
+<!-- MAIL TRACKING -->
+<div data-tab-group="comms" data-tab="mail" style="display: none;">
+    <section class="section">
+        <h2 class="section-heading">Certified Mail Tracking</h2>
+        <div class="card">
+            {% if mail_tracking %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Recipient</th>
+                        <th>Sent</th>
+                        <th>Description</th>
+                        <th>Tracking Number</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in mail_tracking %}
+                    <tr>
+                        <td class="mono">{{ m.id }}</td>
+                        <td>{{ m.recipient }}</td>
+                        <td>{{ m.sent }}</td>
+                        <td>{{ m.description }}</td>
+                        <td class="mono">{{ m.tracking }}</td>
+                        <td>
+                            <span class="badge-{% if m.status == 'delivered' %}green{% else %}yellow{% endif %}">
+                                {{ m.status|upper|replace('-', ' ') }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty-state">No certified mail tracked yet. Mail tracking entries will appear here when configured.</p>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+<!-- ENCRYPTED MESSAGES -->
+<div data-tab-group="comms" data-tab="encrypted" style="display: none;">
+    <section class="section">
+        <h2 class="section-heading">Encrypted Messages</h2>
+        <div class="card encrypted-panel">
+            <div class="encrypted-notice">
+                <span class="encrypted-icon">&#128274;</span>
+                <p>End-to-end encrypted message channel. All messages in this panel are encrypted at rest using AES-256.</p>
+            </div>
+            <div class="encrypted-empty">
+                <p class="empty-state">No encrypted messages at this time.</p>
+            </div>
+        </div>
+    </section>
+</div>
+
+{% endblock %}
