@@ -310,6 +310,10 @@ class BaseAgent:
             else:
                 resolved_system = self.config.system_prompt
 
+        # Inject LLM guardrails into EVERY agent's system prompt
+        from src.security.llm_guardrails import GUARDRAIL_SYSTEM_PROMPT
+        resolved_system = GUARDRAIL_SYSTEM_PROMPT + "\n\n" + resolved_system
+
         response = await self._provider.create_message(
             model=self._settings.llm_model,
             max_tokens=max_tokens if max_tokens is not None else self._settings.llm_max_tokens,

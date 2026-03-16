@@ -148,6 +148,21 @@ class Orchestrator:
         start = time.monotonic()
         degraded_agents: list[str] = []
 
+        # Step 0: LLM Guardrails — check for jailbreak before any agent sees the input
+        from src.security.llm_guardrails import enforce_guardrails, check_input
+        is_safe, deflection = check_input(request.message)
+        if not is_safe:
+            elapsed_ms = (time.monotonic() - start) * 1000
+            return OrchestrationResult(
+                content=deflection or "I'm Cyphergy, a legal analysis tool. How can I help with your legal matter?",
+                wdc_result=None,  # type: ignore[arg-type]
+                agent_contributions={},
+                degraded_agents=[],
+                revision_cycles=0,
+                total_time_ms=round(elapsed_ms, 1),
+                task_type="jailbreak_blocked",
+            )
+
         # Build shared context (blackboard)
         context = self._build_context(request)
 
@@ -276,6 +291,10 @@ class Orchestrator:
             wdc_result = None
 
         elapsed_ms = (time.monotonic() - start) * 1000
+
+        # Step 6: LLM Guardrails — scrub output before it reaches the user
+        from src.security.llm_guardrails import scrub_output
+        draft_content = scrub_output(draft_content)
 
         # Build the result. If WDC failed, deliver with a None-safe fallback.
         result = OrchestrationResult(
