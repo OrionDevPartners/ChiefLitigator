@@ -18,6 +18,10 @@
       {
         "command": "bash .claude/hooks/no-placeholders.sh",
         "description": "Block fake/demo/placeholder data"
+      },
+      {
+        "command": "bash .claude/hooks/env-guard.sh",
+        "description": "Warn if dev/prod env configs cross-contaminate"
       }
     ]
   }

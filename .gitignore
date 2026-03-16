@@ -224,3 +224,5 @@ New-Data/
 
 # === BINARY / PIPELINE DOCS ===
 DualAI_PIPELINE.docx
+.env.development
+.env.production
