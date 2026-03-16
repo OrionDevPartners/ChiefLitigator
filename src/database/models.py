@@ -106,6 +106,11 @@ class User(Base):
         default=True,
         nullable=False,
     )
+    is_admin: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
 
     # Relationships
     cases: Mapped[list[Case]] = relationship(
@@ -120,6 +125,68 @@ class User(Base):
 
     def __repr__(self) -> str:
         return f"<User id={self.id} email={self.email}>"
+
+
+class BetaInvite(Base):
+    """Beta program invite record.
+
+    Tracks invited users, approval status, and IP locking
+    for the beta access gate. During beta, access is locked
+    to the IP address of the user's first login.
+
+    Attributes:
+        id: Unique invite identifier (UUID4).
+        email: Invited user's email address (unique).
+        invite_code: Unique invite code for the invitation link.
+        is_approved: Whether the invite has been approved.
+        is_revoked: Whether the invite has been revoked by an admin.
+        locked_ip: IP address locked on first login (nullable until first login).
+        created_at: Invite creation timestamp.
+    """
+
+    __tablename__ = "beta_invites"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        GUID(),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    email: Mapped[str] = mapped_column(
+        String(320),
+        unique=True,
+        nullable=False,
+    )
+    invite_code: Mapped[str] = mapped_column(
+        String(64),
+        unique=True,
+        nullable=False,
+    )
+    is_approved: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+    is_revoked: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+    locked_ip: Mapped[str | None] = mapped_column(
+        String(45),
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        Index("ix_beta_invites_email", "email"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<BetaInvite id={self.id} email={self.email} approved={self.is_approved}>"
 
 
 class Case(Base):
