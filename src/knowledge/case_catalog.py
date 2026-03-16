@@ -1,20 +1,25 @@
-"""Case Catalog — Auto-siphon engine that catalogs case law by statute.
+"""Case Catalog — Exhaustive case law database indexed by statute.
 
 Novel architecture by Bo Pennington.
 
-The case catalog is the auto-siphon system. As cases flow through
-Cyphergy (via CourtListener queries, user uploads, WDC debates,
-citation verification), they are automatically:
+This is NOT a passive siphon. The perpetual crawler (crawler.py) runs
+until EVERY major Supreme Court and state court case is cataloged.
 
-1. PARSED — extract statutes cited, holdings, court, year
-2. INDEXED — mapped to every statute they interpret
-3. CLASSIFIED — civil, criminal, overlap
-4. RANKED — by jurisdiction relevance, recency, treatment
-5. SUGGESTED — in the user's sandbox based on their case context
+What we store per case (LIGHTWEIGHT):
+  - Case number, date, plaintiff vs defendant names
+  - Reference links (CourtListener URL, Google Scholar URL)
+  - Holdings mapped to statutes
+  - Support classification: SUPPORTS_PLAINTIFF or SUPPORTS_DEFENDANT
+  - Positive/negative tags for instant matching
+  - Practice area + sub-area tags
 
-The catalog grows with every interaction. Over time, it becomes
-the most comprehensive statute-indexed case law database for
-each jurisdiction container.
+What we DO NOT store:
+  - Full opinion text (we link to it)
+
+TWO ACCESS MODES:
+  MODE 1: Context-aware — user uploads case facts → auto-suggestions
+  MODE 2: Context-free — user types scenario + desired outcome + side
+          → search returns matching case law instantly
 """
 
 from __future__ import annotations

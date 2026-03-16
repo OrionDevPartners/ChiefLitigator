@@ -16,5 +16,14 @@ indexed. The catalog grows with every interaction.
 
 from src.knowledge.case_catalog import CaseCatalog, CatalogEntry
 from src.knowledge.statute_index import StatuteIndex, StatuteEntry
+from src.knowledge.crawler import CaseLawCrawler, CaseLawEntry, CrawlState
 
-__all__ = ["CaseCatalog", "CatalogEntry", "StatuteIndex", "StatuteEntry"]
+__all__ = [
+    "CaseCatalog",
+    "CatalogEntry",
+    "StatuteIndex",
+    "StatuteEntry",
+    "CaseLawCrawler",
+    "CaseLawEntry",
+    "CrawlState",
+]
