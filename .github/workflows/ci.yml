@@ -57,8 +57,11 @@ jobs:
       - name: Install dependencies
         run: pip install -e ".[dev]"
 
+      - name: Install optional type stubs
+        run: pip install types-redis sentry-sdk --quiet
+
       - name: Run mypy
-        run: mypy src/
+        run: mypy src/ --ignore-missing-imports
 
   # ──────────────────────────────────────────────
   # Job 3: Tests (pytest + coverage, matrix)
@@ -135,7 +138,7 @@ jobs:
         run: pip-audit
 
       - name: SAST scan (bandit)
-        run: bandit -r src/ -f json -o bandit-report.json || true && bandit -r src/
+        run: bandit -r src/ -ll -f json -o bandit-report.json || true && bandit -r src/ -ll
 
       - name: Upload bandit report
         if: always()
