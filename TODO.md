@@ -22,8 +22,8 @@
 - [x] JWT auth middleware (Devin PR #4, merged)
 - [x] User signup/login (bcrypt + JWT)
 - [x] Auth router wired into api.py
-- [ ] Wire admin router into api.py
-- [ ] Wire beta gate middleware into api.py
+- [x] Wire admin router into api.py
+- [x] Wire beta gate middleware into api.py
 
 ### Database
 - [x] PostgreSQL models (User, Case, Message, Deadline)
@@ -54,8 +54,8 @@
 - [x] Case dashboard (11 files, props-based, no fake data)
 - [x] Onboarding flow (10 files)
 - [x] Source protection (no source maps, WAF blocks, security headers)
-- [ ] V0: Citation viewer component
-- [ ] V0: Deadline manager component
+- [x] V0: Citation viewer component
+- [x] V0: Deadline manager component
 - [ ] V0: Admin dashboard (login, users, agents, deploy, chat)
 - [ ] V0: Mobile app shell (Expo)
 
@@ -88,7 +88,7 @@
 - [ ] Cloudflare Vectorize for semantic search of holdings
 
 ### Semantic Holding Extraction (UPGRADE #1)
-- [ ] Use dual-brain (Opus + Llama + Cohere) to EXTRACT actual legal holdings
+- [x] Semantic holding extraction engine built (src/knowledge/holding_extractor.py)
 - [ ] Not just "cites statute" but "holds that under § X, Y is required for Z"
 - [ ] Classify each holding: rule statement, application, exception, limitation
 - [ ] Store extracted holdings as searchable structured data
@@ -97,7 +97,7 @@
 - [ ] 3-brain consensus required for each extracted holding
 
 ### Argument Graph (UPGRADE #2)
-- [ ] Directed graph: cases SUPPORT / WEAKEN / DISTINGUISH / OVERRULE other cases
+- [x] Argument graph engine built (src/knowledge/argument_graph.py)
 - [ ] For each statute: build the full argument chain
 - [ ] "Start with Case A (rule), supported by B, strengthened by C, defendant cites D"
 - [ ] User gets an argument STRATEGY, not just a case list

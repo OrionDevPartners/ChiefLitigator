@@ -98,6 +98,10 @@ class Orchestrator:
     def __init__(self) -> None:
         settings = get_settings()
 
+        # Initialize model router (CPAA: models from env, not hardcoded)
+        from src.providers.model_router import ModelRouter
+        self._model_router = ModelRouter()
+
         # Initialize all 5 agents
         self._lead = LeadCounsel()
         self._research = ResearchCounsel()

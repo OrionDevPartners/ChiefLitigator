@@ -179,21 +179,22 @@ class AnthropicProvider(LLMProvider):
 
 _BEDROCK_MODEL_MAP: dict[str, str] = {
     # Opus 4.6 — orchestrator + all legal agents in production
-    "claude-opus-4-6": "anthropic.claude-opus-4-6-v1",
-    "claude-opus-4-6-20250514": "anthropic.claude-opus-4-6-v1",
-    # Sonnet 4.6 — lighter tasks if needed
-    "claude-sonnet-4-6": "anthropic.claude-sonnet-4-6",
-    "claude-sonnet-4-6-20250514": "anthropic.claude-sonnet-4-20250514-v1:0",
-    # Haiku 4.5 — non-legal packs only
-    "claude-haiku-4-5": "anthropic.claude-haiku-4-5-20251001-v1:0",
-    "claude-haiku-4-5-20251001": "anthropic.claude-haiku-4-5-20251001-v1:0",
-    # Opus 4.5 / 4.1 — alternatives
-    "claude-opus-4-5": "anthropic.claude-opus-4-5-20251101-v1:0",
-    "claude-opus-4-1": "anthropic.claude-opus-4-1-20250805-v1:0",
+    # Uses inference profile (us. prefix) as required by Bedrock on-demand
+    "claude-opus-4-6": "us.anthropic.claude-opus-4-6-v1",
+    "claude-opus-4-6-20250514": "us.anthropic.claude-opus-4-6-v1",
+    # Sonnet 4.6
+    "claude-sonnet-4-6": "us.anthropic.claude-sonnet-4-6",
+    "claude-sonnet-4-6-20250514": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+    # Haiku 4.5
+    "claude-haiku-4-5": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+    "claude-haiku-4-5-20251001": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+    # Opus 4.5 / 4.1
+    "claude-opus-4-5": "us.anthropic.claude-opus-4-5-20251101-v1:0",
+    "claude-opus-4-1": "us.anthropic.claude-opus-4-1-20250805-v1:0",
     # Older models
-    "claude-sonnet-4-20250514": "anthropic.claude-sonnet-4-20250514-v1:0",
-    "claude-3-5-sonnet-20241022": "anthropic.claude-3-5-sonnet-20241022-v2:0",
-    "claude-3-5-haiku-20241022": "anthropic.claude-3-5-haiku-20241022-v1:0",
+    "claude-sonnet-4-20250514": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+    "claude-3-5-sonnet-20241022": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+    "claude-3-5-haiku-20241022": "us.anthropic.claude-3-5-haiku-20241022-v1:0",
 }
 
 
