@@ -141,11 +141,7 @@ async def get_cases_for_user(
     Returns:
         List of Case instances (may be empty).
     """
-    stmt = (
-        select(Case)
-        .where(Case.user_id == user_id)
-        .order_by(Case.created_at.desc())
-    )
+    stmt = select(Case).where(Case.user_id == user_id).order_by(Case.created_at.desc())
     result = await db.execute(stmt)
     return list(result.scalars().all())
 
@@ -185,11 +181,7 @@ async def get_case_with_messages(
     Returns:
         The Case with messages if found and owned by user, otherwise None.
     """
-    stmt = (
-        select(Case)
-        .options(selectinload(Case.messages))
-        .where(Case.id == case_id, Case.user_id == user_id)
-    )
+    stmt = select(Case).options(selectinload(Case.messages)).where(Case.id == case_id, Case.user_id == user_id)
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -252,11 +244,7 @@ async def get_messages_for_case(
     Returns:
         List of Message instances in chronological order.
     """
-    stmt = (
-        select(Message)
-        .where(Message.case_id == case_id)
-        .order_by(Message.created_at.asc())
-    )
+    stmt = select(Message).where(Message.case_id == case_id).order_by(Message.created_at.asc())
     result = await db.execute(stmt)
     return list(result.scalars().all())
 
@@ -322,10 +310,6 @@ async def get_deadlines_for_case(
     Returns:
         List of Deadline instances ordered by deadline_date ascending.
     """
-    stmt = (
-        select(Deadline)
-        .where(Deadline.case_id == case_id)
-        .order_by(Deadline.deadline_date.asc())
-    )
+    stmt = select(Deadline).where(Deadline.case_id == case_id).order_by(Deadline.deadline_date.asc())
     result = await db.execute(stmt)
     return list(result.scalars().all())

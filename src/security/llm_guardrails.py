@@ -38,7 +38,10 @@ _MAKER_PATTERNS: list[re.Pattern] = [
 # Internal architecture terms that must never leak
 _ARCHITECTURE_PATTERNS: list[re.Pattern] = [
     re.compile(r"\b(symio|analog\s*agi|orion\s*dev\s*partners)\b", re.IGNORECASE),
-    re.compile(r"\b(lead\s+counsel|research\s+counsel|drafting\s+counsel|red\s+team|compliance\s+counsel)\s+agent\b", re.IGNORECASE),
+    re.compile(
+        r"\b(lead\s+counsel|research\s+counsel|drafting\s+counsel|red\s+team|compliance\s+counsel)\s+agent\b",
+        re.IGNORECASE,
+    ),
     re.compile(r"\b(weighted\s+debate\s+consensus|wdc\s+v?\d)\b", re.IGNORECASE),
     re.compile(r"\b(cpaa|code.provider\s+agnostic)\b", re.IGNORECASE),
     re.compile(r"\bsystem\s+prompt\b", re.IGNORECASE),

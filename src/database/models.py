@@ -119,9 +119,7 @@ class User(Base):
         lazy="selectin",
     )
 
-    __table_args__ = (
-        Index("ix_users_email", "email"),
-    )
+    __table_args__ = (Index("ix_users_email", "email"),)
 
     def __repr__(self) -> str:
         return f"<User id={self.id} email={self.email}>"
@@ -181,9 +179,7 @@ class BetaInvite(Base):
         nullable=False,
     )
 
-    __table_args__ = (
-        Index("ix_beta_invites_email", "email"),
-    )
+    __table_args__ = (Index("ix_beta_invites_email", "email"),)
 
     def __repr__(self) -> str:
         return f"<BetaInvite id={self.id} email={self.email} approved={self.is_approved}>"
@@ -257,9 +253,7 @@ class Case(Base):
         order_by="Deadline.deadline_date",
     )
 
-    __table_args__ = (
-        Index("ix_cases_user_id", "user_id"),
-    )
+    __table_args__ = (Index("ix_cases_user_id", "user_id"),)
 
     def __repr__(self) -> str:
         return f"<Case id={self.id} name={self.name!r}>"
@@ -323,9 +317,7 @@ class Message(Base):
         back_populates="messages",
     )
 
-    __table_args__ = (
-        Index("ix_messages_case_id", "case_id"),
-    )
+    __table_args__ = (Index("ix_messages_case_id", "case_id"),)
 
     def __repr__(self) -> str:
         return f"<Message id={self.id} role={self.role} case_id={self.case_id}>"
@@ -395,9 +387,7 @@ class Deadline(Base):
         back_populates="deadlines",
     )
 
-    __table_args__ = (
-        Index("ix_deadlines_case_id", "case_id"),
-    )
+    __table_args__ = (Index("ix_deadlines_case_id", "case_id"),)
 
     @property
     def days_remaining(self) -> int:

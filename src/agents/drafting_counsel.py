@@ -132,10 +132,7 @@ class DraftingCounsel(BaseAgent):
             messages.append(
                 {
                     "role": "user",
-                    "content": (
-                        "Drafting context:\n"
-                        + json.dumps(context, default=str)
-                    ),
+                    "content": ("Drafting context:\n" + json.dumps(context, default=str)),
                 }
             )
         messages.append({"role": "user", "content": prompt})
@@ -166,17 +163,13 @@ class DraftingCounsel(BaseAgent):
             'single key "score" and a float value.\n\n'
             f"Document:\n{response.get('content', '')}"
         )
-        raw = await self._call_model(
-            [{"role": "user", "content": scoring_prompt}]
-        )
+        raw = await self._call_model([{"role": "user", "content": scoring_prompt}])
         try:
             return float(json.loads(raw)["score"])
         except (json.JSONDecodeError, KeyError, ValueError):
             return 0.5
 
-    async def format_for_docx(
-        self, response: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def format_for_docx(self, response: dict[str, Any]) -> dict[str, Any]:
         """Convert a draft response into a .docx-compatible structure.
 
         This is the primary domain-specific capability of Drafting
@@ -206,9 +199,7 @@ class DraftingCounsel(BaseAgent):
             "Return ONLY the JSON object, no commentary.\n\n"
             f"Document:\n{content}"
         )
-        raw = await self._call_model(
-            [{"role": "user", "content": formatting_prompt}]
-        )
+        raw = await self._call_model([{"role": "user", "content": formatting_prompt}])
         try:
             return json.loads(raw)
         except json.JSONDecodeError:

@@ -23,9 +23,9 @@ surfaces ALL case law interpreting that statute, filtered by:
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime
-from typing import Any, Optional
+from datetime import datetime
 from enum import Enum
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
@@ -35,34 +35,34 @@ logger = logging.getLogger("cyphergy.knowledge.statute_index")
 class StatuteType(str, Enum):
     """Classification of statutory authority."""
 
-    FEDERAL_STATUTE = "federal_statute"       # USC
+    FEDERAL_STATUTE = "federal_statute"  # USC
     FEDERAL_REGULATION = "federal_regulation"  # CFR
-    FEDERAL_RULE = "federal_rule"             # FRCP, FRE, FRAP
+    FEDERAL_RULE = "federal_rule"  # FRCP, FRE, FRAP
     STATE_STATUTE = "state_statute"
     STATE_REGULATION = "state_regulation"
-    STATE_RULE = "state_rule"                 # State procedural rules
-    LOCAL_RULE = "local_rule"                 # Court-specific rules
-    CONSTITUTIONAL = "constitutional"          # US or state constitution
+    STATE_RULE = "state_rule"  # State procedural rules
+    LOCAL_RULE = "local_rule"  # Court-specific rules
+    CONSTITUTIONAL = "constitutional"  # US or state constitution
 
 
 class StatuteStatus(str, Enum):
     """Current status of a statute."""
 
     CURRENT = "current"
-    AMENDED = "amended"         # Still valid but text changed
-    REPEALED = "repealed"       # No longer in effect
-    SUPERSEDED = "superseded"   # Replaced by another statute
+    AMENDED = "amended"  # Still valid but text changed
+    REPEALED = "repealed"  # No longer in effect
+    SUPERSEDED = "superseded"  # Replaced by another statute
 
 
 class CaseTreatment(str, Enum):
     """How a case treats the statute it interprets."""
 
-    INTERPRETED = "interpreted"     # Applied the statute to facts
-    UPHELD = "upheld"               # Found statute constitutional/valid
-    STRUCK_DOWN = "struck_down"     # Found statute unconstitutional
-    NARROWED = "narrowed"           # Limited the statute's scope
-    EXPANDED = "expanded"           # Broadened the statute's scope
-    DISTINGUISHED = "distinguished" # Applied differently than prior cases
+    INTERPRETED = "interpreted"  # Applied the statute to facts
+    UPHELD = "upheld"  # Found statute constitutional/valid
+    STRUCK_DOWN = "struck_down"  # Found statute unconstitutional
+    NARROWED = "narrowed"  # Limited the statute's scope
+    EXPANDED = "expanded"  # Broadened the statute's scope
+    DISTINGUISHED = "distinguished"  # Applied differently than prior cases
 
 
 class StatuteEntry(BaseModel):
@@ -110,18 +110,20 @@ class StatuteEntry(BaseModel):
         source: str = "auto_siphon",
     ) -> None:
         """Add a case to this statute's interpretation index."""
-        self.interpreting_cases.append({
-            "citation": case_citation,
-            "name": case_name,
-            "holding": holding,
-            "treatment": treatment.value,
-            "court": court,
-            "year": year,
-            "jurisdiction": jurisdiction,
-            "verified": verified,
-            "source": source,
-            "cataloged_at": datetime.utcnow().isoformat(),
-        })
+        self.interpreting_cases.append(
+            {
+                "citation": case_citation,
+                "name": case_name,
+                "holding": holding,
+                "treatment": treatment.value,
+                "court": court,
+                "year": year,
+                "jurisdiction": jurisdiction,
+                "verified": verified,
+                "source": source,
+                "cataloged_at": datetime.utcnow().isoformat(),
+            }
+        )
 
     def get_cases_by_jurisdiction(self, jurisdiction: str) -> list[dict[str, Any]]:
         """Get cases from a specific jurisdiction interpreting this statute."""
@@ -240,7 +242,9 @@ class StatuteIndex:
 
         logger.info(
             "case_siphoned | statute=%s case=%s jurisdiction=%s",
-            statute_citation, case_citation, jurisdiction,
+            statute_citation,
+            case_citation,
+            jurisdiction,
         )
         return True
 
@@ -314,17 +318,19 @@ class StatuteIndex:
             if relevance > 0:
                 binding = statute.get_binding_authority(jurisdiction)
                 persuasive = statute.get_persuasive_authority(jurisdiction)
-                suggestions.append({
-                    "statute": citation,
-                    "title": statute.title,
-                    "jurisdiction": statute.jurisdiction,
-                    "practice_area": statute.practice_area,
-                    "relevance_score": relevance,
-                    "binding_cases": len(binding),
-                    "persuasive_cases": len(persuasive),
-                    "most_recent_case": binding[0] if binding else (persuasive[0] if persuasive else None),
-                    "total_cases": len(statute.interpreting_cases),
-                })
+                suggestions.append(
+                    {
+                        "statute": citation,
+                        "title": statute.title,
+                        "jurisdiction": statute.jurisdiction,
+                        "practice_area": statute.practice_area,
+                        "relevance_score": relevance,
+                        "binding_cases": len(binding),
+                        "persuasive_cases": len(persuasive),
+                        "most_recent_case": binding[0] if binding else (persuasive[0] if persuasive else None),
+                        "total_cases": len(statute.interpreting_cases),
+                    }
+                )
 
         # Sort by relevance, return top N
         suggestions.sort(key=lambda s: s["relevance_score"], reverse=True)

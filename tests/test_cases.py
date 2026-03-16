@@ -68,9 +68,7 @@ async def db_engine():
 
 @pytest_asyncio.fixture
 async def db_session(db_engine) -> AsyncIterator[AsyncSession]:
-    session_factory = async_sessionmaker(
-        bind=db_engine, class_=AsyncSession, expire_on_commit=False
-    )
+    session_factory = async_sessionmaker(bind=db_engine, class_=AsyncSession, expire_on_commit=False)
     async with session_factory() as session:
         yield session
 
@@ -94,9 +92,7 @@ async def client(db_engine) -> AsyncIterator[AsyncClient]:
     """Provide an async test client with the DB session overridden."""
     from src.api import app
 
-    session_factory = async_sessionmaker(
-        bind=db_engine, class_=AsyncSession, expire_on_commit=False
-    )
+    session_factory = async_sessionmaker(bind=db_engine, class_=AsyncSession, expire_on_commit=False)
 
     async def _override_get_db() -> AsyncIterator[AsyncSession]:
         async with session_factory() as session:
@@ -234,9 +230,7 @@ class TestListCases:
         assert len(cases) == 2
 
     @pytest.mark.asyncio
-    async def test_list_cases_does_not_return_other_users(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_list_cases_does_not_return_other_users(self, client: AsyncClient, db_session: AsyncSession) -> None:
         user_a = await _create_test_user(db_session)
         user_b = await _create_test_user(db_session)
         await db_session.commit()
@@ -373,9 +367,7 @@ class TestAddMessage:
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_add_message_missing_content_returns_422(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_add_message_missing_content_returns_422(self, client: AsyncClient, db_session: AsyncSession) -> None:
         user = await _create_test_user(db_session)
         await db_session.commit()
         token = _make_token(str(user.id))
@@ -395,9 +387,7 @@ class TestAddMessage:
         assert resp.status_code == 422
 
     @pytest.mark.asyncio
-    async def test_add_message_other_user_returns_404(
-        self, client: AsyncClient, db_session: AsyncSession
-    ) -> None:
+    async def test_add_message_other_user_returns_404(self, client: AsyncClient, db_session: AsyncSession) -> None:
         user_a = await _create_test_user(db_session)
         user_b = await _create_test_user(db_session)
         await db_session.commit()

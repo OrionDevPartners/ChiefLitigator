@@ -66,12 +66,14 @@ async def admin_login(
         return None
 
     jwt_handler = JWTHandler()
-    token = jwt_handler.create_token({
-        "sub": str(user.id),
-        "email": user.email,
-        "name": user.name,
-        "is_admin": True,
-    })
+    token = jwt_handler.create_token(
+        {
+            "sub": str(user.id),
+            "email": user.email,
+            "name": user.name,
+            "is_admin": True,
+        }
+    )
 
     logger.info("admin_login | user_id=%s", user.id)
     return {

@@ -121,9 +121,7 @@ class TestBetaGate:
         )
         await db_session.commit()
 
-        invite = await lock_ip(
-            db_session, email="lockip@cyphergy.ai", ip_address="192.168.1.100"
-        )
+        invite = await lock_ip(db_session, email="lockip@cyphergy.ai", ip_address="192.168.1.100")
         await db_session.commit()
 
         assert invite is not None
@@ -140,14 +138,10 @@ class TestBetaGate:
         )
         await db_session.commit()
 
-        await lock_ip(
-            db_session, email="sameip@cyphergy.ai", ip_address="10.0.0.1"
-        )
+        await lock_ip(db_session, email="sameip@cyphergy.ai", ip_address="10.0.0.1")
         await db_session.commit()
 
-        allowed = await check_ip(
-            db_session, email="sameip@cyphergy.ai", ip_address="10.0.0.1"
-        )
+        allowed = await check_ip(db_session, email="sameip@cyphergy.ai", ip_address="10.0.0.1")
         assert allowed is True
 
     @pytest.mark.asyncio
@@ -161,14 +155,10 @@ class TestBetaGate:
         )
         await db_session.commit()
 
-        await lock_ip(
-            db_session, email="diffip@cyphergy.ai", ip_address="10.0.0.1"
-        )
+        await lock_ip(db_session, email="diffip@cyphergy.ai", ip_address="10.0.0.1")
         await db_session.commit()
 
-        allowed = await check_ip(
-            db_session, email="diffip@cyphergy.ai", ip_address="10.0.0.99"
-        )
+        allowed = await check_ip(db_session, email="diffip@cyphergy.ai", ip_address="10.0.0.99")
         assert allowed is False
 
     @pytest.mark.asyncio
@@ -182,20 +172,14 @@ class TestBetaGate:
         )
         await db_session.commit()
 
-        await lock_ip(
-            db_session, email="revoke@cyphergy.ai", ip_address="10.0.0.1"
-        )
+        await lock_ip(db_session, email="revoke@cyphergy.ai", ip_address="10.0.0.1")
         await db_session.commit()
 
-        revoked = await revoke_beta_access(
-            db_session, email="revoke@cyphergy.ai"
-        )
+        revoked = await revoke_beta_access(db_session, email="revoke@cyphergy.ai")
         await db_session.commit()
         assert revoked is True
 
-        allowed = await check_ip(
-            db_session, email="revoke@cyphergy.ai", ip_address="10.0.0.1"
-        )
+        allowed = await check_ip(db_session, email="revoke@cyphergy.ai", ip_address="10.0.0.1")
         assert allowed is False
 
     @pytest.mark.asyncio
@@ -209,15 +193,11 @@ class TestBetaGate:
         )
         await db_session.commit()
 
-        await lock_ip(
-            db_session, email="resetip@cyphergy.ai", ip_address="10.0.0.1"
-        )
+        await lock_ip(db_session, email="resetip@cyphergy.ai", ip_address="10.0.0.1")
         await db_session.commit()
 
         # Before reset, different IP is blocked
-        allowed = await check_ip(
-            db_session, email="resetip@cyphergy.ai", ip_address="10.0.0.2"
-        )
+        allowed = await check_ip(db_session, email="resetip@cyphergy.ai", ip_address="10.0.0.2")
         assert allowed is False
 
         # Reset the IP
@@ -226,15 +206,11 @@ class TestBetaGate:
         assert reset is True
 
         # After reset, any IP passes (not yet locked)
-        allowed = await check_ip(
-            db_session, email="resetip@cyphergy.ai", ip_address="10.0.0.2"
-        )
+        allowed = await check_ip(db_session, email="resetip@cyphergy.ai", ip_address="10.0.0.2")
         assert allowed is True
 
         # Lock to new IP
-        invite = await lock_ip(
-            db_session, email="resetip@cyphergy.ai", ip_address="10.0.0.2"
-        )
+        invite = await lock_ip(db_session, email="resetip@cyphergy.ai", ip_address="10.0.0.2")
         await db_session.commit()
         assert invite is not None
         assert invite.locked_ip == "10.0.0.2"

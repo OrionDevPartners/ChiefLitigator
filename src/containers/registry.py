@@ -21,7 +21,7 @@ No container runs unless needed — Fargate serverless scaling.
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from src.containers.jurisdiction import (
     JurisdictionConfig,
@@ -38,17 +38,36 @@ logger = logging.getLogger("cyphergy.containers.registry")
 
 _JURISDICTIONS: list[JurisdictionConfig] = [
     # ── FEDERAL ──────────────────────────────────────────────────────
-    JurisdictionConfig(code="FED", name="Federal", type=JurisdictionType.FEDERAL, statute_source="uscode.house.gov", case_law_source="courtlistener", court_rules_source="uscourts.gov"),
+    JurisdictionConfig(
+        code="FED",
+        name="Federal",
+        type=JurisdictionType.FEDERAL,
+        statute_source="uscode.house.gov",
+        case_law_source="courtlistener",
+        court_rules_source="uscourts.gov",
+    ),
     # ── 50 STATES (alphabetical) ─────────────────────────────────────
     JurisdictionConfig(code="AL", name="Alabama", type=JurisdictionType.STATE),
     JurisdictionConfig(code="AK", name="Alaska", type=JurisdictionType.STATE),
     JurisdictionConfig(code="AZ", name="Arizona", type=JurisdictionType.STATE),
     JurisdictionConfig(code="AR", name="Arkansas", type=JurisdictionType.STATE),
-    JurisdictionConfig(code="CA", name="California", type=JurisdictionType.STATE, statute_source="leginfo.legislature.ca.gov", court_rules_source="courts.ca.gov"),
+    JurisdictionConfig(
+        code="CA",
+        name="California",
+        type=JurisdictionType.STATE,
+        statute_source="leginfo.legislature.ca.gov",
+        court_rules_source="courts.ca.gov",
+    ),
     JurisdictionConfig(code="CO", name="Colorado", type=JurisdictionType.STATE),
     JurisdictionConfig(code="CT", name="Connecticut", type=JurisdictionType.STATE),
     JurisdictionConfig(code="DE", name="Delaware", type=JurisdictionType.STATE),
-    JurisdictionConfig(code="FL", name="Florida", type=JurisdictionType.STATE, statute_source="flsenate.gov", court_rules_source="flcourts.org"),
+    JurisdictionConfig(
+        code="FL",
+        name="Florida",
+        type=JurisdictionType.STATE,
+        statute_source="flsenate.gov",
+        court_rules_source="flcourts.org",
+    ),
     JurisdictionConfig(code="GA", name="Georgia", type=JurisdictionType.STATE),
     JurisdictionConfig(code="HI", name="Hawaii", type=JurisdictionType.STATE),
     JurisdictionConfig(code="ID", name="Idaho", type=JurisdictionType.STATE),
@@ -57,7 +76,13 @@ _JURISDICTIONS: list[JurisdictionConfig] = [
     JurisdictionConfig(code="IA", name="Iowa", type=JurisdictionType.STATE),
     JurisdictionConfig(code="KS", name="Kansas", type=JurisdictionType.STATE),
     JurisdictionConfig(code="KY", name="Kentucky", type=JurisdictionType.STATE),
-    JurisdictionConfig(code="LA", name="Louisiana", type=JurisdictionType.STATE, statute_source="legis.la.gov", court_rules_source="lasc.org"),
+    JurisdictionConfig(
+        code="LA",
+        name="Louisiana",
+        type=JurisdictionType.STATE,
+        statute_source="legis.la.gov",
+        court_rules_source="lasc.org",
+    ),
     JurisdictionConfig(code="ME", name="Maine", type=JurisdictionType.STATE),
     JurisdictionConfig(code="MD", name="Maryland", type=JurisdictionType.STATE),
     JurisdictionConfig(code="MA", name="Massachusetts", type=JurisdictionType.STATE),
@@ -71,7 +96,13 @@ _JURISDICTIONS: list[JurisdictionConfig] = [
     JurisdictionConfig(code="NH", name="New Hampshire", type=JurisdictionType.STATE),
     JurisdictionConfig(code="NJ", name="New Jersey", type=JurisdictionType.STATE),
     JurisdictionConfig(code="NM", name="New Mexico", type=JurisdictionType.STATE),
-    JurisdictionConfig(code="NY", name="New York", type=JurisdictionType.STATE, statute_source="nysenate.gov", court_rules_source="nycourts.gov"),
+    JurisdictionConfig(
+        code="NY",
+        name="New York",
+        type=JurisdictionType.STATE,
+        statute_source="nysenate.gov",
+        court_rules_source="nycourts.gov",
+    ),
     JurisdictionConfig(code="NC", name="North Carolina", type=JurisdictionType.STATE),
     JurisdictionConfig(code="ND", name="North Dakota", type=JurisdictionType.STATE),
     JurisdictionConfig(code="OH", name="Ohio", type=JurisdictionType.STATE),
@@ -82,7 +113,13 @@ _JURISDICTIONS: list[JurisdictionConfig] = [
     JurisdictionConfig(code="SC", name="South Carolina", type=JurisdictionType.STATE),
     JurisdictionConfig(code="SD", name="South Dakota", type=JurisdictionType.STATE),
     JurisdictionConfig(code="TN", name="Tennessee", type=JurisdictionType.STATE),
-    JurisdictionConfig(code="TX", name="Texas", type=JurisdictionType.STATE, statute_source="statutes.capitol.texas.gov", court_rules_source="txcourts.gov"),
+    JurisdictionConfig(
+        code="TX",
+        name="Texas",
+        type=JurisdictionType.STATE,
+        statute_source="statutes.capitol.texas.gov",
+        court_rules_source="txcourts.gov",
+    ),
     JurisdictionConfig(code="UT", name="Utah", type=JurisdictionType.STATE),
     JurisdictionConfig(code="VT", name="Vermont", type=JurisdictionType.STATE),
     JurisdictionConfig(code="VA", name="Virginia", type=JurisdictionType.STATE),
@@ -127,9 +164,7 @@ class ContainerRegistry:
     """
 
     def __init__(self) -> None:
-        self._configs: dict[str, JurisdictionConfig] = {
-            j.code: j for j in _JURISDICTIONS
-        }
+        self._configs: dict[str, JurisdictionConfig] = {j.code: j for j in _JURISDICTIONS}
         self._containers: dict[str, JurisdictionContainer] = {}
 
         logger.info(
@@ -143,10 +178,7 @@ class ContainerRegistry:
         if code not in self._containers:
             config = self._configs.get(code)
             if not config:
-                raise ValueError(
-                    f"Unknown jurisdiction: {code}. "
-                    f"Available: {sorted(self._configs.keys())}"
-                )
+                raise ValueError(f"Unknown jurisdiction: {code}. Available: {sorted(self._configs.keys())}")
             self._containers[code] = JurisdictionContainer(config)
         return self._containers[code]
 
@@ -159,16 +191,12 @@ class ContainerRegistry:
         result = await container.query(question)
         return result.model_dump()
 
-    async def ingest_wdc_debate(
-        self, jurisdiction_code: str, debate_data: dict[str, Any]
-    ) -> None:
+    async def ingest_wdc_debate(self, jurisdiction_code: str, debate_data: dict[str, Any]) -> None:
         """Route WDC debate training data to the correct container."""
         container = self._get_or_create(jurisdiction_code)
         await container.ingest_wdc_debate(debate_data)
 
-    async def ingest_case_outcome(
-        self, jurisdiction_code: str, outcome: dict[str, Any]
-    ) -> None:
+    async def ingest_case_outcome(self, jurisdiction_code: str, outcome: dict[str, Any]) -> None:
         """Route case outcome data to the correct container."""
         container = self._get_or_create(jurisdiction_code)
         await container.ingest_case_outcome(outcome)
@@ -185,14 +213,16 @@ class ContainerRegistry:
             if code in self._containers:
                 statuses.append(self._containers[code].get_status())
             else:
-                statuses.append({
-                    "code": config.code,
-                    "name": config.name,
-                    "type": config.type.value,
-                    "status": "not_loaded",
-                    "wdc_debates_ingested": 0,
-                    "case_outcomes_ingested": 0,
-                })
+                statuses.append(
+                    {
+                        "code": config.code,
+                        "name": config.name,
+                        "type": config.type.value,
+                        "status": "not_loaded",
+                        "wdc_debates_ingested": 0,
+                        "case_outcomes_ingested": 0,
+                    }
+                )
         return statuses
 
     def list_jurisdictions(self) -> list[dict[str, str]]:

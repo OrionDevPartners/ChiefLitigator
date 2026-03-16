@@ -13,7 +13,7 @@ import logging
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Index, String, Text, func
+from sqlalchemy import DateTime, Index, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import JSON
 
@@ -83,10 +83,7 @@ class AdminAuditLog(Base):
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<AdminAuditLog id={self.id} admin={self.admin_email} "
-            f"action={self.action} ts={self.timestamp}>"
-        )
+        return f"<AdminAuditLog id={self.id} admin={self.admin_email} action={self.action} ts={self.timestamp}>"
 
 
 # ---------------------------------------------------------------------------

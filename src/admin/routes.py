@@ -27,11 +27,11 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import func, select, update
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.admin.agent import AdminAgent
-from src.admin.audit import AdminAuditLog, BetaUser, log_admin_action
+from src.admin.audit import log_admin_action
 from src.admin.auth import (
     AdminJWTHandler,
     get_client_ip,
@@ -41,9 +41,7 @@ from src.admin.auth import (
 from src.beta.email import send_beta_invite
 from src.beta.gate import BetaGate
 from src.beta.models import BetaInvite
-from src.database.crud import get_user_by_email
 from src.database.engine import get_db
-from src.database.models import Case, Message, User
 
 logger = logging.getLogger("cyphergy.admin.routes")
 

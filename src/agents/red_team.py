@@ -138,18 +138,13 @@ class AdversarialCounsel(BaseAgent):
             messages.append(
                 {
                     "role": "user",
-                    "content": (
-                        "Case context for adversarial review:\n"
-                        + json.dumps(context, default=str)
-                    ),
+                    "content": ("Case context for adversarial review:\n" + json.dumps(context, default=str)),
                 }
             )
         messages.append({"role": "user", "content": prompt})
 
         content = await self._call_model(messages)
-        vulnerabilities = await self.identify_vulnerabilities(
-            prompt, context
-        )
+        vulnerabilities = await self.identify_vulnerabilities(prompt, context)
 
         return {
             "content": content,
@@ -175,9 +170,7 @@ class AdversarialCounsel(BaseAgent):
             "and a float value.\n\n"
             f"Review:\n{response.get('content', '')}"
         )
-        raw = await self._call_model(
-            [{"role": "user", "content": scoring_prompt}]
-        )
+        raw = await self._call_model([{"role": "user", "content": scoring_prompt}])
         try:
             return float(json.loads(raw)["score"])
         except (json.JSONDecodeError, KeyError, ValueError):
@@ -215,13 +208,9 @@ class AdversarialCounsel(BaseAgent):
             f"Argument:\n{argument}"
         )
         if context:
-            vuln_prompt += (
-                f"\nContext: {json.dumps(context, default=str)}"
-            )
+            vuln_prompt += f"\nContext: {json.dumps(context, default=str)}"
 
-        raw = await self._call_model(
-            [{"role": "user", "content": vuln_prompt}]
-        )
+        raw = await self._call_model([{"role": "user", "content": vuln_prompt}])
         try:
             parsed = json.loads(raw)
             if isinstance(parsed, list):

@@ -65,28 +65,32 @@ logger = logging.getLogger("cyphergy.knowledge.argument_graph")
 class CaseRelationship(str, Enum):
     """How one case relates to another in the argument graph."""
 
-    SUPPORTS = "supports"           # Case A supports the same legal principle as Case B
-    WEAKENS = "weakens"             # Case A weakens Case B's holding
-    DISTINGUISHES = "distinguishes" # Case A says "that case was different because..."
-    OVERRULES = "overrules"         # Case A explicitly overrules Case B
-    FOLLOWS = "follows"             # Case A follows Case B's reasoning
-    EXTENDS = "extends"             # Case A extends Case B to new facts
-    LIMITS = "limits"               # Case A limits Case B's scope
+    SUPPORTS = "supports"  # Case A supports the same legal principle as Case B
+    WEAKENS = "weakens"  # Case A weakens Case B's holding
+    DISTINGUISHES = "distinguishes"  # Case A says "that case was different because..."
+    OVERRULES = "overrules"  # Case A explicitly overrules Case B
+    FOLLOWS = "follows"  # Case A follows Case B's reasoning
+    EXTENDS = "extends"  # Case A extends Case B to new facts
+    LIMITS = "limits"  # Case A limits Case B's scope
 
 
 # Which relationships strengthen an argument vs. which undermine it
-_REINFORCING: frozenset[CaseRelationship] = frozenset({
-    CaseRelationship.SUPPORTS,
-    CaseRelationship.FOLLOWS,
-    CaseRelationship.EXTENDS,
-})
+_REINFORCING: frozenset[CaseRelationship] = frozenset(
+    {
+        CaseRelationship.SUPPORTS,
+        CaseRelationship.FOLLOWS,
+        CaseRelationship.EXTENDS,
+    }
+)
 
-_UNDERMINING: frozenset[CaseRelationship] = frozenset({
-    CaseRelationship.WEAKENS,
-    CaseRelationship.DISTINGUISHES,
-    CaseRelationship.OVERRULES,
-    CaseRelationship.LIMITS,
-})
+_UNDERMINING: frozenset[CaseRelationship] = frozenset(
+    {
+        CaseRelationship.WEAKENS,
+        CaseRelationship.DISTINGUISHES,
+        CaseRelationship.OVERRULES,
+        CaseRelationship.LIMITS,
+    }
+)
 
 
 # ---------------------------------------------------------------------------
@@ -265,10 +269,7 @@ class ArgumentGraph:
         """
         # Check for duplicate
         for existing in self._outgoing[edge.source_citation]:
-            if (
-                existing.target_citation == edge.target_citation
-                and existing.relationship == edge.relationship
-            ):
+            if existing.target_citation == edge.target_citation and existing.relationship == edge.relationship:
                 logger.debug(
                     "duplicate_edge | source=%s target=%s rel=%s",
                     edge.source_citation,
@@ -382,22 +383,17 @@ class ArgumentGraph:
         """
         # Gather all edges for this statute in this jurisdiction
         statute_edges = self._statute_edges.get(statute, [])
-        relevant_edges = [
-            e for e in statute_edges
-            if e.jurisdiction == jurisdiction
-        ]
+        relevant_edges = [e for e in statute_edges if e.jurisdiction == jurisdiction]
 
         # Also include federal authority (always potentially binding)
-        federal_edges = [
-            e for e in statute_edges
-            if e.jurisdiction == "FED"
-        ]
+        federal_edges = [e for e in statute_edges if e.jurisdiction == "FED"]
         all_edges = relevant_edges + federal_edges
 
         if not all_edges:
             logger.info(
                 "no_edges | statute=%s jurisdiction=%s",
-                statute, jurisdiction,
+                statute,
+                jurisdiction,
             )
             return ArgumentChain(
                 statute=statute,
@@ -422,19 +418,13 @@ class ArgumentGraph:
         )
 
         # Step 2: Build supporting chain from foundation
-        supporting = self._build_supporting_chain(
-            foundation, all_edges, citations_in_scope
-        )
+        supporting = self._build_supporting_chain(foundation, all_edges, citations_in_scope)
 
         # Step 3: Find most recent reaffirmation
-        reaffirmation, reaffirmation_year = self._find_recent_reaffirmation(
-            foundation, all_edges, citations_in_scope
-        )
+        reaffirmation, reaffirmation_year = self._find_recent_reaffirmation(foundation, all_edges, citations_in_scope)
 
         # Step 4: Find counter-arguments (what the other side will cite)
-        counters = self._find_counters(
-            foundation, all_edges, citations_in_scope, side
-        )
+        counters = self._find_counters(foundation, all_edges, citations_in_scope, side)
 
         # Step 5: Compute confidence
         confidence = self._compute_confidence(
@@ -465,10 +455,14 @@ class ArgumentGraph:
         logger.info(
             "chain_built | statute=%s jurisdiction=%s side=%s "
             "foundation=%s supporting=%d reaffirm=%s counters=%d confidence=%.3f",
-            statute, jurisdiction, side,
-            foundation, len(supporting),
+            statute,
+            jurisdiction,
+            side,
+            foundation,
+            len(supporting),
             reaffirmation or "none",
-            len(counters), confidence,
+            len(counters),
+            confidence,
         )
 
         return chain
@@ -507,19 +501,13 @@ class ArgumentGraph:
         - strength: relative strength score
         """
         statute_edges = self._statute_edges.get(statute, [])
-        relevant_edges = [
-            e for e in statute_edges
-            if e.jurisdiction == jurisdiction or e.jurisdiction == "FED"
-        ]
+        relevant_edges = [e for e in statute_edges if e.jurisdiction == jurisdiction or e.jurisdiction == "FED"]
 
         if not relevant_edges:
             return []
 
         # Find all undermining edges
-        counter_edges = [
-            e for e in relevant_edges
-            if e.relationship in _UNDERMINING
-        ]
+        counter_edges = [e for e in relevant_edges if e.relationship in _UNDERMINING]
 
         # Rank by strength
         strength_order = {
@@ -532,23 +520,28 @@ class ArgumentGraph:
         counters = []
         for edge in counter_edges:
             strength = strength_order.get(edge.relationship, 0)
-            counters.append({
-                "citation": edge.source_citation,
-                "relationship": edge.relationship.value,
-                "target": edge.target_citation,
-                "description": edge.description,
-                "year": edge.year,
-                "jurisdiction": edge.jurisdiction,
-                "strength": strength,
-                "is_binding": edge.jurisdiction == jurisdiction,
-            })
+            counters.append(
+                {
+                    "citation": edge.source_citation,
+                    "relationship": edge.relationship.value,
+                    "target": edge.target_citation,
+                    "description": edge.description,
+                    "year": edge.year,
+                    "jurisdiction": edge.jurisdiction,
+                    "strength": strength,
+                    "is_binding": edge.jurisdiction == jurisdiction,
+                }
+            )
 
         # Sort by strength descending, then by year descending (recent = more dangerous)
         counters.sort(key=lambda c: (c["strength"], c["year"]), reverse=True)
 
         logger.info(
             "counter_arguments | statute=%s jurisdiction=%s side=%s count=%d",
-            statute, jurisdiction, side, len(counters),
+            statute,
+            jurisdiction,
+            side,
+            len(counters),
         )
 
         return counters
@@ -694,10 +687,7 @@ class ArgumentGraph:
 
         if not candidates:
             # Fallback: just pick the earliest case
-            all_candidates = [
-                (c, citation_year.get(c, 9999)) for c in citations
-                if c not in overruled
-            ]
+            all_candidates = [(c, citation_year.get(c, 9999)) for c in citations if c not in overruled]
             if all_candidates:
                 all_candidates.sort(key=lambda x: x[1])
                 chosen = all_candidates[0][0]
@@ -751,14 +741,16 @@ class ArgumentGraph:
                     if edge.source_citation not in visited:
                         visited.add(edge.source_citation)
                         next_queue.append(edge.source_citation)
-                        chain.append({
-                            "citation": edge.source_citation,
-                            "year": edge.year,
-                            "relationship": edge.relationship.value,
-                            "description": edge.description,
-                            "cites": current,
-                            "depth": depth + 1,
-                        })
+                        chain.append(
+                            {
+                                "citation": edge.source_citation,
+                                "year": edge.year,
+                                "relationship": edge.relationship.value,
+                                "description": edge.description,
+                                "cites": current,
+                                "depth": depth + 1,
+                            }
+                        )
             queue = next_queue
             depth += 1
 
@@ -888,9 +880,7 @@ class ArgumentGraph:
             }
 
             # Add distinguishability reasoning based on relationship type
-            counter_entry["distinguishable_because"] = (
-                self._generate_distinguishability(edge)
-            )
+            counter_entry["distinguishable_because"] = self._generate_distinguishability(edge)
 
             counters.append(counter_entry)
 
@@ -987,6 +977,7 @@ class ArgumentGraph:
         if reaffirmation and reaffirmation_year:
             # Full credit if within 5 years, decays after that
             import datetime as _dt
+
             current_year = _dt.date.today().year
             age = current_year - reaffirmation_year
             if age <= 2:

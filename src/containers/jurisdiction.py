@@ -21,22 +21,20 @@ any general-purpose AI in that specific legal domain.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import os
 from datetime import datetime
-from typing import Any, Optional
 from enum import Enum
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
+from src.providers.llm_provider import get_provider
 from src.providers.model_router import (
-    ModelRouter,
-    ModelRole,
     DualBrainResult,
+    ModelRouter,
     run_dual_brain_check,
 )
-from src.providers.llm_provider import get_provider
 
 logger = logging.getLogger("cyphergy.containers.jurisdiction")
 
@@ -79,10 +77,10 @@ class PracticeArea(str, Enum):
 
     CIVIL = "civil"
     CRIMINAL = "criminal"
-    OVERLAP = "overlap"          # Civil-criminal bridge (punitive, RICO, fraud)
+    OVERLAP = "overlap"  # Civil-criminal bridge (punitive, RICO, fraud)
     ADMINISTRATIVE = "administrative"  # Agency proceedings, licensing, regulatory
-    APPELLATE = "appellate"      # Appellate procedure (distinct from trial)
-    BANKRUPTCY = "bankruptcy"    # Federal + state exemptions
+    APPELLATE = "appellate"  # Appellate procedure (distinct from trial)
+    BANKRUPTCY = "bankruptcy"  # Federal + state exemptions
 
 
 class PracticeSubArea(str, Enum):
@@ -107,15 +105,15 @@ class PracticeSubArea(str, Enum):
     DOMESTIC_VIOLENCE = "domestic_violence"
 
     # Overlap (civil-criminal bridge)
-    PUNITIVE_DAMAGES = "punitive_damages"    # Civil remedy, criminal-level proof
-    RICO = "rico"                            # Civil + criminal statutes
-    FRAUD = "fraud"                          # Civil fraud + criminal fraud
-    CONVERSION = "conversion"                # Civil tort with criminal theft overlap
-    RESTITUTION = "restitution"              # Criminal sentence + civil remedy
-    CONTEMPT = "contempt"                    # Civil + criminal contempt
-    FORFEITURE = "forfeiture"                # Civil + criminal asset forfeiture
-    QUI_TAM = "qui_tam"                      # False Claims Act — civil/criminal
-    TREBLE_DAMAGES = "treble_damages"        # Antitrust, LUTPA, consumer protection
+    PUNITIVE_DAMAGES = "punitive_damages"  # Civil remedy, criminal-level proof
+    RICO = "rico"  # Civil + criminal statutes
+    FRAUD = "fraud"  # Civil fraud + criminal fraud
+    CONVERSION = "conversion"  # Civil tort with criminal theft overlap
+    RESTITUTION = "restitution"  # Criminal sentence + civil remedy
+    CONTEMPT = "contempt"  # Civil + criminal contempt
+    FORFEITURE = "forfeiture"  # Civil + criminal asset forfeiture
+    QUI_TAM = "qui_tam"  # False Claims Act — civil/criminal
+    TREBLE_DAMAGES = "treble_damages"  # Antitrust, LUTPA, consumer protection
 
     # Administrative
     LICENSING = "licensing"
@@ -137,9 +135,9 @@ OVERLAP_RULES: dict[str, list[dict[str, str]]] = {
         {
             "area": PracticeSubArea.PUNITIVE_DAMAGES.value,
             "rule": "Fla. Stat. § 768.72 — Punitive damages require leave of court. "
-                    "Plaintiff must proffer reasonable evidence showing basis for recovery. "
-                    "Court acts as gatekeeper before jury sees punitive claim. "
-                    "Standard: clear and convincing evidence of intentional misconduct or gross negligence.",
+            "Plaintiff must proffer reasonable evidence showing basis for recovery. "
+            "Court acts as gatekeeper before jury sees punitive claim. "
+            "Standard: clear and convincing evidence of intentional misconduct or gross negligence.",
             "gate_type": "judicial_leave",
             "proof_standard": "clear_and_convincing",
         },
@@ -148,8 +146,8 @@ OVERLAP_RULES: dict[str, list[dict[str, str]]] = {
         {
             "area": PracticeSubArea.PUNITIVE_DAMAGES.value,
             "rule": "Cal. Civ. Code § 3294 — Punitive damages require clear and convincing evidence "
-                    "of oppression, fraud, or malice. No pre-filing gate (unlike FL), but defendant can "
-                    "move to strike under CCP § 435.",
+            "of oppression, fraud, or malice. No pre-filing gate (unlike FL), but defendant can "
+            "move to strike under CCP § 435.",
             "gate_type": "motion_to_strike",
             "proof_standard": "clear_and_convincing",
         },
@@ -158,8 +156,8 @@ OVERLAP_RULES: dict[str, list[dict[str, str]]] = {
         {
             "area": PracticeSubArea.PUNITIVE_DAMAGES.value,
             "rule": "Tex. Civ. Prac. & Rem. Code § 41.003 — Exemplary damages require clear and convincing "
-                    "evidence of fraud, malice, or gross negligence. Capped at greater of 2x economic + "
-                    "non-economic up to $750K, or $200K.",
+            "evidence of fraud, malice, or gross negligence. Capped at greater of 2x economic + "
+            "non-economic up to $750K, or $200K.",
             "gate_type": "cap",
             "proof_standard": "clear_and_convincing",
         },
@@ -168,8 +166,8 @@ OVERLAP_RULES: dict[str, list[dict[str, str]]] = {
         {
             "area": PracticeSubArea.PUNITIVE_DAMAGES.value,
             "rule": "La. C.C. art. 2315.4 — Punitive (exemplary) damages generally NOT available in Louisiana "
-                    "EXCEPT by specific statute (e.g., child pornography, drunk driving, domestic violence). "
-                    "Louisiana is a civil law jurisdiction — punitive damages are the exception, not the rule.",
+            "EXCEPT by specific statute (e.g., child pornography, drunk driving, domestic violence). "
+            "Louisiana is a civil law jurisdiction — punitive damages are the exception, not the rule.",
             "gate_type": "statutory_exception_only",
             "proof_standard": "statutory",
         },
@@ -178,8 +176,8 @@ OVERLAP_RULES: dict[str, list[dict[str, str]]] = {
         {
             "area": PracticeSubArea.PUNITIVE_DAMAGES.value,
             "rule": "No statutory cap. Punitive damages available when defendant's conduct is 'aimed at the public generally' "
-                    "or involves 'high moral culpability.' Standard: gross, wanton, or willful fraud or other "
-                    "morally culpable conduct. Rocanova v. Equitable Life Assur. Soc., 83 N.Y.2d 603 (1994).",
+            "or involves 'high moral culpability.' Standard: gross, wanton, or willful fraud or other "
+            "morally culpable conduct. Rocanova v. Equitable Life Assur. Soc., 83 N.Y.2d 603 (1994).",
             "gate_type": "none",
             "proof_standard": "preponderance_with_moral_culpability",
         },
@@ -188,16 +186,16 @@ OVERLAP_RULES: dict[str, list[dict[str, str]]] = {
         {
             "area": PracticeSubArea.RICO.value,
             "rule": "18 U.S.C. §§ 1961-1968 — RICO provides both criminal penalties (imprisonment, fines, forfeiture) "
-                    "and civil remedies (treble damages + attorney fees under § 1964(c)). "
-                    "Civil RICO requires pattern of racketeering activity (minimum 2 predicate acts).",
+            "and civil remedies (treble damages + attorney fees under § 1964(c)). "
+            "Civil RICO requires pattern of racketeering activity (minimum 2 predicate acts).",
             "gate_type": "predicate_acts",
             "proof_standard": "preponderance_civil_brd_criminal",
         },
         {
             "area": PracticeSubArea.QUI_TAM.value,
             "rule": "31 U.S.C. §§ 3729-3733 — False Claims Act. Civil action brought by relator on behalf of US. "
-                    "Treble damages + $11K-$23K per false claim. DOJ can intervene or decline. "
-                    "Criminal false claims under 18 U.S.C. § 287 carry imprisonment.",
+            "Treble damages + $11K-$23K per false claim. DOJ can intervene or decline. "
+            "Criminal false claims under 18 U.S.C. § 287 carry imprisonment.",
             "gate_type": "doj_intervention",
             "proof_standard": "preponderance_civil_brd_criminal",
         },
@@ -348,7 +346,9 @@ class JurisdictionContainer:
                 setattr(self._config, field, override)
                 logger.info(
                     "jurisdiction_model_override | jurisdiction=%s role=%s model=%s",
-                    code, role, override,
+                    code,
+                    role,
+                    override,
                 )
 
     @property
@@ -435,11 +435,13 @@ class JurisdictionContainer:
         # Extract verified holdings from the debate
         if debate_transcript.get("citations_verified"):
             for citation in debate_transcript["citations_verified"]:
-                self._memory.verified_holdings.append({
-                    "citation": citation,
-                    "verified_at": datetime.utcnow().isoformat(),
-                    "source": "wdc_consensus",
-                })
+                self._memory.verified_holdings.append(
+                    {
+                        "citation": citation,
+                        "verified_at": datetime.utcnow().isoformat(),
+                        "source": "wdc_consensus",
+                    }
+                )
 
         logger.info(
             "wdc_debate_ingested | jurisdiction=%s total_debates=%d",
@@ -454,10 +456,12 @@ class JurisdictionContainer:
         training signal for improving jurisdiction-specific accuracy.
         """
         self._config.case_outcomes_ingested += 1
-        self._memory.legal_patterns.append({
-            "outcome": outcome,
-            "ingested_at": datetime.utcnow().isoformat(),
-        })
+        self._memory.legal_patterns.append(
+            {
+                "outcome": outcome,
+                "ingested_at": datetime.utcnow().isoformat(),
+            }
+        )
 
         logger.info(
             "case_outcome_ingested | jurisdiction=%s total_outcomes=%d",
@@ -471,12 +475,14 @@ class JurisdictionContainer:
         When a lawyer corrects the AI's interpretation of this
         jurisdiction's law, that correction is gold for training.
         """
-        self._memory.corrections.append({
-            "original": original,
-            "corrected": corrected,
-            "reason": reason,
-            "corrected_at": datetime.utcnow().isoformat(),
-        })
+        self._memory.corrections.append(
+            {
+                "original": original,
+                "corrected": corrected,
+                "reason": reason,
+                "corrected_at": datetime.utcnow().isoformat(),
+            }
+        )
 
         logger.info(
             "correction_recorded | jurisdiction=%s total_corrections=%d",

@@ -119,9 +119,7 @@ class TestAdmin:
         await _create_admin(db_session)
         await db_session.commit()
 
-        result = await admin_login(
-            db_session, email="admin@cyphergy.ai", password=_ADMIN_PASSWORD
-        )
+        result = await admin_login(db_session, email="admin@cyphergy.ai", password=_ADMIN_PASSWORD)
 
         assert result is not None
         assert result["email"] == "admin@cyphergy.ai"
@@ -135,20 +133,14 @@ class TestAdmin:
         await _create_regular_user(db_session)
         await db_session.commit()
 
-        result = await admin_login(
-            db_session, email="regular@cyphergy.ai", password=_USER_PASSWORD
-        )
+        result = await admin_login(db_session, email="regular@cyphergy.ai", password=_USER_PASSWORD)
 
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_invite_user_creates_beta_invite(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_invite_user_creates_beta_invite(self, db_session: AsyncSession) -> None:
         """invite_beta_user should create a BetaInvite record with a unique code."""
-        invite = await invite_beta_user(
-            db_session, email="newbeta@cyphergy.ai"
-        )
+        invite = await invite_beta_user(db_session, email="newbeta@cyphergy.ai")
         await db_session.commit()
 
         assert invite.id is not None

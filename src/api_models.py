@@ -12,7 +12,6 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
 
-
 # ---------------------------------------------------------------------------
 # POST /api/v1/chat
 # ---------------------------------------------------------------------------
@@ -125,23 +124,16 @@ class ComputeDeadlineRequest(BaseModel):
     deadline_type: str = Field(
         ...,
         description=(
-            "Category of deadline: answer, motion_to_dismiss, "
-            "discovery_response, appeal_notice, or motion_response."
+            "Category of deadline: answer, motion_to_dismiss, discovery_response, appeal_notice, or motion_response."
         ),
     )
     jurisdiction: str = Field(
         ...,
-        description=(
-            "Governing jurisdiction: federal, louisiana, california, "
-            "texas, new_york, or florida."
-        ),
+        description=("Governing jurisdiction: federal, louisiana, california, texas, new_york, or florida."),
     )
     service_method: Optional[str] = Field(
         default=None,
-        description=(
-            "How papers were served: personal, mail, electronic, "
-            "or certified_mail. Defaults to personal."
-        ),
+        description=("How papers were served: personal, mail, electronic, or certified_mail. Defaults to personal."),
     )
 
     @field_validator("event_date")

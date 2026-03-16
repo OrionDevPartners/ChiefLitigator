@@ -43,13 +43,14 @@ logger = logging.getLogger("cyphergy.verification.citation_chain")
 # Data Models
 # ---------------------------------------------------------------------------
 
+
 class VerificationStatus(str, Enum):
     """Outcome status for a citation verification run."""
 
-    VERIFIED = "verified"       # Passed all 5 steps
-    UNVERIFIED = "unverified"   # Failed one or more steps
-    PARTIAL = "partial"         # Some steps passed, external source unavailable
-    ERROR = "error"             # External API error
+    VERIFIED = "verified"  # Passed all 5 steps
+    UNVERIFIED = "unverified"  # Failed one or more steps
+    PARTIAL = "partial"  # Some steps passed, external source unavailable
+    ERROR = "error"  # External API error
 
 
 class VerificationResult(BaseModel):
@@ -91,15 +92,31 @@ _FEDERAL_REPORTERS: list[str] = [
 
 # Common state reporters
 _STATE_REPORTERS: list[str] = [
-    r"N\.E\.\s*3d", r"N\.E\.\s*2d", r"N\.E\.",
-    r"N\.W\.\s*2d", r"N\.W\.",
-    r"S\.E\.\s*2d", r"S\.E\.",
-    r"S\.W\.\s*3d", r"S\.W\.\s*2d", r"S\.W\.",
-    r"So\.\s*3d", r"So\.\s*2d", r"So\.",
-    r"P\.\s*3d", r"P\.\s*2d", r"P\.",
-    r"A\.\s*3d", r"A\.\s*2d", r"A\.",
-    r"Cal\.\s*Rptr\.\s*3d", r"Cal\.\s*Rptr\.\s*2d", r"Cal\.\s*Rptr\.",
-    r"N\.Y\.S\.\s*3d", r"N\.Y\.S\.\s*2d", r"N\.Y\.S\.",
+    r"N\.E\.\s*3d",
+    r"N\.E\.\s*2d",
+    r"N\.E\.",
+    r"N\.W\.\s*2d",
+    r"N\.W\.",
+    r"S\.E\.\s*2d",
+    r"S\.E\.",
+    r"S\.W\.\s*3d",
+    r"S\.W\.\s*2d",
+    r"S\.W\.",
+    r"So\.\s*3d",
+    r"So\.\s*2d",
+    r"So\.",
+    r"P\.\s*3d",
+    r"P\.\s*2d",
+    r"P\.",
+    r"A\.\s*3d",
+    r"A\.\s*2d",
+    r"A\.",
+    r"Cal\.\s*Rptr\.\s*3d",
+    r"Cal\.\s*Rptr\.\s*2d",
+    r"Cal\.\s*Rptr\.",
+    r"N\.Y\.S\.\s*3d",
+    r"N\.Y\.S\.\s*2d",
+    r"N\.Y\.S\.",
     r"Ill\.\s*Dec\.",
 ]
 
@@ -126,6 +143,7 @@ _YEAR_RE = re.compile(r"\(.*?(\d{4})\)")
 # CitationVerifier
 # ---------------------------------------------------------------------------
 
+
 class CitationVerifier:
     """
     5-step Citation Verification Chain.
@@ -148,15 +166,9 @@ class CitationVerifier:
     ]
 
     def __init__(self) -> None:
-        self._courtlistener_api_url: str = os.environ.get(
-            "COURTLISTENER_API_URL", ""
-        ).rstrip("/")
-        self._courtlistener_api_key: str | None = os.environ.get(
-            "COURTLISTENER_API_KEY"
-        )
-        self._us_code_api_url: str = os.environ.get(
-            "US_CODE_API_URL", ""
-        ).rstrip("/")
+        self._courtlistener_api_url: str = os.environ.get("COURTLISTENER_API_URL", "").rstrip("/")
+        self._courtlistener_api_key: str | None = os.environ.get("COURTLISTENER_API_KEY")
+        self._us_code_api_url: str = os.environ.get("US_CODE_API_URL", "").rstrip("/")
 
         if not self._courtlistener_api_url:
             logger.warning(
@@ -252,14 +264,10 @@ class CitationVerifier:
                 citation=citation,
                 status=VerificationStatus.UNVERIFIED,
                 steps_passed=steps_passed,
-                steps_failed=steps_failed + [
-                    s for s in self.STEP_NAMES[1:] if s not in steps_passed
-                ],
+                steps_failed=steps_failed + [s for s in self.STEP_NAMES[1:] if s not in steps_passed],
                 external_source=external_source,
                 confidence=0.0,
-                details=" | ".join(detail_parts) + (
-                    " | Steps 2–5 skipped: citation not found."
-                ),
+                details=" | ".join(detail_parts) + (" | Steps 2–5 skipped: citation not found."),
             )
 
         # -- STEP 2: Format Verification ---------------------------------
@@ -276,23 +284,17 @@ class CitationVerifier:
         # -- STEP 3: Holding Verification (HARD CONSTRAINT) ---------------
         if claimed_holding and opinion_data and not is_statute:
             try:
-                h_match, h_summary = await self._step3_holding(
-                    citation, claimed_holding, opinion_data
-                )
+                h_match, h_summary = await self._step3_holding(citation, claimed_holding, opinion_data)
                 holding_summary = h_summary
                 holding_match = h_match
                 if h_match:
                     steps_passed.append("holding_verification")
-                    detail_parts.append(
-                        f"Step 3 PASSED: Claimed holding matches external text. "
-                        f"Summary: {h_summary}"
-                    )
+                    detail_parts.append(f"Step 3 PASSED: Claimed holding matches external text. Summary: {h_summary}")
                     logger.info("Step 3 PASSED — holding verified against external text")
                 else:
                     steps_failed.append("holding_verification")
                     detail_parts.append(
-                        f"Step 3 FAILED: Claimed holding does NOT match external text. "
-                        f"Actual: {h_summary}"
+                        f"Step 3 FAILED: Claimed holding does NOT match external text. Actual: {h_summary}"
                     )
                     logger.warning(
                         "Step 3 FAILED — holding mismatch. Claimed: %s, Actual: %s",
@@ -308,43 +310,32 @@ class CitationVerifier:
                     "Model memory is NEVER used for holding verification."
                 )
                 logger.error(
-                    "Step 3 FAILED — external text unavailable, "
-                    "hard constraint prevents model-memory fallback: %s",
+                    "Step 3 FAILED — external text unavailable, hard constraint prevents model-memory fallback: %s",
                     exc,
                 )
             except Exception as exc:
                 steps_failed.append("holding_verification")
-                detail_parts.append(
-                    f"Step 3 ERROR: Unexpected error during holding verification: {exc}"
-                )
+                detail_parts.append(f"Step 3 ERROR: Unexpected error during holding verification: {exc}")
                 logger.error("Step 3 ERROR: %s", exc, exc_info=True)
         elif is_statute:
             # Holding verification does not apply to statutes
             steps_passed.append("holding_verification")
-            detail_parts.append(
-                "Step 3 SKIPPED (statute): Holding verification applies to case law only."
-            )
+            detail_parts.append("Step 3 SKIPPED (statute): Holding verification applies to case law only.")
             logger.info("Step 3 SKIPPED — statute citation, not case law")
         elif not claimed_holding:
             steps_failed.append("holding_verification")
             holding_match = None
-            detail_parts.append(
-                "Step 3 SKIPPED: No claimed holding provided for comparison."
-            )
+            detail_parts.append("Step 3 SKIPPED: No claimed holding provided for comparison.")
             logger.info("Step 3 SKIPPED — no claimed holding to verify")
         else:
             steps_failed.append("holding_verification")
-            detail_parts.append(
-                "Step 3 FAILED: Opinion data unavailable for holding comparison."
-            )
+            detail_parts.append("Step 3 FAILED: Opinion data unavailable for holding comparison.")
             logger.warning("Step 3 FAILED — no opinion data")
 
         # -- STEP 4: Good Law Check --------------------------------------
         if opinion_data and not is_statute:
             try:
-                still_good, treatment = await self._step4_good_law(
-                    citation, opinion_data
-                )
+                still_good, treatment = await self._step4_good_law(citation, opinion_data)
                 good_law = still_good
                 if still_good:
                     steps_passed.append("good_law_check")
@@ -360,9 +351,7 @@ class CitationVerifier:
                 logger.error("Step 4 ERROR: %s", exc, exc_info=True)
         elif is_statute:
             steps_passed.append("good_law_check")
-            detail_parts.append(
-                "Step 4 SKIPPED (statute): Good-law check applies to case law only."
-            )
+            detail_parts.append("Step 4 SKIPPED (statute): Good-law check applies to case law only.")
             logger.info("Step 4 SKIPPED — statute citation")
         else:
             steps_failed.append("good_law_check")
@@ -389,9 +378,7 @@ class CitationVerifier:
         else:
             # Currency check applies only to statutes; for case law it auto-passes.
             steps_passed.append("currency_check")
-            detail_parts.append(
-                "Step 5 SKIPPED (case law): Currency check applies to statutes only."
-            )
+            detail_parts.append("Step 5 SKIPPED (case law): Currency check applies to statutes only.")
             logger.info("Step 5 SKIPPED — case law, not a statute")
 
         # -- Compute final status & confidence ----------------------------
@@ -406,9 +393,7 @@ class CitationVerifier:
             confidence = 0.0
         else:
             # Check if any critical step failed
-            critical_failures = {"existence_check", "holding_verification"} & set(
-                steps_failed
-            )
+            critical_failures = {"existence_check", "holding_verification"} & set(steps_failed)
             if critical_failures:
                 status = VerificationStatus.UNVERIFIED
                 confidence = max(0.0, (passed_count / total_steps) * 0.5)
@@ -455,10 +440,7 @@ class CitationVerifier:
             List of VerificationResult in the same order as input.
         """
         logger.info("BEGIN batch verification for %d citations", len(citations))
-        tasks = [
-            self.verify(citation, claimed_holding)
-            for citation, claimed_holding in citations
-        ]
+        tasks = [self.verify(citation, claimed_holding) for citation, claimed_holding in citations]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         final: list[VerificationResult] = []
@@ -494,9 +476,7 @@ class CitationVerifier:
     # STEP 1: Existence Check
     # ------------------------------------------------------------------
 
-    async def _step1_exists(
-        self, citation: str
-    ) -> tuple[bool, dict[str, Any] | None]:
+    async def _step1_exists(self, citation: str) -> tuple[bool, dict[str, Any] | None]:
         """
         Search CourtListener for the citation.
 
@@ -511,9 +491,7 @@ class CitationVerifier:
         # Fallback: try a broader search by extracting volume/reporter/page
         simplified = self._extract_volume_reporter_page(citation)
         if simplified and simplified != citation:
-            logger.info(
-                "Retrying CourtListener with simplified query: %s", simplified
-            )
+            logger.info("Retrying CourtListener with simplified query: %s", simplified)
             opinion_data = await self._search_courtlistener(simplified)
             if opinion_data is not None:
                 return True, opinion_data
@@ -544,7 +522,7 @@ class CitationVerifier:
 
         # Check case citation pattern
         if _CASE_CITATION_RE.search(stripped):
-            return True, f"Valid Bluebook case citation format detected."
+            return True, "Valid Bluebook case citation format detected."
 
         # If it has a year in parens and some recognizable structure,
         # give it a partial pass with a note
@@ -555,9 +533,9 @@ class CitationVerifier:
             )
 
         return False, (
-            f"Citation does not match standard Bluebook format. "
-            f"Expected patterns like '123 F.3d 456 (9th Cir. 2020)' for cases "
-            f"or '42 U.S.C. § 1983' for statutes."
+            "Citation does not match standard Bluebook format. "
+            "Expected patterns like '123 F.3d 456 (9th Cir. 2020)' for cases "
+            "or '42 U.S.C. § 1983' for statutes."
         )
 
     # ------------------------------------------------------------------
@@ -592,9 +570,7 @@ class CitationVerifier:
             _ExternalTextUnavailable: If the opinion text cannot be fetched.
         """
         if not claimed_holding:
-            raise _ExternalTextUnavailable(
-                "No claimed holding provided for comparison."
-            )
+            raise _ExternalTextUnavailable("No claimed holding provided for comparison.")
 
         # Retrieve the opinion ID from CourtListener data
         opinion_id = self._extract_opinion_id(opinion_data)
@@ -626,9 +602,7 @@ class CitationVerifier:
         # We do NOT use an LLM here to avoid model-memory contamination.
         # Instead we check if key phrases from the claimed holding appear
         # in the actual opinion text.
-        matches, summary = self._compare_holding_to_text(
-            claimed_holding, opinion_text, citation
-        )
+        matches, summary = self._compare_holding_to_text(claimed_holding, opinion_text, citation)
 
         return matches, summary
 
@@ -661,20 +635,70 @@ class CitationVerifier:
         # Extract meaningful phrases from the claimed holding
         # Remove common legal filler words for better signal
         filler_words = {
-            "the", "a", "an", "of", "in", "to", "for", "and", "or", "that",
-            "this", "is", "are", "was", "were", "be", "been", "being",
-            "have", "has", "had", "do", "does", "did", "will", "would",
-            "could", "should", "may", "might", "shall", "can", "must",
-            "not", "no", "its", "it", "with", "by", "from", "as", "at",
-            "on", "but", "if", "into", "through", "during", "before",
-            "after", "above", "below", "between", "under", "upon",
-            "court", "held", "holding", "case", "opinion", "v.",
+            "the",
+            "a",
+            "an",
+            "of",
+            "in",
+            "to",
+            "for",
+            "and",
+            "or",
+            "that",
+            "this",
+            "is",
+            "are",
+            "was",
+            "were",
+            "be",
+            "been",
+            "being",
+            "have",
+            "has",
+            "had",
+            "do",
+            "does",
+            "did",
+            "will",
+            "would",
+            "could",
+            "should",
+            "may",
+            "might",
+            "shall",
+            "can",
+            "must",
+            "not",
+            "no",
+            "its",
+            "it",
+            "with",
+            "by",
+            "from",
+            "as",
+            "at",
+            "on",
+            "but",
+            "if",
+            "into",
+            "through",
+            "during",
+            "before",
+            "after",
+            "above",
+            "below",
+            "between",
+            "under",
+            "upon",
+            "court",
+            "held",
+            "holding",
+            "case",
+            "opinion",
+            "v.",
         }
 
-        claimed_words = [
-            w for w in re.findall(r"[a-z]+", claimed_lower)
-            if w not in filler_words and len(w) > 2
-        ]
+        claimed_words = [w for w in re.findall(r"[a-z]+", claimed_lower) if w not in filler_words and len(w) > 2]
 
         if not claimed_words:
             return False, "Could not extract meaningful terms from claimed holding."
@@ -696,14 +720,8 @@ class CitationVerifier:
         # from the claimed holding in the opinion
         claimed_clean = re.sub(r"[^\w\s]", "", claimed_lower)
         claimed_tokens = claimed_clean.split()
-        bigrams = [
-            " ".join(claimed_tokens[i : i + 2])
-            for i in range(len(claimed_tokens) - 1)
-        ]
-        trigrams = [
-            " ".join(claimed_tokens[i : i + 3])
-            for i in range(len(claimed_tokens) - 2)
-        ]
+        bigrams = [" ".join(claimed_tokens[i : i + 2]) for i in range(len(claimed_tokens) - 1)]
+        trigrams = [" ".join(claimed_tokens[i : i + 3]) for i in range(len(claimed_tokens) - 2)]
 
         opinion_clean = re.sub(r"[^\w\s]", "", opinion_lower)
         bigram_matches = sum(1 for bg in bigrams if bg in opinion_clean)
@@ -714,11 +732,7 @@ class CitationVerifier:
 
         # Weighted score: trigrams matter more than bigrams which matter
         # more than individual words
-        composite_score = (
-            word_match_ratio * 0.3
-            + bigram_ratio * 0.35
-            + trigram_ratio * 0.35
-        )
+        composite_score = word_match_ratio * 0.3 + bigram_ratio * 0.35 + trigram_ratio * 0.35
 
         # Extract a summary from the opinion text (first ~500 chars that
         # contain the most matches)
@@ -753,9 +767,7 @@ class CitationVerifier:
         return matches, full_summary
 
     @staticmethod
-    def _extract_relevant_passage(
-        opinion_text: str, keywords: list[str], max_length: int = 500
-    ) -> str:
+    def _extract_relevant_passage(opinion_text: str, keywords: list[str], max_length: int = 500) -> str:
         """
         Extract the most relevant passage from the opinion text based on
         keyword density. Returns up to max_length characters.
@@ -797,9 +809,7 @@ class CitationVerifier:
     # STEP 4: Good Law Check
     # ------------------------------------------------------------------
 
-    async def _step4_good_law(
-        self, citation: str, opinion_data: dict[str, Any]
-    ) -> tuple[bool, str]:
+    async def _step4_good_law(self, citation: str, opinion_data: dict[str, Any]) -> tuple[bool, str]:
         """
         Check whether the case has been overruled, reversed, or received
         significant negative treatment by looking at citing opinions.
@@ -843,10 +853,7 @@ class CitationVerifier:
             )
         except httpx.HTTPError as exc:
             logger.warning("Step 4: HTTP error fetching citing opinions: %s", exc)
-            return True, (
-                "Good-law check inconclusive due to API error. "
-                "No negative treatment confirmed."
-            )
+            return True, ("Good-law check inconclusive due to API error. No negative treatment confirmed.")
 
         results = data.get("results", [])
         if not results:
@@ -857,10 +864,18 @@ class CitationVerifier:
 
         # Look for negative treatment signals in citing opinion text
         negative_signals = [
-            "overruled", "overrule", "reversed", "reverse",
-            "abrogated", "abrogate", "vacated", "vacate",
-            "no longer good law", "no longer controlling",
-            "expressly overruled", "implicitly overruled",
+            "overruled",
+            "overrule",
+            "reversed",
+            "reverse",
+            "abrogated",
+            "abrogate",
+            "vacated",
+            "vacate",
+            "no longer good law",
+            "no longer controlling",
+            "expressly overruled",
+            "implicitly overruled",
             "superseded by statute",
         ]
 
@@ -868,9 +883,7 @@ class CitationVerifier:
         total_checked = 0
 
         for citing in results:
-            citing_text = (
-                citing.get("plain_text", "") or ""
-            ).lower()
+            citing_text = (citing.get("plain_text", "") or "").lower()
             citing_case = citing.get("case_name", "Unknown")
 
             if not citing_text:
@@ -879,24 +892,18 @@ class CitationVerifier:
             total_checked += 1
             for signal in negative_signals:
                 if signal in citing_text:
-                    negative_hits.append(
-                        f"{citing_case} contains '{signal}'"
-                    )
+                    negative_hits.append(f"{citing_case} contains '{signal}'")
                     break  # One signal per citing case is enough
 
         if negative_hits:
             summary = (
                 f"POTENTIAL NEGATIVE TREATMENT detected in {len(negative_hits)} "
-                f"of {total_checked} citing opinions: "
-                + "; ".join(negative_hits[:5])
+                f"of {total_checked} citing opinions: " + "; ".join(negative_hits[:5])
             )
             logger.warning("Step 4: %s", summary)
             return False, summary
 
-        return True, (
-            f"No negative treatment detected across {total_checked} citing "
-            f"opinions checked."
-        )
+        return True, (f"No negative treatment detected across {total_checked} citing opinions checked.")
 
     # ------------------------------------------------------------------
     # STEP 5: Currency Check (statutes)
@@ -934,15 +941,9 @@ class CitationVerifier:
                     # Check for amendment/repeal indicators
                     status = data.get("status", "unknown")
                     if status in ("current", "active"):
-                        return True, (
-                            f"Statute {title} U.S.C. § {section} is current "
-                            f"per US Code API."
-                        )
+                        return True, (f"Statute {title} U.S.C. § {section} is current per US Code API.")
                     elif status in ("repealed", "superseded"):
-                        return False, (
-                            f"Statute {title} U.S.C. § {section} has been "
-                            f"{status} per US Code API."
-                        )
+                        return False, (f"Statute {title} U.S.C. § {section} has been {status} per US Code API.")
                     else:
                         return True, (
                             f"US Code API returned status '{status}' for "
@@ -981,10 +982,7 @@ class CitationVerifier:
                         f"mentioning repeal/amendment. Manual review recommended."
                     )
                 else:
-                    return True, (
-                        "No CourtListener results indicate repeal or amendment. "
-                        "Statute presumed current."
-                    )
+                    return True, ("No CourtListener results indicate repeal or amendment. Statute presumed current.")
         except httpx.HTTPError as exc:
             logger.warning("Step 5 fallback search error: %s", exc)
 
@@ -998,9 +996,7 @@ class CitationVerifier:
     # CourtListener API Helpers
     # ------------------------------------------------------------------
 
-    async def _search_courtlistener(
-        self, query: str
-    ) -> dict[str, Any] | None:
+    async def _search_courtlistener(self, query: str) -> dict[str, Any] | None:
         """
         Search CourtListener for the given citation query.
 
@@ -1026,9 +1022,7 @@ class CitationVerifier:
         try:
             response = await self._client.get(url, params=params)
         except httpx.TimeoutException:
-            logger.error(
-                "CourtListener search timed out for query: %s", query
-            )
+            logger.error("CourtListener search timed out for query: %s", query)
             return None
         except httpx.HTTPError as exc:
             logger.error(
@@ -1039,10 +1033,7 @@ class CitationVerifier:
             return None
 
         if response.status_code == 429:
-            logger.warning(
-                "CourtListener rate limit hit — consider adding "
-                "COURTLISTENER_API_KEY for higher limits."
-            )
+            logger.warning("CourtListener rate limit hit — consider adding COURTLISTENER_API_KEY for higher limits.")
             return None
 
         if response.status_code != 200:
@@ -1094,9 +1085,7 @@ class CitationVerifier:
         try:
             response = await self._client.get(url)
         except httpx.TimeoutException:
-            logger.error(
-                "Timeout fetching opinion text for ID %s", opinion_id
-            )
+            logger.error("Timeout fetching opinion text for ID %s", opinion_id)
             return None
         except httpx.HTTPError as exc:
             logger.error(
@@ -1155,8 +1144,7 @@ class CitationVerifier:
                 return cluster_text
 
         logger.warning(
-            "No substantive text found for opinion %s. "
-            "Available fields: %s",
+            "No substantive text found for opinion %s. Available fields: %s",
             opinion_id,
             list(data.keys()),
         )
@@ -1302,6 +1290,7 @@ class CitationVerifier:
 # ---------------------------------------------------------------------------
 # Internal Exceptions
 # ---------------------------------------------------------------------------
+
 
 class _ExternalTextUnavailable(Exception):
     """

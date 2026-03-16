@@ -58,10 +58,7 @@ class LLMProviderError(CyphergyError):
     """
 
     status_code = 503
-    safe_message = (
-        "Legal AI service temporarily unavailable. "
-        "Your case data is safe. Please try again in a moment."
-    )
+    safe_message = "Legal AI service temporarily unavailable. Your case data is safe. Please try again in a moment."
 
 
 class CitationVerificationError(CyphergyError):
@@ -75,8 +72,7 @@ class CitationVerificationError(CyphergyError):
 
     status_code = 502
     safe_message = (
-        "External citation verification service is temporarily unavailable. "
-        "Citations will be marked as unverified."
+        "External citation verification service is temporarily unavailable. Citations will be marked as unverified."
     )
 
 

@@ -45,8 +45,8 @@ import asyncio
 import logging
 import os
 from datetime import datetime
-from typing import Any, Optional
 from enum import Enum
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
@@ -64,7 +64,7 @@ class PartyRole(str, Enum):
     SUPPORTS_PLAINTIFF = "supports_plaintiff"
     SUPPORTS_DEFENDANT = "supports_defendant"
     NEUTRAL = "neutral"  # Procedural ruling, doesn't favor either side
-    MIXED = "mixed"      # Different holdings favor different parties
+    MIXED = "mixed"  # Different holdings favor different parties
 
 
 class CaseLawEntry(BaseModel):
@@ -256,9 +256,7 @@ class CaseLawCrawler:
                         continue
 
                     if response.status_code != 200:
-                        logger.error(
-                            "CourtListener API error: %d", response.status_code
-                        )
+                        logger.error("CourtListener API error: %d", response.status_code)
                         await asyncio.sleep(10)
                         continue
 
@@ -341,7 +339,9 @@ class CaseLawCrawler:
             name=case_name,
             plaintiff=plaintiff,
             defendant=defendant,
-            court=opinion.get("court", {}).get("full_name", "") if isinstance(opinion.get("court"), dict) else str(opinion.get("court", "")),
+            court=opinion.get("court", {}).get("full_name", "")
+            if isinstance(opinion.get("court"), dict)
+            else str(opinion.get("court", "")),
             date_decided=opinion.get("date_created", "")[:10],
             year=int(opinion.get("date_created", "0000")[:4]) if opinion.get("date_created") else 0,
             jurisdiction=self._infer_jurisdiction(opinion),
@@ -358,22 +358,79 @@ class CaseLawCrawler:
         court_id = court.get("id", "") if isinstance(court, dict) else str(court)
 
         # Federal courts
-        if any(x in court_id for x in ["scotus", "ca1", "ca2", "ca3", "ca4", "ca5",
-                                         "ca6", "ca7", "ca8", "ca9", "ca10", "ca11", "cadc", "cafc"]):
+        if any(
+            x in court_id
+            for x in [
+                "scotus",
+                "ca1",
+                "ca2",
+                "ca3",
+                "ca4",
+                "ca5",
+                "ca6",
+                "ca7",
+                "ca8",
+                "ca9",
+                "ca10",
+                "ca11",
+                "cadc",
+                "cafc",
+            ]
+        ):
             return "FED"
 
         # State courts — map court ID to state code
         state_map = {
-            "fla": "FL", "cal": "CA", "tex": "TX", "la": "LA", "ny": "NY",
-            "ill": "IL", "ga": "GA", "ohio": "OH", "pa": "PA", "va": "VA",
-            "nj": "NJ", "nc": "NC", "mi": "MI", "ma": "MA", "wa": "WA",
-            "az": "AZ", "co": "CO", "mn": "MN", "wi": "WI", "mo": "MO",
-            "md": "MD", "in": "IN", "tn": "TN", "sc": "SC", "al": "AL",
-            "or": "OR", "ky": "KY", "ct": "CT", "ok": "OK", "ia": "IA",
-            "ms": "MS", "ar": "AR", "ks": "KS", "nv": "NV", "ut": "UT",
-            "ne": "NE", "nm": "NM", "wv": "WV", "id": "ID", "hi": "HI",
-            "me": "ME", "nh": "NH", "ri": "RI", "mt": "MT", "de": "DE",
-            "sd": "SD", "nd": "ND", "ak": "AK", "vt": "VT", "wy": "WY",
+            "fla": "FL",
+            "cal": "CA",
+            "tex": "TX",
+            "la": "LA",
+            "ny": "NY",
+            "ill": "IL",
+            "ga": "GA",
+            "ohio": "OH",
+            "pa": "PA",
+            "va": "VA",
+            "nj": "NJ",
+            "nc": "NC",
+            "mi": "MI",
+            "ma": "MA",
+            "wa": "WA",
+            "az": "AZ",
+            "co": "CO",
+            "mn": "MN",
+            "wi": "WI",
+            "mo": "MO",
+            "md": "MD",
+            "in": "IN",
+            "tn": "TN",
+            "sc": "SC",
+            "al": "AL",
+            "or": "OR",
+            "ky": "KY",
+            "ct": "CT",
+            "ok": "OK",
+            "ia": "IA",
+            "ms": "MS",
+            "ar": "AR",
+            "ks": "KS",
+            "nv": "NV",
+            "ut": "UT",
+            "ne": "NE",
+            "nm": "NM",
+            "wv": "WV",
+            "id": "ID",
+            "hi": "HI",
+            "me": "ME",
+            "nh": "NH",
+            "ri": "RI",
+            "mt": "MT",
+            "de": "DE",
+            "sd": "SD",
+            "nd": "ND",
+            "ak": "AK",
+            "vt": "VT",
+            "wy": "WY",
             "dc": "DC",
         }
 

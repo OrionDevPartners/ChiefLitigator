@@ -93,7 +93,6 @@ async def _send_via_ses(
     """
     try:
         import boto3
-        from botocore.exceptions import ClientError
 
         client = boto3.client("ses", region_name=region)
         client.send_email(

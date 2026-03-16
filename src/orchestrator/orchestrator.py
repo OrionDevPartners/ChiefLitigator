@@ -24,15 +24,15 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
-from src.agents.base_agent import AgentRole, AgentResponse, WDCScore
-from src.agents.lead_counsel import LeadCounsel
-from src.agents.research_counsel import ResearchCounsel
-from src.agents.drafting_counsel import DraftingCounsel
-from src.agents.red_team import AdversarialCounsel
+from src.agents.base_agent import AgentResponse, AgentRole
 from src.agents.compliance_counsel import ComplianceCounsel
-from src.errors import AgentError, LLMProviderError
-from src.orchestrator.wdc import WDCEngine, WDCResult, WDCVerdict
+from src.agents.drafting_counsel import DraftingCounsel
+from src.agents.lead_counsel import LeadCounsel
+from src.agents.red_team import AdversarialCounsel
+from src.agents.research_counsel import ResearchCounsel
 from src.config.settings import get_settings
+from src.errors import LLMProviderError
+from src.orchestrator.wdc import WDCEngine, WDCResult, WDCVerdict
 
 logger = logging.getLogger("cyphergy.orchestrator")
 
@@ -44,12 +44,8 @@ class OrchestrationRequest(BaseModel):
     """Input to the orchestrator from the API layer."""
 
     message: str = Field(description="User's message or query")
-    jurisdiction: Optional[str] = Field(
-        default=None, description="Legal jurisdiction if known"
-    )
-    case_context: Optional[dict[str, Any]] = Field(
-        default=None, description="Existing case data from the blackboard"
-    )
+    jurisdiction: Optional[str] = Field(default=None, description="Legal jurisdiction if known")
+    case_context: Optional[dict[str, Any]] = Field(default=None, description="Existing case data from the blackboard")
 
 
 class OrchestrationResult(BaseModel):
@@ -76,9 +72,7 @@ class OrchestrationResult(BaseModel):
             "continued with the remaining agents."
         ),
     )
-    revision_cycles: int = Field(
-        default=1, description="How many draft-review cycles occurred"
-    )
+    revision_cycles: int = Field(default=1, description="How many draft-review cycles occurred")
     total_time_ms: float = Field(description="Total processing time in milliseconds")
     task_type: str = Field(description="Classified task type from Lead Counsel")
 
@@ -100,6 +94,7 @@ class Orchestrator:
 
         # Initialize model router (CPAA: models from env, not hardcoded)
         from src.providers.model_router import ModelRouter
+
         self._model_router = ModelRouter()
 
         # Initialize all 5 agents
@@ -153,7 +148,8 @@ class Orchestrator:
         degraded_agents: list[str] = []
 
         # Step 0: LLM Guardrails — check for jailbreak before any agent sees the input
-        from src.security.llm_guardrails import enforce_guardrails, check_input
+        from src.security.llm_guardrails import check_input
+
         is_safe, deflection = check_input(request.message)
         if not is_safe:
             elapsed_ms = (time.monotonic() - start) * 1000
@@ -176,13 +172,9 @@ class Orchestrator:
         agents_needed = [r.value for r in AgentRole]
 
         try:
-            classification = await self._lead.classify_task(
-                request.message, context
-            )
+            classification = await self._lead.classify_task(request.message, context)
             task_type = classification.get("task_type", "general")
-            agents_needed = classification.get(
-                "agents_needed", [r.value for r in AgentRole]
-            )
+            agents_needed = classification.get("agents_needed", [r.value for r in AgentRole])
         except Exception as exc:
             logger.error(
                 "classification_failed | role=lead_counsel error_type=%s error=%s | falling back to all agents",
@@ -201,24 +193,18 @@ class Orchestrator:
         # Step 2-3: Fan-out to relevant agents and collect responses.
         # Individual agent failures are handled inside _fan_out and
         # recorded in the returned dict (with agent_error flag).
-        agent_responses, fan_out_failures = await self._fan_out(
-            request.message, context, agents_needed
-        )
+        agent_responses, fan_out_failures = await self._fan_out(request.message, context, agents_needed)
         degraded_agents.extend(fan_out_failures)
 
         # If ALL agents failed, we cannot produce useful output.
         if not agent_responses:
-            raise LLMProviderError(
-                "All agents failed during fan-out — cannot produce a response"
-            )
+            raise LLMProviderError("All agents failed during fan-out — cannot produce a response")
 
         # Step 4: Aggregate into a single response.
         # This is the critical step — if Lead Counsel cannot aggregate,
         # the request cannot succeed.
         try:
-            aggregation_prompt = self._build_aggregation_prompt(
-                request.message, agent_responses, degraded_agents
-            )
+            aggregation_prompt = self._build_aggregation_prompt(request.message, agent_responses, degraded_agents)
             aggregated = await self._lead.invoke(aggregation_prompt, context)
             draft_content = aggregated.content
         except Exception as exc:
@@ -227,9 +213,7 @@ class Orchestrator:
                 type(exc).__name__,
                 str(exc)[:200],
             )
-            raise LLMProviderError(
-                "Lead Counsel aggregation failed — cannot produce a response"
-            ) from exc
+            raise LLMProviderError("Lead Counsel aggregation failed — cannot produce a response") from exc
 
         # Step 5: WDC debate cycle (with revisions if needed).
         # If WDC debate fails, deliver the un-certified draft and log the failure.
@@ -237,14 +221,9 @@ class Orchestrator:
         wdc_result: Optional[WDCResult] = None
 
         try:
-            wdc_result = await self._wdc.run_debate(
-                draft_content, self._agents, context
-            )
+            wdc_result = await self._wdc.run_debate(draft_content, self._agents, context)
 
-            while (
-                wdc_result.verdict == WDCVerdict.REVISION_REQUIRED
-                and cycle < self._max_cycles
-            ):
+            while wdc_result.verdict == WDCVerdict.REVISION_REQUIRED and cycle < self._max_cycles:
                 cycle += 1
                 logger.info(
                     "Revision cycle %d: score=%.2f feedback=%s",
@@ -256,9 +235,7 @@ class Orchestrator:
                 # Re-draft with feedback.  If drafting fails during a
                 # revision cycle, break out and deliver the previous draft.
                 try:
-                    revision_prompt = self._build_revision_prompt(
-                        draft_content, wdc_result.revision_feedback or []
-                    )
+                    revision_prompt = self._build_revision_prompt(draft_content, wdc_result.revision_feedback or [])
                     revised = await self._drafting.invoke(revision_prompt, context)
                     draft_content = revised.content
                 except Exception as rev_exc:
@@ -273,9 +250,7 @@ class Orchestrator:
 
                 # Re-score
                 try:
-                    wdc_result = await self._wdc.run_debate(
-                        draft_content, self._agents, context
-                    )
+                    wdc_result = await self._wdc.run_debate(draft_content, self._agents, context)
                 except Exception as wdc_exc:
                     logger.error(
                         "wdc_rescore_failed | cycle=%d error_type=%s error=%s",
@@ -298,15 +273,14 @@ class Orchestrator:
 
         # Step 6: LLM Guardrails — scrub output before it reaches the user
         from src.security.llm_guardrails import scrub_output
+
         draft_content = scrub_output(draft_content)
 
         # Build the result. If WDC failed, deliver with a None-safe fallback.
         result = OrchestrationResult(
             content=draft_content,
             wdc_result=wdc_result,  # type: ignore[arg-type]
-            agent_contributions={
-                role: resp.content[:200] for role, resp in agent_responses.items()
-            },
+            agent_contributions={role: resp.content[:200] for role, resp in agent_responses.items()},
             degraded_agents=degraded_agents,
             revision_cycles=cycle,
             total_time_ms=round(elapsed_ms, 1),
@@ -380,9 +354,7 @@ class Orchestrator:
 
         # Run all agents in parallel — return_exceptions=True so one
         # failure does not cancel the others.
-        results = await asyncio.gather(
-            *tasks.values(), return_exceptions=True
-        )
+        results = await asyncio.gather(*tasks.values(), return_exceptions=True)
 
         responses: dict[str, AgentResponse] = {}
         failed_roles: list[str] = []
@@ -436,19 +408,14 @@ class Orchestrator:
         # Inform Lead Counsel about degraded agents so it can
         # adjust confidence and flag coverage gaps.
         if degraded_agents:
-            parts.append(
-                "DEGRADED AGENTS (these agents were unavailable for this request):"
-            )
+            parts.append("DEGRADED AGENTS (these agents were unavailable for this request):")
             for role in degraded_agents:
                 parts.append(f"  - {role}")
             parts.append(
-                "Note: Adjust your confidence downward and flag any coverage "
-                "gaps caused by the missing agents.\n"
+                "Note: Adjust your confidence downward and flag any coverage gaps caused by the missing agents.\n"
             )
 
-        parts.append(
-            "AGENT RESPONSES (synthesize into a unified, certified response):"
-        )
+        parts.append("AGENT RESPONSES (synthesize into a unified, certified response):")
         for role, resp in agent_responses.items():
             parts.append(f"\n--- {role.upper()} (confidence: {resp.confidence}) ---")
             parts.append(resp.content)
@@ -475,6 +442,6 @@ class Orchestrator:
             f"REVISE THIS DRAFT based on WDC feedback:\n\n"
             f"DRAFT:\n{draft}\n\n"
             f"FEEDBACK:\n" + "\n".join(f"- {f}" for f in feedback) + "\n\n"
-            f"Produce an improved version addressing all feedback points. "
-            f"Maintain all verified citations. Fix any flagged issues."
+            "Produce an improved version addressing all feedback points. "
+            "Maintain all verified citations. Fix any flagged issues."
         )

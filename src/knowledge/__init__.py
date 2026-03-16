@@ -14,22 +14,22 @@ user uploads, WDC debates), they are automatically cataloged and
 indexed. The catalog grows with every interaction.
 """
 
+from src.knowledge.argument_graph import (
+    ArgumentChain,
+    ArgumentGraph,
+    CaseRelationship,
+    GraphEdge,
+)
 from src.knowledge.case_catalog import CaseCatalog, CatalogEntry
-from src.knowledge.statute_index import StatuteIndex, StatuteEntry
 from src.knowledge.crawler import CaseLawCrawler, CaseLawEntry, CrawlState
 from src.knowledge.holding_extractor import (
-    HoldingExtractor,
     ExtractedHolding,
     ExtractionResult,
+    HoldingExtractor,
     HoldingType,
     extract_and_catalog,
 )
-from src.knowledge.argument_graph import (
-    ArgumentGraph,
-    ArgumentChain,
-    GraphEdge,
-    CaseRelationship,
-)
+from src.knowledge.statute_index import StatuteEntry, StatuteIndex
 
 __all__ = [
     "CaseCatalog",

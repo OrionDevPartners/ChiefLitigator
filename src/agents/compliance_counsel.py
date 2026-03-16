@@ -148,10 +148,7 @@ class ComplianceCounsel(BaseAgent):
             messages.append(
                 {
                     "role": "user",
-                    "content": (
-                        "Compliance review context:\n"
-                        + json.dumps(context, default=str)
-                    ),
+                    "content": ("Compliance review context:\n" + json.dumps(context, default=str)),
                 }
             )
         messages.append({"role": "user", "content": prompt})
@@ -184,9 +181,7 @@ class ComplianceCounsel(BaseAgent):
             'JSON object with key "score" and a float value.\n\n'
             f"Review:\n{response.get('content', '')}"
         )
-        raw = await self._call_model(
-            [{"role": "user", "content": scoring_prompt}]
-        )
+        raw = await self._call_model([{"role": "user", "content": scoring_prompt}])
         try:
             return float(json.loads(raw)["score"])
         except (json.JSONDecodeError, KeyError, ValueError):
@@ -231,13 +226,9 @@ class ComplianceCounsel(BaseAgent):
             f"Document/Strategy:\n{document_or_strategy}"
         )
         if context:
-            veto_prompt += (
-                f"\nContext: {json.dumps(context, default=str)}"
-            )
+            veto_prompt += f"\nContext: {json.dumps(context, default=str)}"
 
-        raw = await self._call_model(
-            [{"role": "user", "content": veto_prompt}]
-        )
+        raw = await self._call_model([{"role": "user", "content": veto_prompt}])
         try:
             parsed = json.loads(raw)
             return {
@@ -247,8 +238,7 @@ class ComplianceCounsel(BaseAgent):
             }
         except json.JSONDecodeError:
             has_veto_signal = any(
-                keyword in raw.lower()
-                for keyword in ["veto", "defect", "violation", "non-compliant"]
+                keyword in raw.lower() for keyword in ["veto", "defect", "violation", "non-compliant"]
             )
             return {
                 "veto": has_veto_signal,
@@ -256,13 +246,9 @@ class ComplianceCounsel(BaseAgent):
                     {
                         "rule": "parse_error",
                         "description": (
-                            "Could not parse structured compliance "
-                            "review; raw output flagged for manual review."
+                            "Could not parse structured compliance review; raw output flagged for manual review."
                         ),
-                        "corrective_action": (
-                            "Re-run compliance review or perform manual "
-                            "procedural check."
-                        ),
+                        "corrective_action": ("Re-run compliance review or perform manual procedural check."),
                     }
                 ]
                 if has_veto_signal

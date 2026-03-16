@@ -69,6 +69,7 @@ def _build_engine_kwargs() -> dict:
 # Engine + Session factory
 # ---------------------------------------------------------------------------
 
+
 def _get_engine():
     """Lazy engine creation — only build when DATABASE_URL is set."""
     url = _DATABASE_URL

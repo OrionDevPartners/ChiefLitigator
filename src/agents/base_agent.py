@@ -19,7 +19,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
 
-from src.providers.llm_provider import LLMProvider, LLMProviderResponse, get_provider
+from src.providers.llm_provider import LLMProvider, get_provider
 
 logger = logging.getLogger(__name__)
 
@@ -78,10 +78,7 @@ class AgentResponse(BaseModel):
     def __str__(self) -> str:
         flag_str = f" | flags: {self.flags}" if self.flags else ""
         cite_str = f" | citations: {len(self.citations_used)}" if self.citations_used else ""
-        return (
-            f"[{self.role.value}] (confidence={self.confidence:.2f}{flag_str}{cite_str})\n"
-            f"{self.content}"
-        )
+        return f"[{self.role.value}] (confidence={self.confidence:.2f}{flag_str}{cite_str})\n{self.content}"
 
 
 class WDCScore(BaseModel):
@@ -303,15 +300,14 @@ class BaseAgent:
         """
         resolved_system = system
         if resolved_system is None:
-            if hasattr(self, "system_prompt") and isinstance(
-                getattr(type(self), "system_prompt", None), property
-            ):
+            if hasattr(self, "system_prompt") and isinstance(getattr(type(self), "system_prompt", None), property):
                 resolved_system = self.system_prompt  # type: ignore[attr-defined]
             else:
                 resolved_system = self.config.system_prompt
 
         # Inject LLM guardrails into EVERY agent's system prompt
         from src.security.llm_guardrails import GUARDRAIL_SYSTEM_PROMPT
+
         resolved_system = GUARDRAIL_SYSTEM_PROMPT + "\n\n" + resolved_system
 
         response = await self._provider.create_message(
@@ -347,9 +343,7 @@ class BaseAgent:
 
         if context:
             ctx_lines = [f"- {k}: {v}" for k, v in context.items()]
-            content_parts.append(
-                "CASE CONTEXT (from shared blackboard):\n" + "\n".join(ctx_lines)
-            )
+            content_parts.append("CASE CONTEXT (from shared blackboard):\n" + "\n".join(ctx_lines))
 
         content_parts.append(user_message)
 

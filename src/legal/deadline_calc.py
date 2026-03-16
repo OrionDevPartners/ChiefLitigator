@@ -106,16 +106,16 @@ def federal_holidays_for_year(year: int) -> list[date]:
     returned so that the calculator never schedules a deadline on either.
     """
     raw: list[date] = [
-        date(year, 1, 1),                                  # New Year's Day
-        _nth_weekday_of_month(year, 1, 0, 3),              # MLK Day (3rd Mon Jan)
-        _nth_weekday_of_month(year, 2, 0, 3),              # Presidents' Day (3rd Mon Feb)
-        _last_weekday_of_month(year, 5, 0),                # Memorial Day (last Mon May)
-        date(year, 7, 4),                                  # Independence Day
-        _nth_weekday_of_month(year, 9, 0, 1),              # Labor Day (1st Mon Sep)
-        _nth_weekday_of_month(year, 10, 0, 2),             # Columbus Day (2nd Mon Oct)
-        date(year, 11, 11),                                # Veterans Day
-        _nth_weekday_of_month(year, 11, 3, 4),             # Thanksgiving (4th Thu Nov)
-        date(year, 12, 25),                                # Christmas Day
+        date(year, 1, 1),  # New Year's Day
+        _nth_weekday_of_month(year, 1, 0, 3),  # MLK Day (3rd Mon Jan)
+        _nth_weekday_of_month(year, 2, 0, 3),  # Presidents' Day (3rd Mon Feb)
+        _last_weekday_of_month(year, 5, 0),  # Memorial Day (last Mon May)
+        date(year, 7, 4),  # Independence Day
+        _nth_weekday_of_month(year, 9, 0, 1),  # Labor Day (1st Mon Sep)
+        _nth_weekday_of_month(year, 10, 0, 2),  # Columbus Day (2nd Mon Oct)
+        date(year, 11, 11),  # Veterans Day
+        _nth_weekday_of_month(year, 11, 3, 4),  # Thanksgiving (4th Thu Nov)
+        date(year, 12, 25),  # Christmas Day
     ]
 
     holidays: set[date] = set()
@@ -222,39 +222,37 @@ _DEADLINE_RULES: dict[tuple[Jurisdiction, DeadlineType], _RuleEntry] = {
 # (extra_days, adjustment_note)
 _SERVICE_EXTENSIONS: dict[tuple[Jurisdiction, ServiceMethod], tuple[int, str | None]] = {
     # --- Federal (FRCP Rule 6(d)) ---
-    (Jurisdiction.FEDERAL, ServiceMethod.PERSONAL):       (0, None),
-    (Jurisdiction.FEDERAL, ServiceMethod.ELECTRONIC):     (0, None),
-    (Jurisdiction.FEDERAL, ServiceMethod.MAIL):           (3, "+3 days for service by mail (FRCP Rule 6(d))"),
+    (Jurisdiction.FEDERAL, ServiceMethod.PERSONAL): (0, None),
+    (Jurisdiction.FEDERAL, ServiceMethod.ELECTRONIC): (0, None),
+    (Jurisdiction.FEDERAL, ServiceMethod.MAIL): (3, "+3 days for service by mail (FRCP Rule 6(d))"),
     (Jurisdiction.FEDERAL, ServiceMethod.CERTIFIED_MAIL): (3, "+3 days for service by mail (FRCP Rule 6(d))"),
-
     # --- Louisiana (La. C.C.P. art. 1313) ---
-    (Jurisdiction.LOUISIANA, ServiceMethod.PERSONAL):       (0, None),
-    (Jurisdiction.LOUISIANA, ServiceMethod.ELECTRONIC):     (0, None),
-    (Jurisdiction.LOUISIANA, ServiceMethod.MAIL):           (5, "+5 days for service by mail (La. C.C.P. art. 1313)"),
+    (Jurisdiction.LOUISIANA, ServiceMethod.PERSONAL): (0, None),
+    (Jurisdiction.LOUISIANA, ServiceMethod.ELECTRONIC): (0, None),
+    (Jurisdiction.LOUISIANA, ServiceMethod.MAIL): (5, "+5 days for service by mail (La. C.C.P. art. 1313)"),
     (Jurisdiction.LOUISIANA, ServiceMethod.CERTIFIED_MAIL): (5, "+5 days for service by mail (La. C.C.P. art. 1313)"),
-
     # --- California (Cal. C.C.P. SS 1013) ---
-    (Jurisdiction.CALIFORNIA, ServiceMethod.PERSONAL):       (0, None),
-    (Jurisdiction.CALIFORNIA, ServiceMethod.ELECTRONIC):     (2, "+2 days for electronic service (Cal. C.C.P. SS 1010.6)"),
-    (Jurisdiction.CALIFORNIA, ServiceMethod.MAIL):           (5, "+5 days for service by mail (Cal. C.C.P. SS 1013(a))"),
-    (Jurisdiction.CALIFORNIA, ServiceMethod.CERTIFIED_MAIL): (5, "+5 days for service by mail (Cal. C.C.P. SS 1013(a))"),
-
+    (Jurisdiction.CALIFORNIA, ServiceMethod.PERSONAL): (0, None),
+    (Jurisdiction.CALIFORNIA, ServiceMethod.ELECTRONIC): (2, "+2 days for electronic service (Cal. C.C.P. SS 1010.6)"),
+    (Jurisdiction.CALIFORNIA, ServiceMethod.MAIL): (5, "+5 days for service by mail (Cal. C.C.P. SS 1013(a))"),
+    (Jurisdiction.CALIFORNIA, ServiceMethod.CERTIFIED_MAIL): (
+        5,
+        "+5 days for service by mail (Cal. C.C.P. SS 1013(a))",
+    ),
     # --- Texas (Tex. R. Civ. P. 21a) ---
-    (Jurisdiction.TEXAS, ServiceMethod.PERSONAL):       (0, None),
-    (Jurisdiction.TEXAS, ServiceMethod.ELECTRONIC):     (0, None),
-    (Jurisdiction.TEXAS, ServiceMethod.MAIL):           (3, "+3 days for service by mail (Tex. R. Civ. P. 21a)"),
+    (Jurisdiction.TEXAS, ServiceMethod.PERSONAL): (0, None),
+    (Jurisdiction.TEXAS, ServiceMethod.ELECTRONIC): (0, None),
+    (Jurisdiction.TEXAS, ServiceMethod.MAIL): (3, "+3 days for service by mail (Tex. R. Civ. P. 21a)"),
     (Jurisdiction.TEXAS, ServiceMethod.CERTIFIED_MAIL): (3, "+3 days for service by mail (Tex. R. Civ. P. 21a)"),
-
     # --- New York (N.Y. CPLR SS 2103(b)(2)) ---
-    (Jurisdiction.NEW_YORK, ServiceMethod.PERSONAL):       (0, None),
-    (Jurisdiction.NEW_YORK, ServiceMethod.ELECTRONIC):     (0, None),
-    (Jurisdiction.NEW_YORK, ServiceMethod.MAIL):           (5, "+5 days for service by mail (N.Y. CPLR SS 2103(b)(2))"),
+    (Jurisdiction.NEW_YORK, ServiceMethod.PERSONAL): (0, None),
+    (Jurisdiction.NEW_YORK, ServiceMethod.ELECTRONIC): (0, None),
+    (Jurisdiction.NEW_YORK, ServiceMethod.MAIL): (5, "+5 days for service by mail (N.Y. CPLR SS 2103(b)(2))"),
     (Jurisdiction.NEW_YORK, ServiceMethod.CERTIFIED_MAIL): (5, "+5 days for service by mail (N.Y. CPLR SS 2103(b)(2))"),
-
     # --- Florida (Fla. R. Civ. P. 1.090(e)) ---
-    (Jurisdiction.FLORIDA, ServiceMethod.PERSONAL):       (0, None),
-    (Jurisdiction.FLORIDA, ServiceMethod.ELECTRONIC):     (0, None),
-    (Jurisdiction.FLORIDA, ServiceMethod.MAIL):           (5, "+5 days for service by mail (Fla. R. Civ. P. 1.090(e))"),
+    (Jurisdiction.FLORIDA, ServiceMethod.PERSONAL): (0, None),
+    (Jurisdiction.FLORIDA, ServiceMethod.ELECTRONIC): (0, None),
+    (Jurisdiction.FLORIDA, ServiceMethod.MAIL): (5, "+5 days for service by mail (Fla. R. Civ. P. 1.090(e))"),
     (Jurisdiction.FLORIDA, ServiceMethod.CERTIFIED_MAIL): (5, "+5 days for service by mail (Fla. R. Civ. P. 1.090(e))"),
 }
 
@@ -326,14 +324,10 @@ class DeadlineCalculator:
             Fully populated, auditable result.
         """
         # Step 1: base days + rule citation
-        base_days, rule_citation, conservative, warning = self._get_base_days(
-            deadline_type, jurisdiction
-        )
+        base_days, rule_citation, conservative, warning = self._get_base_days(deadline_type, jurisdiction)
 
         # Step 2: service-method extension
-        total_days, service_adjustments = self._add_service_extension(
-            base_days, service_method, jurisdiction
-        )
+        total_days, service_adjustments = self._add_service_extension(base_days, service_method, jurisdiction)
 
         adjustments: list[str] = []
         if service_adjustments:
@@ -343,16 +337,11 @@ class DeadlineCalculator:
         raw_target = event_date + timedelta(days=total_days)
 
         # Step 4: weekend / holiday adjustment
-        adjusted_date, cal_adjustments = self._adjust_for_weekends_holidays(
-            raw_target, jurisdiction
-        )
+        adjusted_date, cal_adjustments = self._adjust_for_weekends_holidays(raw_target, jurisdiction)
         adjustments.extend(cal_adjustments)
 
         # Step 5: Texas "next Monday" rule for answers
-        if (
-            jurisdiction == Jurisdiction.TEXAS
-            and deadline_type == DeadlineType.ANSWER
-        ):
+        if jurisdiction == Jurisdiction.TEXAS and deadline_type == DeadlineType.ANSWER:
             if adjusted_date.weekday() != 0:  # not already Monday
                 # Move to next Monday
                 days_until_monday = (7 - adjusted_date.weekday()) % 7
@@ -360,12 +349,8 @@ class DeadlineCalculator:
                     days_until_monday = 7
                 monday_date = adjusted_date + timedelta(days=days_until_monday)
                 # Ensure that Monday is itself a business day
-                monday_date, monday_adj = self._adjust_for_weekends_holidays(
-                    monday_date, jurisdiction
-                )
-                adjustments.append(
-                    f"Texas Monday rule: moved from {adjusted_date} to {monday_date}"
-                )
+                monday_date, monday_adj = self._adjust_for_weekends_holidays(monday_date, jurisdiction)
+                adjustments.append(f"Texas Monday rule: moved from {adjusted_date} to {monday_date}")
                 adjustments.extend(monday_adj)
                 adjusted_date = monday_date
 
@@ -405,9 +390,7 @@ class DeadlineCalculator:
                     f"No specific rule found for {jurisdiction.value} "
                     f"{deadline_type.value}. Using federal default — verify.",
                 )
-            raise ValueError(
-                f"No deadline rule for {jurisdiction.value} / {deadline_type.value}"
-            )
+            raise ValueError(f"No deadline rule for {jurisdiction.value} / {deadline_type.value}")
         return _DEADLINE_RULES[key]
 
     def _add_service_extension(
@@ -429,9 +412,7 @@ class DeadlineCalculator:
         # jurisdiction + method combo, add 0 (earlier deadline).
         return base_days, None
 
-    def _adjust_for_weekends_holidays(
-        self, target_date: date, jurisdiction: Jurisdiction
-    ) -> tuple[date, list[str]]:
+    def _adjust_for_weekends_holidays(self, target_date: date, jurisdiction: Jurisdiction) -> tuple[date, list[str]]:
         """Roll forward past weekends and federal holidays.
 
         Implements FRCP 6(a)(1)(C) and equivalent state rules: if the
@@ -445,19 +426,12 @@ class DeadlineCalculator:
 
         while not self._is_business_day(current, jurisdiction):
             if current.weekday() == 5:
-                adjustments.append(
-                    f"Deadline {current.isoformat()} falls on Saturday; "
-                    f"extended to next business day"
-                )
+                adjustments.append(f"Deadline {current.isoformat()} falls on Saturday; extended to next business day")
             elif current.weekday() == 6:
-                adjustments.append(
-                    f"Deadline {current.isoformat()} falls on Sunday; "
-                    f"extended to next business day"
-                )
+                adjustments.append(f"Deadline {current.isoformat()} falls on Sunday; extended to next business day")
             else:
                 adjustments.append(
-                    f"Deadline {current.isoformat()} falls on a court holiday; "
-                    f"extended to next business day"
+                    f"Deadline {current.isoformat()} falls on a court holiday; extended to next business day"
                 )
             current = current + timedelta(days=1)
 

@@ -42,15 +42,13 @@ async def test_lead_counsel_invoke_returns_content() -> None:
 
     lead = LeadCounsel()
     response = await lead.invoke(
-        "I was served with a civil lawsuit in federal court in Louisiana. "
-        "What are my deadlines to respond?"
+        "I was served with a civil lawsuit in federal court in Louisiana. What are my deadlines to respond?"
     )
 
     # Response must have substantive content
     assert response.content, "LeadCounsel returned empty content"
     assert len(response.content) > 50, (
-        f"Response too short ({len(response.content)} chars) — "
-        "expected substantive legal guidance"
+        f"Response too short ({len(response.content)} chars) — expected substantive legal guidance"
     )
 
     # Confidence must be populated (the prompt asks about deadlines)
@@ -141,9 +139,7 @@ async def test_deadline_calculator_full_path() -> None:
     )
 
     # Federal answer = 21 days base (FRCP 12(a)(1)(A)(i))
-    assert result.days_allowed == 21, (
-        f"Expected 21 days for federal answer, got {result.days_allowed}"
-    )
+    assert result.days_allowed == 21, f"Expected 21 days for federal answer, got {result.days_allowed}"
 
     # Mail service adds 3 days (FRCP 6(d))
     assert any("mail" in adj.lower() for adj in result.adjustments), (

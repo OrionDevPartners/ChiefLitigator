@@ -131,10 +131,7 @@ class ResearchCounsel(BaseAgent):
             messages.append(
                 {
                     "role": "user",
-                    "content": (
-                        "Research context:\n"
-                        + json.dumps(context, default=str)
-                    ),
+                    "content": ("Research context:\n" + json.dumps(context, default=str)),
                 }
             )
         messages.append({"role": "user", "content": prompt})
@@ -161,9 +158,7 @@ class ResearchCounsel(BaseAgent):
             "role": self.config.role.value,
             "citations": verified_citations,
             "citation_count": len(citations),
-            "verified_count": sum(
-                1 for r in verification_results if r.valid
-            ),
+            "verified_count": sum(1 for r in verification_results if r.valid),
         }
 
     async def score(self, response: dict[str, Any]) -> float:
@@ -189,9 +184,7 @@ class ResearchCounsel(BaseAgent):
             'a single key "score" and a float value.\n\n'
             f"Memo:\n{response.get('content', '')}"
         )
-        raw = await self._call_model(
-            [{"role": "user", "content": scoring_prompt}]
-        )
+        raw = await self._call_model([{"role": "user", "content": scoring_prompt}])
         try:
             thoroughness = float(json.loads(raw)["score"])
         except (json.JSONDecodeError, KeyError, ValueError):
@@ -199,9 +192,7 @@ class ResearchCounsel(BaseAgent):
 
         return 0.6 * verification_ratio + 0.4 * thoroughness
 
-    async def verify_citations(
-        self, text: str
-    ) -> list[dict[str, Any]]:
+    async def verify_citations(self, text: str) -> list[dict[str, Any]]:
         """Extract and verify all citations found in *text*.
 
         This is the primary domain-specific capability of Research

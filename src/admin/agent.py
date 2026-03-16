@@ -29,7 +29,7 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.admin.audit import AdminAuditLog, BetaUser, log_admin_action
+from src.admin.audit import log_admin_action
 from src.beta.models import BetaInvite
 from src.database.models import Case, Message, User
 from src.providers.llm_provider import LLMProvider, get_provider
@@ -139,9 +139,7 @@ async def _handle_system_stats(db: AsyncSession) -> dict[str, Any]:
         user_count = await db.execute(select(func.count(User.id)))
         stats["total_users"] = user_count.scalar_one()
 
-        active_users = await db.execute(
-            select(func.count(User.id)).where(User.is_active.is_(True))
-        )
+        active_users = await db.execute(select(func.count(User.id)).where(User.is_active.is_(True)))
         stats["active_users"] = active_users.scalar_one()
 
         case_count = await db.execute(select(func.count(Case.id)))
@@ -153,9 +151,7 @@ async def _handle_system_stats(db: AsyncSession) -> dict[str, Any]:
         beta_count = await db.execute(select(func.count(BetaInvite.id)))
         stats["total_beta_invites"] = beta_count.scalar_one()
 
-        active_beta = await db.execute(
-            select(func.count(BetaInvite.id)).where(BetaInvite.status == "active")
-        )
+        active_beta = await db.execute(select(func.count(BetaInvite.id)).where(BetaInvite.status == "active"))
         stats["active_beta_users"] = active_beta.scalar_one()
 
     except Exception as exc:
@@ -188,6 +184,7 @@ async def _handle_health_check() -> dict[str, Any]:
     bucket_name = os.getenv("S3_DOCUMENTS_BUCKET", "cyphergy-documents")
     try:
         import boto3
+
         s3 = boto3.client("s3", region_name=os.getenv("AWS_DEFAULT_REGION", "us-east-1"))
         await asyncio.to_thread(s3.head_bucket, Bucket=bucket_name)
         health["s3"] = {"status": "accessible", "bucket": bucket_name}
@@ -200,10 +197,9 @@ async def _handle_health_check() -> dict[str, Any]:
     cluster_name = os.getenv("ECS_CLUSTER_NAME", "cyphergy")
     try:
         import boto3
+
         ecs = boto3.client("ecs", region_name=os.getenv("AWS_DEFAULT_REGION", "us-east-1"))
-        response = await asyncio.to_thread(
-            ecs.describe_clusters, clusters=[cluster_name]
-        )
+        response = await asyncio.to_thread(ecs.describe_clusters, clusters=[cluster_name])
         clusters = response.get("clusters", [])
         if clusters:
             health["ecs"] = {
@@ -238,8 +234,7 @@ async def _handle_deploy_info() -> dict[str, Any]:
         "service": service,
         "region": region,
         "command": (
-            f"aws ecs update-service --cluster {cluster} --service {service} "
-            f"--force-new-deployment --region {region}"
+            f"aws ecs update-service --cluster {cluster} --service {service} --force-new-deployment --region {region}"
         ),
         "warning": "This will trigger a rolling restart of all running tasks.",
     }

@@ -7,17 +7,15 @@ Each test gets a fresh database with all tables created.
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime
+from datetime import date
 
 import pytest
 import pytest_asyncio
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from src.database.engine import Base
-from src.database.models import Case, Deadline, Message, User
 from src.database import crud
-
+from src.database.engine import Base
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -211,9 +209,7 @@ class TestCaseCRUD:
         )
         await db_session.commit()
 
-        case = await crud.create_case(
-            db_session, user_id=user.id, name="Specific Case"
-        )
+        case = await crud.create_case(db_session, user_id=user.id, name="Specific Case")
         await db_session.commit()
 
         found = await crud.get_case_by_id(db_session, case_id=case.id)
@@ -241,9 +237,7 @@ class TestMessageCRUD:
         )
         await db_session.commit()
 
-        case = await crud.create_case(
-            db_session, user_id=user.id, name="Message Case"
-        )
+        case = await crud.create_case(db_session, user_id=user.id, name="Message Case")
         await db_session.commit()
 
         msg = await crud.create_message(
@@ -272,9 +266,7 @@ class TestMessageCRUD:
         )
         await db_session.commit()
 
-        case = await crud.create_case(
-            db_session, user_id=user.id, name="Assistant Message Case"
-        )
+        case = await crud.create_case(db_session, user_id=user.id, name="Assistant Message Case")
         await db_session.commit()
 
         citations = ["Cal. Civ. Proc. Code 335.1", "28 U.S.C. 1332"]
@@ -305,9 +297,7 @@ class TestMessageCRUD:
         )
         await db_session.commit()
 
-        case = await crud.create_case(
-            db_session, user_id=user.id, name="List Message Case"
-        )
+        case = await crud.create_case(db_session, user_id=user.id, name="List Message Case")
         await db_session.commit()
 
         await crud.create_message(
@@ -359,9 +349,7 @@ class TestDeadlineCRUD:
         )
         await db_session.commit()
 
-        case = await crud.create_case(
-            db_session, user_id=user.id, name="Deadline Case"
-        )
+        case = await crud.create_case(db_session, user_id=user.id, name="Deadline Case")
         await db_session.commit()
 
         deadline = await crud.create_deadline(
@@ -395,9 +383,7 @@ class TestDeadlineCRUD:
         )
         await db_session.commit()
 
-        case = await crud.create_case(
-            db_session, user_id=user.id, name="Days Remaining Case"
-        )
+        case = await crud.create_case(db_session, user_id=user.id, name="Days Remaining Case")
         await db_session.commit()
 
         # Use a date far in the future to ensure positive days_remaining
@@ -426,9 +412,7 @@ class TestDeadlineCRUD:
         )
         await db_session.commit()
 
-        case = await crud.create_case(
-            db_session, user_id=user.id, name="Deadline List Case"
-        )
+        case = await crud.create_case(db_session, user_id=user.id, name="Deadline List Case")
         await db_session.commit()
 
         # Create in non-chronological order to verify sorting
@@ -469,9 +453,7 @@ class TestDeadlineCRUD:
         )
         await db_session.commit()
 
-        case = await crud.create_case(
-            db_session, user_id=user.id, name="No Deadlines Case"
-        )
+        case = await crud.create_case(db_session, user_id=user.id, name="No Deadlines Case")
         await db_session.commit()
 
         deadlines = await crud.get_deadlines_for_case(db_session, case_id=case.id)
@@ -512,9 +494,7 @@ class TestModelProperties:
         )
         await db_session.commit()
 
-        case = await crud.create_case(
-            db_session, user_id=user.id, name="Repr Case"
-        )
+        case = await crud.create_case(db_session, user_id=user.id, name="Repr Case")
         await db_session.commit()
 
         repr_str = repr(case)

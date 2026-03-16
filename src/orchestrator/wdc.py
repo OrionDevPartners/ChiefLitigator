@@ -101,9 +101,7 @@ class WDCEngine:
     """
 
     # Expected agent roles in every scoring round
-    REQUIRED_ROLES: frozenset[str] = frozenset(
-        role.value for role in AgentRole
-    )
+    REQUIRED_ROLES: frozenset[str] = frozenset(role.value for role in AgentRole)
 
     def __init__(self, settings: Settings | None = None) -> None:
         self._settings: Settings = settings or get_settings()
@@ -120,10 +118,7 @@ class WDCEngine:
         # Validate weights sum to 1.0 (with floating-point tolerance)
         total = sum(self._weights.values())
         if not math.isclose(total, 1.0, rel_tol=1e-6):
-            raise ValueError(
-                f"Agent weights must sum to 1.0, got {total:.6f}. "
-                f"Weights: {self._weights}"
-            )
+            raise ValueError(f"Agent weights must sum to 1.0, got {total:.6f}. Weights: {self._weights}")
 
         # Thresholds
         self._cert_threshold: float = self._settings.wdc_certification_threshold
@@ -231,18 +226,14 @@ class WDCEngine:
         missing = self.REQUIRED_ROLES - received_roles
         if missing:
             raise ValueError(
-                f"Missing agent scores for roles: {sorted(missing)}. "
-                f"All 5 agents must participate in every WDC round."
+                f"Missing agent scores for roles: {sorted(missing)}. All 5 agents must participate in every WDC round."
             )
         if len(agent_scores) != len(self.REQUIRED_ROLES):
             raise ValueError(
-                f"Expected exactly {len(self.REQUIRED_ROLES)} scores "
-                f"(one per role), got {len(agent_scores)}."
+                f"Expected exactly {len(self.REQUIRED_ROLES)} scores (one per role), got {len(agent_scores)}."
             )
 
-    def _check_veto(
-        self, agent_scores: list[WDCScore]
-    ) -> tuple[bool, str | None]:
+    def _check_veto(self, agent_scores: list[WDCScore]) -> tuple[bool, str | None]:
         """Check if any agent with veto authority has exercised it.
 
         Only Compliance Counsel has veto power. A veto is absolute
@@ -263,9 +254,7 @@ class WDCEngine:
                 return True, reason
         return False, None
 
-    def _compute_composite(
-        self, agent_scores: list[WDCScore]
-    ) -> tuple[float, dict[str, float], dict[str, float]]:
+    def _compute_composite(self, agent_scores: list[WDCScore]) -> tuple[float, dict[str, float], dict[str, float]]:
         """Compute the weighted composite score.
 
         Returns
@@ -284,9 +273,7 @@ class WDCEngine:
         composite = sum(weighted_scores.values())
         return composite, raw_scores, weighted_scores
 
-    def _determine_verdict(
-        self, composite: float, vetoed: bool
-    ) -> WDCVerdict:
+    def _determine_verdict(self, composite: float, vetoed: bool) -> WDCVerdict:
         """Map composite score to a verdict, with veto override.
 
         Parameters
@@ -321,14 +308,10 @@ class WDCEngine:
         notes: list[str] = []
         for s in agent_scores:
             if s.flags:
-                notes.append(
-                    f"[{s.scorer_role.value}] flags: {', '.join(s.flags)}"
-                )
+                notes.append(f"[{s.scorer_role.value}] flags: {', '.join(s.flags)}")
             # If an agent scored below the notes threshold, include their reasoning
             if s.score < self._notes_threshold:
-                notes.append(
-                    f"[{s.scorer_role.value}] low score ({s.score:.1f}): {s.reasoning}"
-                )
+                notes.append(f"[{s.scorer_role.value}] low score ({s.score:.1f}): {s.reasoning}")
         return notes
 
     def _collect_revision_feedback(
@@ -346,11 +329,7 @@ class WDCEngine:
         feedback: list[str] = []
         for s in agent_scores:
             if s.score < self._cert_threshold:
-                feedback.append(
-                    f"[{s.scorer_role.value}] (score: {s.score:.1f}) {s.reasoning}"
-                )
+                feedback.append(f"[{s.scorer_role.value}] (score: {s.score:.1f}) {s.reasoning}")
             if s.flags:
-                feedback.append(
-                    f"[{s.scorer_role.value}] issues: {', '.join(s.flags)}"
-                )
+                feedback.append(f"[{s.scorer_role.value}] issues: {', '.join(s.flags)}")
         return feedback if feedback else None

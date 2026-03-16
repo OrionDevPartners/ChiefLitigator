@@ -21,11 +21,7 @@ from typing import Any
 
 import bcrypt
 import jwt
-from fastapi import Depends, HTTPException, Request, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from src.admin.audit import log_admin_action
-from src.database.engine import get_db
+from fastapi import HTTPException, Request, status
 
 logger = logging.getLogger("cyphergy.admin.auth")
 
@@ -54,9 +50,7 @@ class AdminJWTHandler:
             )
         self._algorithm = os.getenv("ADMIN_JWT_ALGORITHM", "HS256")
         try:
-            self._expiry_seconds = int(
-                os.getenv("ADMIN_JWT_EXPIRY_SECONDS", str(_ADMIN_EXPIRY_SECONDS))
-            )
+            self._expiry_seconds = int(os.getenv("ADMIN_JWT_EXPIRY_SECONDS", str(_ADMIN_EXPIRY_SECONDS)))
         except ValueError:
             self._expiry_seconds = _ADMIN_EXPIRY_SECONDS
 
@@ -77,9 +71,7 @@ class AdminJWTHandler:
             "iat": now,
             "exp": now + self._expiry_seconds,
         }
-        token: str = jwt.encode(
-            token_payload, self._secret_key, algorithm=self._algorithm
-        )
+        token: str = jwt.encode(token_payload, self._secret_key, algorithm=self._algorithm)
         return token
 
     def verify_token(self, token: str) -> dict[str, Any]:
@@ -133,9 +125,7 @@ def verify_admin_credentials(email: str, password: str) -> bool:
     admin_password_hash = os.getenv("ADMIN_PASSWORD_HASH", "")
 
     if not admin_email or not admin_password_hash:
-        logger.error(
-            "admin_auth_misconfigured | ADMIN_EMAIL or ADMIN_PASSWORD_HASH not set"
-        )
+        logger.error("admin_auth_misconfigured | ADMIN_EMAIL or ADMIN_PASSWORD_HASH not set")
         return False
 
     if email != admin_email:

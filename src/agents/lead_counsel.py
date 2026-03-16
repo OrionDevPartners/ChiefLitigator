@@ -202,8 +202,7 @@ class LeadCounsel(BaseAgent):
 
         for resp in responses:
             agent_summaries.append(
-                f"--- {resp.role.value.upper()} (confidence: {resp.confidence:.2f}) ---\n"
-                f"{resp.content}\n"
+                f"--- {resp.role.value.upper()} (confidence: {resp.confidence:.2f}) ---\n{resp.content}\n"
             )
             all_citations.extend(resp.citations_used)
             all_flags.extend(resp.flags)

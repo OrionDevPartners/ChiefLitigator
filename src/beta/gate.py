@@ -233,11 +233,7 @@ class BetaGate:
         await db.execute(stmt)
 
         # Deactivate the user account
-        stmt = (
-            update(User)
-            .where(User.id == user_id)
-            .values(is_active=False)
-        )
+        stmt = update(User).where(User.id == user_id).values(is_active=False)
         await db.execute(stmt)
         await db.flush()
 

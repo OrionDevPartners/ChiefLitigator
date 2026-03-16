@@ -11,8 +11,8 @@ This module provides a thin client around the Linear GraphQL API to:
 
 from __future__ import annotations
 
-import os
 import logging
+import os
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -120,9 +120,7 @@ class LinearClient:
             LinearIssue with the created issue details.
         """
         if not self.is_configured():
-            raise LinearConfigError(
-                "LINEAR_TOKEN and LINEAR_TEAM_ID must be set in environment."
-            )
+            raise LinearConfigError("LINEAR_TOKEN and LINEAR_TEAM_ID must be set in environment.")
 
         mutation = """
         mutation CreateIssue($input: IssueCreateInput!) {

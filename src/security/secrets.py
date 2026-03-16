@@ -29,6 +29,7 @@ logger = logging.getLogger("cyphergy.security.secrets")
 # Secret Definitions
 # ---------------------------------------------------------------------------
 
+
 class SecretCategory(Enum):
     """Categories for secret classification.
 
@@ -36,10 +37,11 @@ class SecretCategory(Enum):
     An LLM API key leak costs money; a database password leak
     exposes all client legal data. Classification drives audit priority.
     """
-    CRITICAL = "critical"      # Database, encryption keys -- data breach risk
-    HIGH = "high"              # LLM API keys, auth tokens -- financial/access risk
-    MEDIUM = "medium"          # Monitoring, CDN -- operational risk
-    LOW = "low"                # Feature flags, non-sensitive config
+
+    CRITICAL = "critical"  # Database, encryption keys -- data breach risk
+    HIGH = "high"  # LLM API keys, auth tokens -- financial/access risk
+    MEDIUM = "medium"  # Monitoring, CDN -- operational risk
+    LOW = "low"  # Feature flags, non-sensitive config
 
 
 @dataclass(frozen=True)
@@ -53,6 +55,7 @@ class SecretDefinition:
         description: Human-readable purpose (for health checks).
         integration: Which external service this belongs to.
     """
+
     env_var: str
     category: SecretCategory
     required: bool
@@ -79,7 +82,6 @@ _SECRET_REGISTRY: list[SecretDefinition] = [
         description="AES-256 encryption key for data-at-rest",
         integration="Encryption",
     ),
-
     # -- High (financial/access risk) --
     SecretDefinition(
         env_var="ANTHROPIC_API_KEY",
@@ -95,7 +97,6 @@ _SECRET_REGISTRY: list[SecretDefinition] = [
         description="CourtListener API key for case law retrieval",
         integration="CourtListener",
     ),
-
     # -- Medium (operational risk) --
     SecretDefinition(
         env_var="CLOUDFLARE_API_KEY",
@@ -125,7 +126,6 @@ _SECRET_REGISTRY: list[SecretDefinition] = [
         description="Redis connection URL for rate limiting and caching",
         integration="Redis",
     ),
-
     # -- Low (non-sensitive config) --
     SecretDefinition(
         env_var="APP_ENV",
@@ -230,20 +230,17 @@ class SecretMaskingFilter(logging.Filter):
         if record.args:
             if isinstance(record.args, dict):
                 record.args = {
-                    k: mask_secrets_in_text(str(v)) if isinstance(v, str) else v
-                    for k, v in record.args.items()
+                    k: mask_secrets_in_text(str(v)) if isinstance(v, str) else v for k, v in record.args.items()
                 }
             elif isinstance(record.args, tuple):
-                record.args = tuple(
-                    mask_secrets_in_text(str(a)) if isinstance(a, str) else a
-                    for a in record.args
-                )
+                record.args = tuple(mask_secrets_in_text(str(a)) if isinstance(a, str) else a for a in record.args)
         return True
 
 
 # ---------------------------------------------------------------------------
 # Health Check
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class IntegrationStatus:
@@ -256,6 +253,7 @@ class IntegrationStatus:
         env_vars: List of env var names (values are NEVER included).
         category: Risk classification.
     """
+
     integration: str
     configured: bool
     required: bool
@@ -272,6 +270,7 @@ class SecretsHealthReport:
     ever seeing the actual secret values. This report powers
     the /health endpoint and startup diagnostics.
     """
+
     all_required_present: bool
     missing_required: list[str]
     integrations: list[IntegrationStatus]
@@ -282,6 +281,7 @@ class SecretsHealthReport:
 # ---------------------------------------------------------------------------
 # SecretsManager (public API)
 # ---------------------------------------------------------------------------
+
 
 class SecretsManager:
     """Centralized secrets management for the Cyphergy platform.
@@ -366,9 +366,7 @@ class SecretsManager:
 
         for integration_name, definitions in sorted(by_integration.items()):
             env_vars = [d.env_var for d in definitions]
-            configured = all(
-                bool(os.getenv(d.env_var, "").strip()) for d in definitions
-            )
+            configured = all(bool(os.getenv(d.env_var, "").strip()) for d in definitions)
             is_required = any(d.required for d in definitions)
             category = max(
                 (d.category for d in definitions),
@@ -380,10 +378,7 @@ class SecretsManager:
             else:
                 total_missing += 1
                 if is_required:
-                    missing_required.extend(
-                        d.env_var for d in definitions
-                        if not os.getenv(d.env_var, "").strip()
-                    )
+                    missing_required.extend(d.env_var for d in definitions if not os.getenv(d.env_var, "").strip())
 
             integrations.append(
                 IntegrationStatus(

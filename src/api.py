@@ -198,10 +198,12 @@ configure_cors(app)
 
 # 4. Auth router (signup + login endpoints — public, no JWT required)
 from src.auth import auth_router  # noqa: E402
+
 app.include_router(auth_router)
 
 # 5. Admin router (admin-only endpoints — requires admin JWT)
 from src.admin.routes import admin_router  # noqa: E402
+
 app.include_router(admin_router)
 
 # 6. Beta gate middleware (IP enforcement — after JWT, before request handlers)
@@ -340,9 +342,7 @@ if os.getenv("APP_ENV", "development") != "production":
         registered). Use it after deployment to confirm that errors are
         flowing to the Sentry dashboard with PII properly scrubbed.
         """
-        raise RuntimeError(
-            "Sentry integration test — this error should appear in the Sentry dashboard."
-        )
+        raise RuntimeError("Sentry integration test — this error should appear in the Sentry dashboard.")
 
 
 # ---------------------------------------------------------------------------
@@ -757,9 +757,7 @@ async def llm_provider_error_handler(request: Request, exc: LLMProviderError) ->
 
 
 @app.exception_handler(CitationVerificationError)
-async def citation_verification_error_handler(
-    request: Request, exc: CitationVerificationError
-) -> JSONResponse:
+async def citation_verification_error_handler(request: Request, exc: CitationVerificationError) -> JSONResponse:
     """Handle CourtListener/external verification API failures with a 502.
 
     Instead of failing the whole request, citations are marked PARTIAL

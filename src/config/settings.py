@@ -69,9 +69,7 @@ class Settings(BaseSettings):
     def llm_provider_must_be_valid(cls, v: str) -> str:
         allowed = {"anthropic", "bedrock"}
         if v.lower().strip() not in allowed:
-            raise ValueError(
-                f"llm_provider must be one of {allowed}, got '{v}'"
-            )
+            raise ValueError(f"llm_provider must be one of {allowed}, got '{v}'")
         return v.lower().strip()
 
     @field_validator("llm_temperature")

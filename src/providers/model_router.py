@@ -25,7 +25,7 @@ from __future__ import annotations
 import logging
 import os
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -40,22 +40,22 @@ logger = logging.getLogger("cyphergy.providers.model_router")
 class ModelTier(str, Enum):
     """Task complexity tiers determining which models are used."""
 
-    TIER_1_LEGAL = "tier_1_legal"       # Orchestrator + WDC panel — max capability
+    TIER_1_LEGAL = "tier_1_legal"  # Orchestrator + WDC panel — max capability
     TIER_2_JURISDICTION = "tier_2_jurisdiction"  # Dual-brain per-state verification
-    TIER_3_UTILITY = "tier_3_utility"   # Scheduling, formatting, classification
+    TIER_3_UTILITY = "tier_3_utility"  # Scheduling, formatting, classification
 
 
 class ModelRole(str, Enum):
     """Specific role a model plays in the pipeline."""
 
-    ORCHESTRATOR = "orchestrator"           # Manages all agents
-    WDC_PANEL = "wdc_panel"                 # WDC debate scoring
-    EXTENDED_PANEL = "extended_panel"       # Cross-validation on WDC
-    JURISDICTION_PRIMARY = "jurisdiction_primary"   # Brain A — primary legal
-    JURISDICTION_SCOUT = "jurisdiction_scout"       # Brain B — Llama Scout
-    JURISDICTION_COHERE = "jurisdiction_cohere"     # Brain C — Cohere
-    UTILITY_LIGHT = "utility_light"         # Easy tasks
-    UTILITY_MEDIUM = "utility_medium"       # Moderate tasks
+    ORCHESTRATOR = "orchestrator"  # Manages all agents
+    WDC_PANEL = "wdc_panel"  # WDC debate scoring
+    EXTENDED_PANEL = "extended_panel"  # Cross-validation on WDC
+    JURISDICTION_PRIMARY = "jurisdiction_primary"  # Brain A — primary legal
+    JURISDICTION_SCOUT = "jurisdiction_scout"  # Brain B — Llama Scout
+    JURISDICTION_COHERE = "jurisdiction_cohere"  # Brain C — Cohere
+    UTILITY_LIGHT = "utility_light"  # Easy tasks
+    UTILITY_MEDIUM = "utility_medium"  # Moderate tasks
 
 
 # ---------------------------------------------------------------------------
@@ -70,17 +70,14 @@ _BEDROCK_MODELS: dict[str, str] = {
     # TIER 1 — Maximum capability for legal reasoning
     ModelRole.ORCHESTRATOR.value: "anthropic.claude-opus-4-6-v1",
     ModelRole.WDC_PANEL.value: "anthropic.claude-opus-4-6-v1",
-
     # Extended WDC panel — 3 additional high-context models
     "extended_panel_1": "anthropic.claude-opus-4-5-20251101-v1:0",
     "extended_panel_2": "anthropic.claude-opus-4-1-20250805-v1:0",
     "extended_panel_3": "anthropic.claude-sonnet-4-6",
-
     # TIER 2 — Jurisdiction dual-brain (per-state verification)
     ModelRole.JURISDICTION_PRIMARY.value: "anthropic.claude-opus-4-6-v1",
     ModelRole.JURISDICTION_SCOUT.value: "meta.llama4-scout-17b-instruct-v1:0",
     ModelRole.JURISDICTION_COHERE.value: "cohere.command-r-plus-v1:0",
-
     # TIER 3 — Utility (lower cost)
     ModelRole.UTILITY_LIGHT.value: "anthropic.claude-haiku-4-5-20251001-v1:0",
     ModelRole.UTILITY_MEDIUM.value: "anthropic.claude-sonnet-4-6",
@@ -125,9 +122,7 @@ class ModelRouter:
     def __init__(self) -> None:
         self._models = dict(_BEDROCK_MODELS)
         self._apply_env_overrides()
-        logger.info(
-            "ModelRouter initialized: %d models configured", len(self._models)
-        )
+        logger.info("ModelRouter initialized: %d models configured", len(self._models))
 
     def _apply_env_overrides(self) -> None:
         """Allow env var overrides for any model role.
@@ -143,7 +138,9 @@ class ModelRouter:
                 self._models[role.value] = override
                 logger.info(
                     "model_override | role=%s old=%s new=%s",
-                    role.value, old, override,
+                    role.value,
+                    old,
+                    override,
                 )
 
     def get_model(self, role: ModelRole) -> ModelConfig:
@@ -154,21 +151,31 @@ class ModelRouter:
 
         # Tier 1 legal tasks: temperature 0 for deterministic reasoning
         # Tier 3 utility: slightly higher temperature for natural responses
-        temperature = 0.0 if role in (
-            ModelRole.ORCHESTRATOR,
-            ModelRole.WDC_PANEL,
-            ModelRole.EXTENDED_PANEL,
-            ModelRole.JURISDICTION_PRIMARY,
-            ModelRole.JURISDICTION_SCOUT,
-            ModelRole.JURISDICTION_COHERE,
-        ) else 0.3
+        temperature = (
+            0.0
+            if role
+            in (
+                ModelRole.ORCHESTRATOR,
+                ModelRole.WDC_PANEL,
+                ModelRole.EXTENDED_PANEL,
+                ModelRole.JURISDICTION_PRIMARY,
+                ModelRole.JURISDICTION_SCOUT,
+                ModelRole.JURISDICTION_COHERE,
+            )
+            else 0.3
+        )
 
         # Max tokens: higher for legal reasoning, lower for utility
-        max_tokens = 8192 if role in (
-            ModelRole.ORCHESTRATOR,
-            ModelRole.WDC_PANEL,
-            ModelRole.JURISDICTION_PRIMARY,
-        ) else 4096
+        max_tokens = (
+            8192
+            if role
+            in (
+                ModelRole.ORCHESTRATOR,
+                ModelRole.WDC_PANEL,
+                ModelRole.JURISDICTION_PRIMARY,
+            )
+            else 4096
+        )
 
         return ModelConfig(
             model_id=model_id,
@@ -201,12 +208,14 @@ class ModelRouter:
         for key in ("extended_panel_1", "extended_panel_2", "extended_panel_3"):
             model_id = self._models.get(key)
             if model_id:
-                extended.append(ModelConfig(
-                    model_id=model_id,
-                    max_tokens=4096,
-                    temperature=0.0,
-                    role="extended_panel",
-                ))
+                extended.append(
+                    ModelConfig(
+                        model_id=model_id,
+                        max_tokens=4096,
+                        temperature=0.0,
+                        role="extended_panel",
+                    )
+                )
         return [base] + extended
 
     def get_utility_model(self, task_complexity: str) -> ModelConfig:
@@ -242,7 +251,8 @@ class DualBrainResult(BaseModel):
         description="Specific points of disagreement between models",
     )
     confidence: float = Field(
-        ge=0.0, le=1.0,
+        ge=0.0,
+        le=1.0,
         description="Confidence based on agreement level (1.0 = full consensus)",
     )
 
@@ -297,9 +307,7 @@ async def run_dual_brain_check(
 
     # Simple consensus check — all responses should agree on key citations
     # Full consensus engine will be built in Phase 2
-    consensus = len(responses) == 3 and all(
-        not isinstance(r, str) or not r.startswith("[Model") for r in responses
-    )
+    consensus = len(responses) == 3 and all(not isinstance(r, str) or not r.startswith("[Model") for r in responses)
 
     return DualBrainResult(
         jurisdiction=jurisdiction,

@@ -50,12 +50,12 @@ logger = logging.getLogger("cyphergy.knowledge.holding_extractor")
 class HoldingType(str, Enum):
     """Classification of a legal holding within an opinion."""
 
-    RULE_STATEMENT = "rule_statement"       # "The court holds that under X, Y is required"
-    APPLICATION = "application"             # "Applying X to these facts, the court finds..."
-    EXCEPTION = "exception"                 # "However, X does not apply when..."
-    LIMITATION = "limitation"               # "The scope of X is limited to..."
-    OVERRULING = "overruling"               # "We overrule our prior holding in..."
-    DISTINGUISHING = "distinguishing"       # "This case is distinguishable because..."
+    RULE_STATEMENT = "rule_statement"  # "The court holds that under X, Y is required"
+    APPLICATION = "application"  # "Applying X to these facts, the court finds..."
+    EXCEPTION = "exception"  # "However, X does not apply when..."
+    LIMITATION = "limitation"  # "The scope of X is limited to..."
+    OVERRULING = "overruling"  # "We overrule our prior holding in..."
+    DISTINGUISHING = "distinguishing"  # "This case is distinguishable because..."
 
 
 class LegalStandard(str, Enum):
@@ -323,7 +323,9 @@ class HoldingExtractor:
         if len(opinion_text) > self._MAX_OPINION_CHARS:
             logger.warning(
                 "opinion_truncated | citation=%s chars=%d max=%d",
-                case_citation, len(opinion_text), self._MAX_OPINION_CHARS,
+                case_citation,
+                len(opinion_text),
+                self._MAX_OPINION_CHARS,
             )
             opinion_text = opinion_text[: self._MAX_OPINION_CHARS]
 
@@ -336,8 +338,7 @@ class HoldingExtractor:
 
         # Run all 3 models in parallel
         extraction_tasks = [
-            self._extract_with_model(opinion_text, case_citation, jurisdiction, config)
-            for config in models
+            self._extract_with_model(opinion_text, case_citation, jurisdiction, config) for config in models
         ]
         raw_results = await asyncio.gather(*extraction_tasks, return_exceptions=True)
 
@@ -354,7 +355,9 @@ class HoldingExtractor:
             if isinstance(raw, Exception):
                 logger.error(
                     "model_extraction_failed | model=%s citation=%s error=%s",
-                    label, case_citation, str(raw)[:300],
+                    label,
+                    case_citation,
+                    str(raw)[:300],
                 )
                 extractions.append([])
                 result.model_responses[label] = 0
@@ -363,7 +366,9 @@ class HoldingExtractor:
                 result.model_responses[label] = len(raw)
                 logger.info(
                     "model_extraction_complete | model=%s citation=%s holdings=%d",
-                    label, case_citation, len(raw),
+                    label,
+                    case_citation,
+                    len(raw),
                 )
             else:
                 extractions.append([])
@@ -453,20 +458,16 @@ class HoldingExtractor:
                 continue
 
             # Normalize fields with defaults
-            validated.append({
-                "statute_citation": str(h.get("statute_citation", "") or ""),
-                "holding_text": str(h.get("holding_text", "")),
-                "holding_type": self._normalize_holding_type(
-                    str(h.get("holding_type", "rule_statement"))
-                ),
-                "key_facts": list(h.get("key_facts", [])),
-                "legal_standard": self._normalize_legal_standard(
-                    str(h.get("legal_standard", "not_specified"))
-                ),
-                "supports": self._normalize_party_side(
-                    str(h.get("supports", "neutral"))
-                ),
-            })
+            validated.append(
+                {
+                    "statute_citation": str(h.get("statute_citation", "") or ""),
+                    "holding_text": str(h.get("holding_text", "")),
+                    "holding_type": self._normalize_holding_type(str(h.get("holding_type", "rule_statement"))),
+                    "key_facts": list(h.get("key_facts", [])),
+                    "legal_standard": self._normalize_legal_standard(str(h.get("legal_standard", "not_specified"))),
+                    "supports": self._normalize_party_side(str(h.get("supports", "neutral"))),
+                }
+            )
 
         return validated
 
@@ -573,12 +574,14 @@ class HoldingExtractor:
             source_label = model_labels[source_idx] if source_idx < len(model_labels) else "unknown"
             disagreements: list[dict[str, Any]] = []
             for h in non_empty[0]:
-                disagreements.append({
-                    "reason": f"Only {source_label} extracted this holding; other 2 models returned nothing",
-                    "citation": case_citation,
-                    "holding_text": h.get("holding_text", ""),
-                    "source_model": source_label,
-                })
+                disagreements.append(
+                    {
+                        "reason": f"Only {source_label} extracted this holding; other 2 models returned nothing",
+                        "citation": case_citation,
+                        "holding_text": h.get("holding_text", ""),
+                        "source_model": source_label,
+                    }
+                )
             return [], [], disagreements
 
         # Build a flat list of (model_index, holding_dict) pairs
@@ -677,10 +680,7 @@ class HoldingExtractor:
                 models_present = list(group.keys())
                 model_labels_map = {0: "primary", 1: "scout", 2: "cohere"}
                 present_labels = [model_labels_map.get(m, f"model_{m}") for m in models_present]
-                missing_models = [
-                    model_labels_map.get(m, f"model_{m}")
-                    for m in range(3) if m not in group
-                ]
+                missing_models = [model_labels_map.get(m, f"model_{m}") for m in range(3) if m not in group]
 
                 holding = ExtractedHolding(
                     case_citation=case_citation,
@@ -708,16 +708,20 @@ class HoldingExtractor:
 
         for flat_idx, (model_idx, h_dict) in enumerate(all_holdings):
             if (model_idx, flat_idx) not in matched:
-                source_label = model_labels_full[model_idx] if model_idx < len(model_labels_full) else f"model_{model_idx}"
-                disagreement_list.append({
-                    "reason": f"Only {source_label} extracted this holding",
-                    "citation": case_citation,
-                    "holding_text": h_dict.get("holding_text", ""),
-                    "holding_type": h_dict.get("holding_type", ""),
-                    "statute_citation": h_dict.get("statute_citation", ""),
-                    "supports": h_dict.get("supports", ""),
-                    "source_model": source_label,
-                })
+                source_label = (
+                    model_labels_full[model_idx] if model_idx < len(model_labels_full) else f"model_{model_idx}"
+                )
+                disagreement_list.append(
+                    {
+                        "reason": f"Only {source_label} extracted this holding",
+                        "citation": case_citation,
+                        "holding_text": h_dict.get("holding_text", ""),
+                        "holding_type": h_dict.get("holding_type", ""),
+                        "statute_citation": h_dict.get("statute_citation", ""),
+                        "supports": h_dict.get("supports", ""),
+                        "source_model": source_label,
+                    }
+                )
 
         return consensus_holdings, partial_holdings, disagreement_list
 
@@ -767,12 +771,7 @@ class HoldingExtractor:
         support_sim = 1.0 if support_a == support_b else 0.0
 
         # Weighted combination
-        score = (
-            0.60 * text_sim
-            + 0.15 * type_sim
-            + 0.15 * stat_sim
-            + 0.10 * support_sim
-        )
+        score = 0.60 * text_sim + 0.15 * type_sim + 0.15 * stat_sim + 0.10 * support_sim
 
         return score
 
@@ -812,15 +811,9 @@ class HoldingExtractor:
                     all_facts.append(str(fact))
 
         # Majority vote for categorical fields
-        holding_type = self._majority_vote(
-            [str(h.get("holding_type", "rule_statement")) for h in holdings]
-        )
-        legal_standard = self._majority_vote(
-            [str(h.get("legal_standard", "not_specified")) for h in holdings]
-        )
-        supports = self._majority_vote(
-            [str(h.get("supports", "neutral")) for h in holdings]
-        )
+        holding_type = self._majority_vote([str(h.get("holding_type", "rule_statement")) for h in holdings])
+        legal_standard = self._majority_vote([str(h.get("legal_standard", "not_specified")) for h in holdings])
+        supports = self._majority_vote([str(h.get("supports", "neutral")) for h in holdings])
 
         return {
             "holding_text": holding_text,
@@ -967,7 +960,8 @@ async def extract_and_catalog(
     if result.error:
         logger.error(
             "extract_and_catalog_failed | citation=%s error=%s",
-            case_citation, result.error,
+            case_citation,
+            result.error,
         )
         return result
 
@@ -976,27 +970,31 @@ async def extract_and_catalog(
 
     # Consensus holdings go in as verified
     for holding in result.consensus_holdings:
-        holdings_for_catalog.append({
-            "statute": holding.statute_citation,
-            "holding_text": holding.holding_text,
-            "treatment": _holding_type_to_treatment(holding.holding_type),
-            "supports": holding.supports,
-            "verified": "true",
-            "holding_type": holding.holding_type.value,
-            "legal_standard": holding.legal_standard,
-        })
+        holdings_for_catalog.append(
+            {
+                "statute": holding.statute_citation,
+                "holding_text": holding.holding_text,
+                "treatment": _holding_type_to_treatment(holding.holding_type),
+                "supports": holding.supports,
+                "verified": "true",
+                "holding_type": holding.holding_type.value,
+                "legal_standard": holding.legal_standard,
+            }
+        )
 
     # Partial holdings go in as unverified
     for holding in result.partial_holdings:
-        holdings_for_catalog.append({
-            "statute": holding.statute_citation,
-            "holding_text": holding.holding_text,
-            "treatment": _holding_type_to_treatment(holding.holding_type),
-            "supports": holding.supports,
-            "verified": "false",
-            "holding_type": holding.holding_type.value,
-            "legal_standard": holding.legal_standard,
-        })
+        holdings_for_catalog.append(
+            {
+                "statute": holding.statute_citation,
+                "holding_text": holding.holding_text,
+                "treatment": _holding_type_to_treatment(holding.holding_type),
+                "supports": holding.supports,
+                "verified": "false",
+                "holding_type": holding.holding_type.value,
+                "legal_standard": holding.legal_standard,
+            }
+        )
 
     # Determine overall party support
     supports_counts: dict[str, int] = {}
@@ -1015,9 +1013,7 @@ async def extract_and_catalog(
         jurisdiction=jurisdiction,
         holdings=holdings_for_catalog,
         statutes_cited=[
-            h.statute_citation
-            for h in result.consensus_holdings + result.partial_holdings
-            if h.statute_citation
+            h.statute_citation for h in result.consensus_holdings + result.partial_holdings if h.statute_citation
         ],
         verified=len(result.consensus_holdings) > 0,
         verification_source="dual_brain_consensus",

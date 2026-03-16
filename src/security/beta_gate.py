@@ -242,7 +242,9 @@ class BetaGateMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(
-        self, request: Request, call_next: Callable,  # type: ignore[type-arg]
+        self,
+        request: Request,
+        call_next: Callable,  # type: ignore[type-arg]
     ) -> Response:
         # Skip non-API routes
         if not request.url.path.startswith("/api/v1/"):

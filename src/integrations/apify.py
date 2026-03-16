@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger("cyphergy.integrations.apify")
 
@@ -82,6 +82,7 @@ class ApifyClient:
 
             # Wait for completion
             import asyncio
+
             for _ in range(timeout_secs // 5):
                 await asyncio.sleep(5)
                 status_resp = await client.get(

@@ -25,7 +25,6 @@ Bedrock-specific:
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 from abc import ABC, abstractmethod
@@ -38,6 +37,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Response envelope — unified across providers
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class LLMProviderResponse:
@@ -68,6 +68,7 @@ class LLMProviderResponse:
 # ---------------------------------------------------------------------------
 # Abstract base
 # ---------------------------------------------------------------------------
+
 
 class LLMProvider(ABC):
     """Abstract interface for LLM providers.
@@ -116,6 +117,7 @@ class LLMProvider(ABC):
 # Anthropic (direct API) — development
 # ---------------------------------------------------------------------------
 
+
 class AnthropicProvider(LLMProvider):
     """Direct Anthropic API provider for development environments.
 
@@ -128,15 +130,13 @@ class AnthropicProvider(LLMProvider):
             import anthropic  # noqa: F811
         except ImportError as exc:
             raise ImportError(
-                "The 'anthropic' package is required for AnthropicProvider. "
-                "Install it with: pip install anthropic"
+                "The 'anthropic' package is required for AnthropicProvider. Install it with: pip install anthropic"
             ) from exc
 
         api_key = os.environ.get("ANTHROPIC_API_KEY", "")
         if not api_key:
             raise ValueError(
-                "ANTHROPIC_API_KEY environment variable is required for "
-                "AnthropicProvider but was not set or is empty."
+                "ANTHROPIC_API_KEY environment variable is required for AnthropicProvider but was not set or is empty."
             )
 
         self._client = anthropic.AsyncAnthropic(api_key=api_key)
@@ -224,6 +224,7 @@ def _resolve_bedrock_model_id(model: str) -> str:
 # AWS Bedrock — production
 # ---------------------------------------------------------------------------
 
+
 class BedrockProvider(LLMProvider):
     """AWS Bedrock Runtime provider for production environments.
 
@@ -249,8 +250,7 @@ class BedrockProvider(LLMProvider):
             import boto3
         except ImportError as exc:
             raise ImportError(
-                "The 'boto3' package is required for BedrockProvider. "
-                "Install it with: pip install boto3"
+                "The 'boto3' package is required for BedrockProvider. Install it with: pip install boto3"
             ) from exc
 
         region = os.environ.get("AWS_DEFAULT_REGION", "us-east-1")
@@ -293,16 +293,20 @@ class BedrockProvider(LLMProvider):
             role = msg.get("role", "user")
             content = msg.get("content", "")
             if isinstance(content, str):
-                converse_messages.append({
-                    "role": role,
-                    "content": [{"text": content}],
-                })
+                converse_messages.append(
+                    {
+                        "role": role,
+                        "content": [{"text": content}],
+                    }
+                )
             elif isinstance(content, list):
                 # Already in block format
-                converse_messages.append({
-                    "role": role,
-                    "content": content if all(isinstance(b, dict) for b in content) else [{"text": str(content)}],
-                })
+                converse_messages.append(
+                    {
+                        "role": role,
+                        "content": content if all(isinstance(b, dict) for b in content) else [{"text": str(content)}],
+                    }
+                )
 
         # Build system prompt in Converse format
         system_blocks = [{"text": system}] if system else []
@@ -377,10 +381,7 @@ def get_provider(*, force_new: bool = False) -> LLMProvider:
     elif provider_name == "anthropic":
         _provider_instance = AnthropicProvider()
     else:
-        raise ValueError(
-            f"Unsupported LLM_PROVIDER value: '{provider_name}'. "
-            f"Expected 'anthropic' or 'bedrock'."
-        )
+        raise ValueError(f"Unsupported LLM_PROVIDER value: '{provider_name}'. Expected 'anthropic' or 'bedrock'.")
 
     logger.info("LLM provider resolved: %s", provider_name)
     return _provider_instance

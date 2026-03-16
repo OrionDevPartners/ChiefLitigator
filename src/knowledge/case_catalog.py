@@ -31,12 +31,9 @@ from typing import Any, Optional
 from pydantic import BaseModel, Field
 
 from src.knowledge.statute_index import (
-    StatuteIndex,
-    StatuteEntry,
-    StatuteType,
     CaseTreatment,
+    StatuteIndex,
 )
-from src.containers.jurisdiction import PracticeArea, PracticeSubArea
 
 logger = logging.getLogger("cyphergy.knowledge.case_catalog")
 
@@ -236,14 +233,16 @@ class CaseCatalog:
                 limit=limit,
             )
             for s in statute_suggestions:
-                suggestions.append({
-                    "type": "statute_suggestion",
-                    "statute": s["statute"],
-                    "title": s["title"],
-                    "binding_cases": s["binding_cases"],
-                    "persuasive_cases": s["persuasive_cases"],
-                    "relevance_score": s["relevance_score"],
-                })
+                suggestions.append(
+                    {
+                        "type": "statute_suggestion",
+                        "statute": s["statute"],
+                        "title": s["title"],
+                        "binding_cases": s["binding_cases"],
+                        "persuasive_cases": s["persuasive_cases"],
+                        "relevance_score": s["relevance_score"],
+                    }
+                )
 
         # Deduplicate and sort
         seen = set()
