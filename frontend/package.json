@@ -58,9 +58,7 @@
     "tailwind-merge": "^3.3.1",
     "vaul": "^1.1.2",
     "zod": "^3.24.1",
-    "tailwindcss-animate": "1.0.7",
-    "ai": "6.0.116",
-    "@ai-sdk/react": "3.0.118"
+    "tailwindcss-animate": "1.0.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.0",
