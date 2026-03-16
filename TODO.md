@@ -13,10 +13,10 @@
 - [x] 0.1.1 BaseAgent class with Anthropic API integration (base_agent.py — 419 lines)
 - [x] 0.1.2 AgentRole enum, AgentConfig, AgentResponse, WDCScore models
 - [x] 0.1.3 Lead Counsel agent with classify_task + aggregate_responses (lead_counsel.py — 362 lines)
-- [~] 0.1.4 Research Counsel agent (Devin PR #2 — WDC review pending)
-- [~] 0.1.5 Drafting Counsel agent (Devin PR #2 — WDC review pending)
-- [~] 0.1.6 Red Team agent (Devin PR #2 — WDC review pending)
-- [~] 0.1.7 Compliance Counsel agent with VETO power (Devin PR #2 — WDC review pending)
+- [x] 0.1.4 Research Counsel agent (Devin PR #2 — WDC 7.05, cherry-picked + fixed)
+- [x] 0.1.5 Drafting Counsel agent (Devin PR #2 — WDC 7.05, cherry-picked + fixed)
+- [x] 0.1.6 Red Team agent (Devin PR #2 — WDC 7.05, cherry-picked + fixed)
+- [x] 0.1.7 Compliance Counsel agent with VETO power (Devin PR #2 — cherry-picked + fixed)
 - [ ] 0.1.8 Wire Opus 4.6 as orchestrator managing all 5 agents in dev
 
 ### 0.2 Agent Communication
