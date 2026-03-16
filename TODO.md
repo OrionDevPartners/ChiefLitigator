@@ -1,292 +1,201 @@
-# CYPHERGY — FULL PRODUCTION ROADMAP (A to Z)
-# Format: [ ] pending | [~] in-progress | [x] done | [!] blocked | [-] deferred
-# Rule: ONE [~] task at a time. Finish before starting next.
-# Source: CIPHERGY-FINAL-ROADMAP.md (8 phases) + V3.1 spec additions
+# CYPHERGY — MASTER TODO (A to Z)
+# Novel architecture by Bo Pennington
+# Format: [ ] pending | [~] in-progress | [x] done | [!] blocked
 # Last Updated: 2026-03-16
 
 ---
 
-## PHASE 0: FOUNDATION
-**Goal:** 5-agent architecture, WDC engine, core plumbing
+## PHASE 0: FOUNDATION [~85% COMPLETE]
 
-### 0.1 Agent Architecture
-- [x] 0.1.1 BaseAgent class with Anthropic API integration (base_agent.py — 419 lines)
-- [x] 0.1.2 AgentRole enum, AgentConfig, AgentResponse, WDCScore models
-- [x] 0.1.3 Lead Counsel agent with classify_task + aggregate_responses (lead_counsel.py — 362 lines)
-- [x] 0.1.4 Research Counsel agent (Devin PR #2 — WDC 7.05, cherry-picked + fixed)
-- [x] 0.1.5 Drafting Counsel agent (Devin PR #2 — WDC 7.05, cherry-picked + fixed)
-- [x] 0.1.6 Red Team agent (Devin PR #2 — WDC 7.05, cherry-picked + fixed)
-- [x] 0.1.7 Compliance Counsel agent with VETO power (Devin PR #2 — cherry-picked + fixed)
-- [ ] 0.1.8 Wire Opus 4.6 as orchestrator managing all 5 agents in dev
+### Agents + Orchestration
+- [x] BaseAgent + provider adapter (Anthropic ↔ Bedrock CPAA switch)
+- [x] 5 agents: Lead Counsel, Research, Drafting, Red Team, Compliance
+- [x] WDC v2.0 engine (16 tests, veto, thresholds)
+- [x] Full orchestration loop (fan-out → WDC debate → revision cycles)
+- [x] LLM guardrails (3-layer: input gate + system prompt + output scrub)
+- [x] Error handling + graceful degradation (failed agents don't block pipeline)
+- [ ] Wire model_router.py into orchestrator (replace single-model with 3-tier)
+- [ ] First real Bedrock API call through full pipeline (end-to-end proof)
 
-### 0.2 Agent Communication
-- [x] 0.2.1 Shared blackboard (dict) for case state
-- [x] 0.2.2 Private scratchpads per agent
-- [x] 0.2.3 Message history for multi-turn conversations
-- [ ] 0.2.4 Inter-agent structured JSON messaging protocol
-- [ ] 0.2.5 Agent routing logic (Lead Counsel → fan-out → fan-in)
+### API + Auth
+- [x] FastAPI entrypoint (5 endpoints: health, chat, verify-citation, compute-deadline)
+- [x] JWT auth middleware (Devin PR #4, merged)
+- [x] User signup/login (bcrypt + JWT)
+- [x] Auth router wired into api.py
+- [ ] Wire admin router into api.py
+- [ ] Wire beta gate middleware into api.py
 
-### 0.3 WDC v2.0 Debate Engine
-- [x] 0.3.1 WDCEngine class with score() method (wdc.py — 356 lines)
-- [x] 0.3.2 WDCVerdict enum (CERTIFIED, CERTIFIED_WITH_NOTES, REVISION_REQUIRED, REJECTED, VETOED)
-- [x] 0.3.3 Compliance VETO logic (overrides any composite score)
-- [x] 0.3.4 16 WDC tests passing
-- [ ] 0.3.5 run_debate() — async full debate cycle with all 5 agents
-- [ ] 0.3.6 Revision loop (if REVISION_REQUIRED, re-draft and re-score up to 3 cycles)
+### Database
+- [x] PostgreSQL models (User, Case, Message, Deadline)
+- [x] CRUD operations (async)
+- [x] Alembic migrations configured
+- [x] RDS provisioned (cyphergy-beta, available)
+- [ ] Run alembic upgrade head on RDS (via ECS init container — VPC only)
+- [ ] Case persistence endpoints (Devin PR #5, merged — wire into api.py)
 
-### 0.4 Verification Chain
-- [x] 0.4.1 CitationVerifier 5-step pipeline (citation_chain.py — 1,314 lines)
-- [x] 0.4.2 External-retrieval hard constraint (Step 3 — model memory NEVER sufficient)
-- [x] 0.4.3 CourtListener API integration (search, fetch opinion text)
-- [x] 0.4.4 Batch verification with asyncio.gather
-- [ ] 0.4.5 Integration test against real CourtListener API
+### Verification + Legal
+- [x] Citation Verification Chain (5-step, external-retrieval hard constraint)
+- [x] Deadline Calculator (17 tests, 6 jurisdictions)
+- [x] 57 jurisdiction containers (50 states + federal + DC + 5 territories)
+- [x] Practice area split (civil, criminal, overlap + 28 sub-areas)
+- [x] Overlap rules (FL § 768.72, CA § 3294, TX § 41.003, LA art. 2315.4, NY, FED RICO/FCA)
 
-### 0.5 Deadline Calculator
-- [x] 0.5.1 DeadlineCalculator with 6 jurisdictions (deadline_calc.py — 478 lines)
-- [x] 0.5.2 17 deadline tests — all passing
-- [x] 0.5.3 Conservative computation (earlier date when ambiguous)
-- [x] 0.5.4 Holiday engine with algorithmic computation
-- [ ] 0.5.5 Expand to 10+ states (IL, GA, OH, PA, VA)
-- [ ] 0.5.6 Court-specific local rule overrides
+### Infrastructure
+- [x] AWS: ECR, ECS cluster, S3 (encrypted), CloudWatch, RDS, SG, IAM, task def
+- [x] Cloudflare: cyphergy.ai ACTIVE, admin.cyphergy.ai, Pages x2, SSL strict, WAF
+- [x] CI/CD: GitHub Actions, WDC merge gate, Trust but Verify branching
+- [x] Security: 4-layer rate limiter, middleware, secrets manager, no-placeholders hook
+- [ ] Connect GitHub → Cloudflare Pages (both projects — CF dashboard)
+- [ ] Create ECS Fargate service with ALB
+- [ ] First deployment to ECS
 
-### 0.6 Configuration & Settings
-- [x] 0.6.1 CPAA-compliant Settings (pydantic-settings, all from env)
-- [x] 0.6.2 .env.example with 40 integration keys
-- [x] 0.6.3 External retrieval hard constraint validator
-- [ ] 0.6.4 Bedrock provider adapter (LLM_PROVIDER=bedrock for production)
+### Frontend (V0 mandate — all UI via v0.dev)
+- [x] Chat interface (9 files, wired to real API)
+- [x] Case dashboard (11 files, props-based, no fake data)
+- [x] Onboarding flow (10 files)
+- [x] Source protection (no source maps, WAF blocks, security headers)
+- [ ] V0: Citation viewer component
+- [ ] V0: Deadline manager component
+- [ ] V0: Admin dashboard (login, users, agents, deploy, chat)
+- [ ] V0: Mobile app shell (Expo)
 
-### 0.7 API & App Entrypoint
-- [ ] 0.7.1 FastAPI app (src/api.py) with /health endpoint
-- [ ] 0.7.2 POST /api/v1/chat — Lead Counsel conversational endpoint
-- [ ] 0.7.3 POST /api/v1/classify — task classification endpoint
-- [ ] 0.7.4 POST /api/v1/verify-citation — citation verification endpoint
-- [ ] 0.7.5 POST /api/v1/compute-deadline — deadline calculator endpoint
-- [ ] 0.7.6 Wire security middleware (CORS, headers, request ID)
-- [ ] 0.7.7 Wire rate limiter (4-layer)
-
-### 0.8 Prototype Reconciliation
-- [ ] 0.8.1 Audit 48 untracked prototype files (ciphergy/, agents/, core/, etc.)
-- [ ] 0.8.2 Decide: commit (archive alongside src/) or .gitignore
-- [ ] 0.8.3 Migrate any useful prototype code into src/ structure
-
----
-
-## PHASE 1: AGENT CORE
-**Goal:** All 5 agents wired with full debate consensus
-
-- [ ] 1.1 Build full orchestration loop: user input → Lead Counsel classify → fan-out → WDC debate → deliver
-- [ ] 1.2 Agent system prompts: wire Amendment 1.0 directives into each agent's behavioral protocol
-- [ ] 1.3 Multi-turn conversation support across all agents
-- [ ] 1.4 Agent state persistence (Redis working memory + Postgres episodic)
-- [ ] 1.5 Checkpoint/rollback system (LangGraph-style state snapshots)
-- [ ] 1.6 E13: What-If Strategy Branching (fork case state, model multiple paths)
-- [ ] 1.7 Integration tests: full 5-agent debate on a test case scenario
-- [ ] 1.8 Benchmark: measure response time, token usage, cost per debate cycle
+### Admin + Beta
+- [x] Admin panel backend (separate auth, routes, internal chat agent, audit log)
+- [x] Beta gate (IP locking, invite-only, email sender)
+- [x] admin.cyphergy.ai DNS + Pages project
+- [ ] Wire admin routes into separate FastAPI app (not shared with user API)
+- [ ] Admin panel V0 frontend deployed to admin-cyphergy.pages.dev
+- [ ] First beta user invited through admin panel
 
 ---
 
-## PHASE 2: LEGAL KNOWLEDGE ENGINE
-**Goal:** Verified citations, jurisdiction rules, anti-hallucination
+## PHASE 1: KNOWLEDGE ENGINE [~40% COMPLETE]
 
-- [ ] 2.1 Verified Authority Registry (VAR) — pgvector-backed citation database
-- [ ] 2.2 CourtListener MCP server (E16)
-- [ ] 2.3 US Code API connector (uscode.house.gov XML)
-- [ ] 2.4 eCFR API connector (ecfr.gov)
-- [ ] 2.5 Google Scholar legal search (backup verification)
-- [ ] 2.6 State statute connectors — top 10 states
-- [ ] 2.7 Jurisdiction Rules Engine — structured rules per jurisdiction
-- [ ] 2.8 Citation recheck pipeline (30-day currency check)
-- [ ] 2.9 E9: Real-Time Case Law Monitoring (CourtListener webhooks)
-- [ ] 2.10 E14: Outcome-Based Learning Engine (track case outcomes → improve recommendations)
+### Perpetual Crawler (exhaustive case law cataloging)
+- [x] CaseLawCrawler — perpetual background crawler via CourtListener API
+- [x] CaseLawEntry — lightweight: case#, date, parties, links, holdings, tags
+- [x] StatuteIndex — every statute mapped to interpreting case law
+- [x] CaseCatalog — two modes: context-aware + context-free search
+- [x] PartyRole tags (SUPPORTS_PLAINTIFF / SUPPORTS_DEFENDANT)
+- [x] Positive/negative tags for instant matching
+- [ ] Deploy crawler as background ECS task (perpetual, resumable)
+- [ ] Crawl ALL Supreme Court cases (start with SCOTUS → circuit → state)
+- [ ] Crawl ALL state supreme court cases (50 states)
+- [ ] Crawl ALL state appellate court cases
+- [ ] Crawl ALL federal circuit court cases (1st-11th + DC + Federal)
+- [ ] Crawl ALL federal district court cases
+- [ ] Aurora PostgreSQL storage for catalog (not in-memory)
+- [ ] Cloudflare Vectorize for semantic search of holdings
 
----
+### Semantic Holding Extraction (UPGRADE #1)
+- [ ] Use dual-brain (Opus + Llama + Cohere) to EXTRACT actual legal holdings
+- [ ] Not just "cites statute" but "holds that under § X, Y is required for Z"
+- [ ] Classify each holding: rule statement, application, exception, limitation
+- [ ] Store extracted holdings as searchable structured data
+- [ ] Build heading/headnote system (AI equivalent of Westlaw KeyCite/Headnotes)
+- [ ] Verify extracted holdings through citation verification chain
+- [ ] 3-brain consensus required for each extracted holding
 
-## PHASE 3: CASE MANAGEMENT ENGINE
-**Goal:** Full case lifecycle tracking
+### Argument Graph (UPGRADE #2)
+- [ ] Directed graph: cases SUPPORT / WEAKEN / DISTINGUISH / OVERRULE other cases
+- [ ] For each statute: build the full argument chain
+- [ ] "Start with Case A (rule), supported by B, strengthened by C, defendant cites D"
+- [ ] User gets an argument STRATEGY, not just a case list
+- [ ] Store graph in Aurora PostgreSQL with recursive CTE queries
+- [ ] Visualize argument graph in V0 frontend (nodes + edges)
+- [ ] Red Team agent automatically finds counter-arguments from the graph
 
-- [ ] 3.1 Case Knowledge Store — per-matter 22-section structured storage
-- [ ] 3.2 Case state machine — tracks litigation phase, transitions, active deadlines
-- [ ] 3.3 Deadline engine — proactive warnings, calendar integration, tiered reminders (14/7/3/1 day)
-- [ ] 3.4 Evidence inventory — upload, classification, chain of custody, authentication
-- [ ] 3.5 Extraction automation — auto-generate 22-section extraction on demand
-- [ ] 3.6 Document processing pipeline — complaint analyzer, motion analyzer, contract reviewer
-- [ ] 3.7 Claims/defenses tracker — elements mapping, evidence linking, viability scoring
-- [ ] 3.8 E1: Evidence Weaponization Engine (element-evidence matrix, discovery sequencing)
-- [ ] 3.9 E6: Opposing Party Vulnerability Scanner (public records deep scan)
-- [ ] 3.10 E7: Procedural Trap Detector (monitor opposing party for violations)
-- [ ] 3.11 Batch Document Intake pipeline (14-category classification, OCR, priority routing)
+### Predictive Outcome Modeling (UPGRADE #3)
+- [ ] Tag every cataloged case: plaintiff-win vs defendant-win
+- [ ] Per statute + per jurisdiction: compute win probability
+- [ ] "847 cases interpreting § 768.72 in S.D. Fla → 73% plaintiff success with expert proffer"
+- [ ] Factor in: court, judge, year, practice area, evidence type
+- [ ] Display win probability in case dashboard
+- [ ] Update predictions as new cases are cataloged (continuous learning)
 
----
+### Contradiction Detection Engine (ENHANCEMENT)
+- [ ] When dual-brain disagrees on a holding: analyze WHY they disagree
+- [ ] Catalog statutory ambiguities automatically
+- [ ] Flag genuine conflicts of law (not just model errors)
+- [ ] Create "ambiguity reports" — valuable for attorneys
 
-## PHASE 4: DOCUMENT GENERATION
-**Goal:** Court-ready .docx/.pdf filing production
+### Cross-Jurisdiction Conflict Router (ENHANCEMENT)
+- [ ] Meta-container above jurisdiction containers
+- [ ] Handles choice-of-law analysis (contract signed in TX, breach in LA, suit in FED)
+- [ ] Queries multiple containers simultaneously and reconciles
+- [ ] Identifies which jurisdiction's law governs each issue
 
-- [ ] 4.1 docxtpl rendering engine — court-formatted documents
-- [ ] 4.2 WeasyPrint PDF generation — memos, research summaries
-- [ ] 4.3 Court-specific format profiles — federal + state systems + local rules
-- [ ] 4.4 Template library — motions, pleadings, discovery, correspondence per jurisdiction
-- [ ] 4.5 Watermark/marking system — DRAFT/WORK PRODUCT/CONFIDENTIAL headers
-- [ ] 4.6 File naming convention enforcement
-- [ ] 4.7 E-filing format validation (PDF/A, font restrictions)
-- [ ] 4.8 Exhibit preparation — Bates numbering, exhibit tabs, exhibit lists
-- [ ] 4.9 Document revision tracking with diff view
-- [ ] 4.10 E8: Case Narrative Engine (theory of case, visual timeline, jury instructions)
-- [ ] 4.11 E10: Pro Se Credibility Optimizer (professional formatting, filing quality score)
+### Temporal Versioning (ENHANCEMENT)
+- [ ] Maintain historical versions of statutes (not just current law)
+- [ ] "Law as it existed on DATE" for retroactivity and SOL analysis
+- [ ] Amendment timeline per statute with effective dates
 
----
+### Confidence Decay (ENHANCEMENT)
+- [ ] Model knowledge confidence decays over time since last corpus refresh
+- [ ] Stale containers report lower confidence on recent issues
+- [ ] Auto-trigger re-crawl when confidence drops below threshold
 
-## PHASE 5: INTEGRATIONS & CONNECTORS
-**Goal:** Wire external services via MCP protocol
-
-- [ ] 5.1 Google Drive connector — matter file organization, document storage
-- [ ] 5.2 Google Calendar — deadline events with tiered reminders
-- [ ] 5.3 Gmail connector — draft composition, prior communication search
-- [ ] 5.4 Asana connector — litigation project management
-- [ ] 5.5 PACER/CM-ECF connector — federal court docket access
-- [ ] 5.6 State court portal connectors — e-filing status, docket search
-- [ ] 5.7 E16: Build 10 custom legal MCP servers (open-source ecosystem play)
-- [ ] 5.8 Integration testing suite for all connectors
-- [ ] 5.9 Slack connector — status updates, context retrieval
-- [ ] 5.10 DocuSign — e-signatures
-
----
-
-## PHASE 6: PRO SE FEATURES
-**Goal:** Features that level the playing field for self-represented litigants
-
-- [ ] 6.1 Plain Language Translator — legal jargon ↔ plain English
-- [ ] 6.2 Filing Checklist Generator — step-by-step per court
-- [ ] 6.3 E4: Judge Profile Engine — CourtListener data, ruling patterns, preferences
-- [ ] 6.4 Fee Waiver Assistant — IFP application guidance + form generation
-- [ ] 6.5 Legal Aid Eligibility Screener — LSC, pro bono panels, law school clinics
-- [ ] 6.6 Courtroom Procedure Coach — hearing expectations, etiquette, objection basics
-- [ ] 6.7 Service of Process Guide — per-jurisdiction with approved methods
-- [ ] 6.8 Court Form Finder — mandatory forms with pre-fill
-- [ ] 6.9 Offline Courtroom Mode — pre-hearing package, PDF export, mobile cache
-- [ ] 6.10 E2: Settlement Pressure Engine (cost-of-litigation modeling, demand letters)
-- [ ] 6.11 E3: Motion Practice Warfare (offensive sequencing, RFA warfare, SJ packages)
-- [ ] 6.12 E5: Damages Maximization Engine (taxonomy, claim stacking, interest calc)
-- [ ] 6.13 E12: Appeal Preservation Engine (issue tracker, objection generator)
-- [ ] 6.14 E15: Opposing Counsel Profiling (litigation history, exploitable patterns)
+### Container-to-Container Citation Sharing (ENHANCEMENT)
+- [ ] Federal case verified → broadcast to ALL state containers
+- [ ] One container's verification benefits all others
+- [ ] Reduces redundant CourtListener API calls across jurisdictions
 
 ---
 
-## PHASE 7: FRONTEND & UX
-**Goal:** User-facing app + admin panel
+## PHASE 2: MULTI-MODEL ARCHITECTURE [~60% COMPLETE]
 
-### User-Facing UI (cyphergy.ai)
-- [ ] 7.1 V0: Design conversational interface (clean like ChatGPT — input box, nothing else)
-- [ ] 7.2 V0: Case dashboard (claims, deadlines, evidence inventory, confidence scores)
-- [ ] 7.3 V0: Document viewer/editor with confidence flags
-- [ ] 7.4 V0: Deadline calendar with color-coded urgency
-- [ ] 7.5 Expo React Native mobile app — zero marketing, clean, ready to go
-- [ ] 7.6 Onboarding UX — 5-step flow, first value in 5 minutes
-- [ ] 7.7 14-day reverse trial (Pro features → downgrade to Free)
-- [ ] 7.8 WCAG 2.1 AA accessibility compliance
-- [ ] 7.9 SSE streaming for real-time agent output
-- [ ] 7.10 E18: Real-Time Cost Transparency dashboard
-
-### Master Admin Panel (FULLY SEPARATE)
-- [ ] 7.11 V0: Full analytics dashboard (users, cases, agents, costs, accuracy)
-- [ ] 7.12 V0: Connector plug-in management (add/remove/configure integrations)
-- [ ] 7.13 V0: System-wide override controls (feature flags, model routing, thresholds)
-- [ ] 7.14 V0: Built-in chat with coding agents (git + redeploy from panel)
-- [ ] 7.15 Separate deployment — no shared code with user UI
-- [ ] 7.16 No source code visible from browser inspect
-- [ ] 7.17 Admin auth: separate identity provider, MFA required
+- [x] 3-tier model router (Opus orchestrator + extended WDC + dual-brain)
+- [x] Bedrock model mapping (real ARNs from aws bedrock list-foundation-models)
+- [x] Auto-rotation via MODEL_OVERRIDE_{ROLE} env vars
+- [x] Dual-brain per jurisdiction (Opus + Llama 4 Scout + Cohere Command-R+)
+- [ ] Wire model_router into orchestrator (replace single-model invoke)
+- [ ] Wire extended WDC panel (8 models scoring instead of 5)
+- [ ] Wire dual-brain into jurisdiction container queries
+- [ ] Benchmark: dual-brain consensus accuracy vs single-model
+- [ ] Cost optimization: use Tier 3 models for non-legal tasks
 
 ---
 
-## PHASE 8: HARDENING & PRODUCTION
-**Goal:** Battle-tested, compliant, deployed
+## PHASE 3: DEPLOYMENT + BETA [REMAINING]
 
-### Testing
-- [ ] 8.1 E2E tests with 10 anonymized real case scenarios
-- [ ] 8.2 Citation accuracy audit — verify 100% of citations in test outputs
-- [ ] 8.3 Deadline computation testing — verify against known court calendars
-- [ ] 8.4 Red Team stress test — Agent 4 attacks every output type
-- [ ] 8.5 Jurisdictional coverage testing — top 10 states + federal
-- [ ] 8.6 WDC calibration — tune debate weights/thresholds from test metrics
-- [ ] 8.7 Load testing + cost optimization
-- [ ] 8.8 Error Museum — document every bug with root cause and regression test
-
-### Compliance & Security
-- [ ] 8.9 SOC 2 Type II audit preparation
-- [ ] 8.10 EU AI Act Article 9/11 conformity documentation
-- [ ] 8.11 Formal STRIDE/PASTA threat model
-- [ ] 8.12 Penetration testing (annual schedule)
-- [ ] 8.13 E&O insurance consideration
-- [ ] 8.14 State bar AI guidelines compliance tracker
-
-### Deployment
-- [ ] 8.15 Deploy to staging (ECS Fargate) with all feature flags OFF
-- [ ] 8.16 Smoke test: full case lifecycle on staging
-- [ ] 8.17 Progressive feature flag rollout (Phase 1 features first)
-- [ ] 8.18 Production deployment — cyphergy.ai live
-- [ ] 8.19 Monitoring: Sentry, CloudWatch, cost alerts
-- [ ] 8.20 E11: Compliance Monitoring Dashboard (court order tracker, opposing party compliance)
-
-### Go-to-Market
-- [ ] 8.21 Pricing: Free ($0) / Pro ($29) / Team ($49/user) / Enterprise (custom)
-- [ ] 8.22 Revenue model: bear case (15-25% conversion) as planning target
-- [ ] 8.23 Content marketing + legal forum SEO
-- [ ] 8.24 Legal aid organization partnerships
-- [ ] 8.25 Beta invite program (500 free users)
+- [ ] Connect GitHub → Cloudflare Pages (user + admin)
+- [ ] Create ECS Fargate service with ALB
+- [ ] Alembic migration via ECS init container
+- [ ] First real Bedrock API call end-to-end
+- [ ] Start perpetual crawler (background ECS task)
+- [ ] First beta user invited
+- [ ] First real case processed through full pipeline
+- [ ] Sentry DSN wired for production error tracking
+- [ ] Promote dev → staging (WDC gate review)
+- [ ] Promote staging → main (manual approval)
 
 ---
 
-## PHASE 9: JURISDICTION CONTAINERS (Future — Post-Launch)
-**Goal:** Per-jurisdiction fine-tuned models that outperform general AI
+## PHASE 4: PRODUCTION HARDENING [NOT STARTED]
 
-- [ ] 9.1 Architecture: each jurisdiction = own container with fine-tuned model
-- [ ] 9.2 Training pipeline: WDC debate transcripts → SageMaker → Bedrock deployment
-- [ ] 9.3 HuggingFace base models (LegalBERT / fine-tuned Llama)
-- [ ] 9.4 First container: Louisiana (home jurisdiction)
-- [ ] 9.5 Second container: Federal
-- [ ] 9.6 Benchmark framework: per-jurisdiction accuracy vs general-purpose AI
-- [ ] 9.7 Scale to 50 states + territories
-- [ ] 9.8 E14 integration: outcome data feeds training loop
-
----
-
-## INFRASTRUCTURE (Cross-Phase)
-
-### Already Done
-- [x] Dockerfile (multi-stage, non-root, health check)
-- [x] docker-compose.yml (app + Postgres 16/pgvector + Redis 7)
-- [x] CloudFormation (ECS Fargate, ALB, S3, ECR, IAM)
-- [x] ECS task definition with Secrets Manager
-- [x] Deploy script (build → ECR → ECS rolling update)
-- [x] GitHub Actions CI (lint, test, security scan)
-- [x] Weekly security scan + Dependabot
-- [x] 4-layer rate limiter (IP/user/tenant/global circuit breaker)
-- [x] Security middleware (HSTS, CSP, CORS, request ID audit)
-- [x] Cloudflare WAF rules (10 rules + managed rulesets)
-- [x] GUARDRAILS.yml + no-placeholders hook
-- [x] Sentry + Linear integrations
-- [x] CLAUDE.md + Devin orchestration protocol
-
-### Remaining
-- [ ] Wire Sentry DSN in production
-- [ ] Wire Linear team ID for project tracking
-- [ ] Set up AWS Secrets Manager entries for production
-- [ ] Configure Cloudflare DNS for cyphergy.ai
-- [ ] SSL certificate via Cloudflare
-- [ ] Set up monitoring dashboards (CloudWatch)
-- [ ] Set up cost alerts (AWS Budgets)
+- [ ] SOC 2 Type II documentation
+- [ ] EU AI Act Article 9/11 conformity docs
+- [ ] WCAG 2.1 AA accessibility audit
+- [ ] Formal STRIDE threat model
+- [ ] E&O insurance consideration
+- [ ] Load testing + cost optimization
+- [ ] Error Museum populated from beta feedback
+- [ ] WDC calibration from real case outcomes
 
 ---
 
-## HARD MANDATES (Apply to ALL phases)
+## HARD MANDATES (ALL PHASES)
 
 1. No placeholders/filler/simulations/demo data — EVER (hook enforced)
 2. No AI attribution in commits (@M:014)
 3. Citation verification: external text only, never model memory
 4. Deadline computation: conservative (earlier date when ambiguous)
 5. Admin panel fully disconnected from user UI
-6. DEV: Anthropic (Opus 4.6 orchestrator). PROD: Bedrock Core (best per agent class)
+6. DEV: Anthropic. PROD: Bedrock Core (best per agent class)
 7. All CI quality gates enforced — no continue-on-error
-8. PII never in logs, file names, or task titles
+8. All UI via V0 — no hand-written components
+9. Dual-brain consensus required for legal holdings
+10. Perpetual crawler runs until ALL case law cataloged
 
 ---
 
@@ -294,13 +203,14 @@
 
 | Metric | Current | Target |
 |--------|---------|--------|
-| Python files | 83 | — |
-| Lines of code | 22,316 | — |
-| Tests passing | 62 | 200+ |
-| WDC spec score | 8.585 | 8.5+ maintained |
-| Citation accuracy | untested | 99.9% |
-| Deadline accuracy | 17/17 tests | 100% |
-| Jurisdictions | 6 | 50+ states + federal |
-| API endpoints | 0 | 5+ (Phase 0.7) |
-| Agents operational | 1 (Lead) | 5 (full WDC) |
-| Production readiness | ~15% | 100% |
+| Python files | 55+ | — |
+| Lines of code | 60,000+ | — |
+| Tests passing | 33+ | 200+ |
+| Jurisdictions | 57 | 57 (complete) |
+| Practice sub-areas | 28 | 28 (complete) |
+| Overlap rules | 7 | 50+ (all states) |
+| Cases cataloged | 0 | 12,000,000+ |
+| Statutes indexed | 0 | 100,000+ |
+| Agents operational | 5 | 5 + 3 extended + 3 dual-brain |
+| Real API calls | 0 | First call is #1 priority |
+| Production readiness | ~25% | 100% |
