@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Bot, CheckCircle2, Circle, Clock, FileSearch, Loader2, Search, Zap } from "lucide-react"
+import { Bot, CheckCircle2, Clock, FileSearch, Loader2, Search, Zap } from "lucide-react"
 
 type EventType = "complete" | "running" | "queued" | "flagged"
 
@@ -16,61 +16,7 @@ interface AgentEvent {
   duration?: string
 }
 
-const events: AgentEvent[] = [
-  {
-    id: "e1",
-    agent: "ContractAnalyst",
-    action: "Clause extraction complete",
-    detail: "Identified 14 potentially adverse clauses in Exhibit C",
-    time: "2m ago",
-    type: "complete",
-    duration: "38s",
-  },
-  {
-    id: "e2",
-    agent: "PrecedentFinder",
-    action: "Searching case law database",
-    detail: "Querying SDNY rulings on SaaS breach 2019–2024",
-    time: "5m ago",
-    type: "running",
-    duration: "ongoing",
-  },
-  {
-    id: "e3",
-    agent: "RiskScorer",
-    action: "Liability exposure updated",
-    detail: "Tortious interference risk elevated to 6.8 — new deposition transcript",
-    time: "14m ago",
-    type: "flagged",
-    duration: "12s",
-  },
-  {
-    id: "e4",
-    agent: "DocReview",
-    action: "Privilege log generated",
-    detail: "312 documents flagged for attorney-client privilege review",
-    time: "31m ago",
-    type: "complete",
-    duration: "2m 14s",
-  },
-  {
-    id: "e5",
-    agent: "TimelineBuilder",
-    action: "Chronology analysis queued",
-    detail: "Waiting for deposition transcripts D4-D9 upload",
-    time: "1h ago",
-    type: "queued",
-  },
-  {
-    id: "e6",
-    agent: "DiscoveryBot",
-    action: "ESI processing complete",
-    detail: "84,200 emails processed — 1,284 responsive documents identified",
-    time: "3h ago",
-    type: "complete",
-    duration: "47m",
-  },
-]
+/** Data loaded from case context via props. No hardcoded data. */
 
 const typeConfig: Record<EventType, { icon: React.ElementType; iconClass: string; badgeClass: string; label: string }> = {
   complete: {
@@ -108,7 +54,9 @@ const agentIcons: Record<string, React.ElementType> = {
   DiscoveryBot: FileSearch,
 }
 
-export function AgentActivity() {
+export function AgentActivity({ events = [] }: { events?: AgentEvent[] }) {
+  const runningCount = events.filter((ev) => ev.type === "running").length
+
   return (
     <Card className="flex flex-col gap-0 border-border bg-card">
       <CardHeader className="pb-3 flex-row items-center justify-between">
@@ -116,14 +64,21 @@ export function AgentActivity() {
           <Bot className="w-4 h-4 text-primary" />
           <CardTitle className="text-sm font-semibold text-foreground">Agent Activity</CardTitle>
         </div>
-        <Badge variant="secondary" className="text-[10px] font-mono">
-          <span className="w-1.5 h-1.5 rounded-full bg-[oklch(0.6_0.2_250)] mr-1.5 animate-pulse inline-block" />
-          1 running
-        </Badge>
+        {runningCount > 0 && (
+          <Badge variant="secondary" className="text-[10px] font-mono">
+            <span className="w-1.5 h-1.5 rounded-full bg-[oklch(0.6_0.2_250)] mr-1.5 animate-pulse inline-block" />
+            {runningCount} running
+          </Badge>
+        )}
       </CardHeader>
 
       <CardContent className="p-4 pt-0 flex flex-col gap-0">
-        {events.map((ev, i) => {
+        {events.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
+            <Bot className="w-8 h-8 mb-2 opacity-40" />
+            <p className="text-sm">No agent activity yet</p>
+          </div>
+        ) : events.map((ev, i) => {
           const cfg = typeConfig[ev.type]
           const AgentIcon = agentIcons[ev.agent] ?? Bot
           const StatusIcon = cfg.icon

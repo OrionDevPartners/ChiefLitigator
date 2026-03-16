@@ -11,44 +11,7 @@ interface MatrixRow {
   elements: { label: string; status: Status }[]
 }
 
-const matrix: MatrixRow[] = [
-  {
-    claim: "Breach of Contract",
-    elements: [
-      { label: "Valid Contract", status: "Supported" },
-      { label: "Performance", status: "Supported" },
-      { label: "Breach", status: "Strong" },
-      { label: "Damages", status: "Moderate" },
-    ],
-  },
-  {
-    claim: "Neg. Misrepresentation",
-    elements: [
-      { label: "Duty of Care", status: "Moderate" },
-      { label: "False Statement", status: "Strong" },
-      { label: "Reliance", status: "Moderate" },
-      { label: "Damages", status: "Weak" },
-    ],
-  },
-  {
-    claim: "Unjust Enrichment",
-    elements: [
-      { label: "Benefit Conferred", status: "Supported" },
-      { label: "Knowledge", status: "Moderate" },
-      { label: "Injustice", status: "Weak" },
-      { label: "Remedy", status: "Unresolved" },
-    ],
-  },
-  {
-    claim: "Tortious Interference",
-    elements: [
-      { label: "Business Rel.", status: "Moderate" },
-      { label: "Knowledge", status: "Weak" },
-      { label: "Interference", status: "Unresolved" },
-      { label: "Damages", status: "Unresolved" },
-    ],
-  },
-]
+/** Data loaded from case context via props. No hardcoded data. */
 
 const statusStyles: Record<Status, { cell: string; text: string }> = {
   Strong: {
@@ -81,7 +44,7 @@ const statusDot: Record<Status, string> = {
   Unresolved: "bg-muted-foreground/40",
 }
 
-export function ClaimsMatrix() {
+export function ClaimsMatrix({ matrix = [] }: { matrix?: MatrixRow[] }) {
   return (
     <Card className="flex flex-col gap-0 border-border bg-card">
       <CardHeader className="pb-3 flex-row items-center justify-between">
@@ -89,74 +52,85 @@ export function ClaimsMatrix() {
           <Grid3X3 className="w-4 h-4 text-primary" />
           <CardTitle className="text-sm font-semibold text-foreground">Claims Matrix</CardTitle>
         </div>
-        <div className="flex items-center gap-2">
-          {(["Strong", "Moderate", "Weak", "Unresolved"] as Status[]).map((s) => (
-            <span key={s} className="flex items-center gap-1 text-[10px] text-muted-foreground">
-              <span className={`w-1.5 h-1.5 rounded-full ${statusDot[s]}`} />
-              {s}
-            </span>
-          ))}
-        </div>
+        {matrix.length > 0 && (
+          <div className="flex items-center gap-2">
+            {(["Strong", "Moderate", "Weak", "Unresolved"] as Status[]).map((s) => (
+              <span key={s} className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                <span className={`w-1.5 h-1.5 rounded-full ${statusDot[s]}`} />
+                {s}
+              </span>
+            ))}
+          </div>
+        )}
       </CardHeader>
 
       <CardContent className="p-4 pt-0 overflow-x-auto">
-        <table className="w-full text-xs border-separate border-spacing-y-1" role="table">
-          <thead>
-            <tr>
-              <th className="text-left text-[10px] font-medium text-muted-foreground uppercase tracking-wider pb-2 pr-3 w-36">
-                Claim
-              </th>
-              {matrix[0].elements.map((e) => (
-                <th
-                  key={e.label}
-                  className="text-center text-[10px] font-medium text-muted-foreground uppercase tracking-wider pb-2 px-1"
-                >
-                  {e.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {matrix.map((row) => (
-              <tr key={row.claim}>
-                <td className="pr-3 py-0.5">
-                  <span className="text-[11px] text-foreground font-medium whitespace-nowrap">
-                    {row.claim}
-                  </span>
-                </td>
-                {row.elements.map((el) => {
-                  const styles = statusStyles[el.status]
-                  return (
-                    <td key={el.label} className="px-1 py-0.5">
-                      <div
-                        className={`rounded border px-2 py-1.5 text-center ${styles.cell}`}
-                        title={el.status}
-                      >
-                        <span className={`text-[10px] font-medium leading-none ${styles.text}`}>
-                          {el.status}
-                        </span>
-                      </div>
+        {matrix.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
+            <Grid3X3 className="w-8 h-8 mb-2 opacity-40" />
+            <p className="text-sm">No claims tracked</p>
+          </div>
+        ) : (
+          <>
+            <table className="w-full text-xs border-separate border-spacing-y-1" role="table">
+              <thead>
+                <tr>
+                  <th className="text-left text-[10px] font-medium text-muted-foreground uppercase tracking-wider pb-2 pr-3 w-36">
+                    Claim
+                  </th>
+                  {matrix[0].elements.map((e) => (
+                    <th
+                      key={e.label}
+                      className="text-center text-[10px] font-medium text-muted-foreground uppercase tracking-wider pb-2 px-1"
+                    >
+                      {e.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {matrix.map((row) => (
+                  <tr key={row.claim}>
+                    <td className="pr-3 py-0.5">
+                      <span className="text-[11px] text-foreground font-medium whitespace-nowrap">
+                        {row.claim}
+                      </span>
                     </td>
-                  )
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                    {row.elements.map((el) => {
+                      const styles = statusStyles[el.status]
+                      return (
+                        <td key={el.label} className="px-1 py-0.5">
+                          <div
+                            className={`rounded border px-2 py-1.5 text-center ${styles.cell}`}
+                            title={el.status}
+                          >
+                            <span className={`text-[10px] font-medium leading-none ${styles.text}`}>
+                              {el.status}
+                            </span>
+                          </div>
+                        </td>
+                      )
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
-        {/* Legend badges */}
-        <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-border">
-          {(Object.entries(statusStyles) as [Status, { cell: string; text: string }][]).map(
-            ([status, styles]) => (
-              <Badge
-                key={status}
-                className={`text-[10px] border px-2 py-0.5 ${styles.cell} ${styles.text}`}
-              >
-                {status}
-              </Badge>
-            )
-          )}
-        </div>
+            {/* Legend badges */}
+            <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-border">
+              {(Object.entries(statusStyles) as [Status, { cell: string; text: string }][]).map(
+                ([status, styles]) => (
+                  <Badge
+                    key={status}
+                    className={`text-[10px] border px-2 py-0.5 ${styles.cell} ${styles.text}`}
+                  >
+                    {status}
+                  </Badge>
+                )
+              )}
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   )
