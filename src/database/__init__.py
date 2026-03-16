@@ -1,27 +1,22 @@
-"""Database package — async SQLAlchemy engine, session factory, and base model."""
+"""Cyphergy database layer.
 
-from __future__ import annotations
+Provides async SQLAlchemy engine, session factory, and ORM models
+for PostgreSQL (production) and SQLite (testing). All connection
+configuration is sourced from the DATABASE_URL environment variable
+(CPAA-compliant).
 
-import os
-from typing import AsyncIterator
+Exports:
+    engine: The async SQLAlchemy engine singleton.
+    async_session_factory: Session factory for request-scoped sessions.
+    Base: Declarative base for ORM models.
+    get_db: FastAPI dependency yielding a database session.
+"""
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import DeclarativeBase
+from src.database.engine import Base, async_session_factory, engine, get_db
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+asyncpg://localhost:5432/cyphergy",
-)
-
-engine = create_async_engine(DATABASE_URL, echo=False)
-async_session_factory = async_sessionmaker(engine, expire_on_commit=False)
-
-
-class Base(DeclarativeBase):
-    """Shared declarative base for all ORM models."""
-
-
-async def get_session() -> AsyncIterator[AsyncSession]:
-    """Yield an async session and ensure it is closed after use."""
-    async with async_session_factory() as session:
-        yield session
+__all__ = [
+    "Base",
+    "async_session_factory",
+    "engine",
+    "get_db",
+]

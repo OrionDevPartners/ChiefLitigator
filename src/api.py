@@ -32,6 +32,14 @@ from src.api_models import (
 )
 from src.auth.middleware import JWTAuthMiddleware
 from src.cases import router as cases_router
+from src.errors import (
+    AgentError,
+    AuthenticationError,
+    CitationVerificationError,
+    CyphergyError,
+    LLMProviderError,
+    RateLimitExceeded,
+)
 from src.legal.deadline_calc import (
     DeadlineCalculator,
     DeadlineType,
@@ -133,15 +141,28 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             ",".join(missing_recommended),
         )
 
+    # --- Sentry ---
+    # Initialize Sentry before the app starts accepting traffic.
+    # PII scrubbing is handled inside init_sentry() — legal data never leaves
+    # the tenant boundary.  If SENTRY_DSN is not set, this is a safe no-op.
+    from src.integrations.sentry import init_sentry
+
+    sentry_active = init_sentry()
+    if sentry_active:
+        logger.info("cyphergy_sentry | status=active")
+    else:
+        logger.info("cyphergy_sentry | status=disabled")
+
     llm_provider = os.getenv("LLM_PROVIDER", "anthropic")
     llm_model = os.getenv("LLM_MODEL", "claude-opus-4-6")
     app_env = os.getenv("APP_ENV", "development")
 
     logger.info(
-        "cyphergy_started | env=%s provider=%s model=%s agents=5",
+        "cyphergy_started | env=%s provider=%s model=%s agents=5 sentry=%s",
         app_env,
         llm_provider,
         llm_model,
+        sentry_active,
     )
 
     yield
@@ -285,6 +306,31 @@ async def health_ready() -> ReadinessResponse:
 
 
 # ---------------------------------------------------------------------------
+# Sentry debug endpoint (non-production only)
+# ---------------------------------------------------------------------------
+
+if os.getenv("APP_ENV", "development") != "production":
+
+    @app.get(
+        "/debug-sentry",
+        tags=["debug"],
+        summary="Trigger a test exception for Sentry verification",
+        include_in_schema=True,
+    )
+    async def debug_sentry() -> None:
+        """Raise an intentional exception to verify Sentry is capturing events.
+
+        This endpoint exists ONLY in non-production environments. It is
+        excluded entirely when APP_ENV=production (the route is never
+        registered). Use it after deployment to confirm that errors are
+        flowing to the Sentry dashboard with PII properly scrubbed.
+        """
+        raise RuntimeError(
+            "Sentry integration test — this error should appear in the Sentry dashboard."
+        )
+
+
+# ---------------------------------------------------------------------------
 # API v1 endpoints
 # ---------------------------------------------------------------------------
 
@@ -293,8 +339,10 @@ async def health_ready() -> ReadinessResponse:
     "/api/v1/chat",
     response_model=ChatResponse,
     responses={
-        500: {"model": ErrorResponse, "description": "Internal server error"},
+        401: {"model": ErrorResponse, "description": "Authentication required"},
         429: {"model": ErrorResponse, "description": "Rate limit exceeded"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+        503: {"model": ErrorResponse, "description": "LLM provider unavailable"},
     },
     tags=["chat"],
     summary="Chat with Lead Counsel",
@@ -308,6 +356,11 @@ async def chat(request: Request, body: ChatRequest) -> ChatResponse:
 
     If a jurisdiction is provided, it is injected into the blackboard
     context so all agents have jurisdiction awareness.
+
+    Graceful degradation:
+        - LLM provider failures -> 503 with safe message
+        - CyphergyError subclasses -> re-raised for typed handlers
+        - Unknown errors -> 500 with sanitized message (no stack traces)
     """
     request_id = getattr(request.state, "request_id", "unknown")
 
@@ -331,6 +384,10 @@ async def chat(request: Request, body: ChatRequest) -> ChatResponse:
             output_tokens=agent_response.output_tokens,
         )
 
+    except CyphergyError:
+        # Let typed exception handlers deal with CyphergyError subclasses
+        raise
+
     except Exception as exc:
         # Log error with request ID for correlation — never log user message (@M:010)
         logger.error(
@@ -339,11 +396,25 @@ async def chat(request: Request, body: ChatRequest) -> ChatResponse:
             type(exc).__name__,
             str(exc)[:200],
         )
+        # Detect LLM provider errors by exception type name (Anthropic SDK,
+        # botocore) and wrap them so the typed handler returns 503.
+        exc_type = type(exc).__name__
+        if exc_type in (
+            "APIConnectionError",
+            "APITimeoutError",
+            "InternalServerError",
+            "APIStatusError",
+            "RateLimitError",
+            "ClientError",
+            "BotoCoreError",
+            "EndpointConnectionError",
+        ):
+            raise LLMProviderError(str(exc)[:200]) from exc
+
         return JSONResponse(
             status_code=500,
             content=ErrorResponse(
                 error="An internal error occurred while processing your request.",
-                detail=type(exc).__name__,
                 request_id=request_id,
             ).model_dump(),
         )
@@ -353,8 +424,10 @@ async def chat(request: Request, body: ChatRequest) -> ChatResponse:
     "/api/v1/verify-citation",
     response_model=VerifyCitationResponse,
     responses={
-        500: {"model": ErrorResponse, "description": "Internal server error"},
+        401: {"model": ErrorResponse, "description": "Authentication required"},
         429: {"model": ErrorResponse, "description": "Rate limit exceeded"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+        502: {"model": ErrorResponse, "description": "External verification unavailable"},
     },
     tags=["verification"],
     summary="Verify a legal citation",
@@ -371,6 +444,11 @@ async def verify_citation(
         3. Holding Verification -- does the claimed holding match? (HARD CONSTRAINT: external text only)
         4. Good Law Check -- is the case still good law?
         5. Currency Check -- is it the current version? (for statutes)
+
+    Graceful degradation:
+        - If CourtListener is down, the citation is returned as PARTIAL
+          with a note that external verification was unavailable, rather
+          than failing the entire request.
     """
     request_id = getattr(request.state, "request_id", "unknown")
 
@@ -391,18 +469,71 @@ async def verify_citation(
             details=result.details,
         )
 
+    except CitationVerificationError as exc:
+        # CourtListener/external source failed — return PARTIAL result
+        # instead of an error. The citation exists but cannot be fully
+        # verified right now. This is graceful degradation, not a failure.
+        logger.warning(
+            "citation_verification_degraded | request_id=%s error=%s",
+            request_id,
+            str(exc)[:200],
+        )
+        return VerifyCitationResponse(
+            citation=body.citation,
+            status="partial",
+            steps_passed=[],
+            steps_failed=[],
+            external_source=None,
+            holding_summary=None,
+            holding_match=None,
+            good_law=None,
+            confidence=0.0,
+            details="External verification unavailable. Citation could not be verified against CourtListener. Please retry later.",
+        )
+
+    except CyphergyError:
+        # Let typed exception handlers deal with other CyphergyError subclasses
+        raise
+
     except Exception as exc:
+        # Detect CourtListener / httpx connection errors and degrade gracefully
+        exc_type = type(exc).__name__
+        if exc_type in (
+            "ConnectError",
+            "ConnectTimeout",
+            "ReadTimeout",
+            "HTTPStatusError",
+            "TimeoutException",
+        ):
+            logger.warning(
+                "citation_external_api_degraded | request_id=%s error_type=%s error=%s",
+                request_id,
+                exc_type,
+                str(exc)[:200],
+            )
+            return VerifyCitationResponse(
+                citation=body.citation,
+                status="partial",
+                steps_passed=[],
+                steps_failed=[],
+                external_source=None,
+                holding_summary=None,
+                holding_match=None,
+                good_law=None,
+                confidence=0.0,
+                details="External verification unavailable. Citation could not be verified against CourtListener. Please retry later.",
+            )
+
         logger.error(
             "verify_citation_error | request_id=%s error_type=%s error=%s",
             request_id,
-            type(exc).__name__,
+            exc_type,
             str(exc)[:200],
         )
         return JSONResponse(
             status_code=500,
             content=ErrorResponse(
                 error="An internal error occurred during citation verification.",
-                detail=type(exc).__name__,
                 request_id=request_id,
             ).model_dump(),
         )
@@ -511,6 +642,9 @@ async def compute_deadline(
                 request_id=request_id,
             ).model_dump(),
         )
+    except CyphergyError:
+        # Let typed exception handlers deal with CyphergyError subclasses
+        raise
     except Exception as exc:
         logger.error(
             "compute_deadline_error | request_id=%s error_type=%s error=%s",
@@ -522,24 +656,184 @@ async def compute_deadline(
             status_code=500,
             content=ErrorResponse(
                 error="An internal error occurred during deadline computation.",
-                detail=type(exc).__name__,
                 request_id=request_id,
             ).model_dump(),
         )
 
 
 # ---------------------------------------------------------------------------
-# Global exception handler
+# Typed exception handlers — one per CyphergyError subclass
 # ---------------------------------------------------------------------------
+# FastAPI dispatches to the most specific handler first. These handlers
+# ensure that:
+#   1. Users always get a safe, human-readable message.
+#   2. Stack traces and PII never leak to the client (@M:010).
+#   3. Each error type returns the correct HTTP status code.
+#   4. Server-side logs include enough context for debugging.
+# ---------------------------------------------------------------------------
+
+
+@app.exception_handler(LLMProviderError)
+async def llm_provider_error_handler(request: Request, exc: LLMProviderError) -> JSONResponse:
+    """Handle Anthropic/Bedrock API failures with a 503.
+
+    Returns a reassuring message that the user's case data is safe.
+    Load balancers should retry on 503 with exponential backoff.
+    """
+    request_id = getattr(request.state, "request_id", "unknown")
+    logger.error(
+        "llm_provider_error | request_id=%s path=%s error=%s",
+        request_id,
+        request.url.path,
+        str(exc)[:200],
+    )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=ErrorResponse(
+            error=exc.safe_message,
+            request_id=request_id,
+        ).model_dump(),
+        headers={"Retry-After": "30"},
+    )
+
+
+@app.exception_handler(CitationVerificationError)
+async def citation_verification_error_handler(
+    request: Request, exc: CitationVerificationError
+) -> JSONResponse:
+    """Handle CourtListener/external verification API failures with a 502.
+
+    Instead of failing the whole request, citations are marked PARTIAL
+    with a note that external verification was unavailable. The user
+    can retry verification later.
+    """
+    request_id = getattr(request.state, "request_id", "unknown")
+    logger.warning(
+        "citation_verification_error | request_id=%s path=%s error=%s",
+        request_id,
+        request.url.path,
+        str(exc)[:200],
+    )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=ErrorResponse(
+            error=exc.safe_message,
+            detail="External verification unavailable — citation marked as unverified.",
+            request_id=request_id,
+        ).model_dump(),
+    )
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    """Handle rate limit violations with 429 and Retry-After header.
+
+    The Retry-After header tells clients (and load balancers) how long
+    to wait before retrying. The layer field helps operators debug which
+    rate limit tier was hit.
+    """
+    request_id = getattr(request.state, "request_id", "unknown")
+    logger.warning(
+        "rate_limit_exceeded | request_id=%s path=%s layer=%s retry_after=%d",
+        request_id,
+        request.url.path,
+        exc.layer,
+        exc.retry_after,
+    )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=ErrorResponse(
+            error=exc.safe_message,
+            request_id=request_id,
+        ).model_dump(),
+        headers={
+            "Retry-After": str(exc.retry_after),
+            "X-RateLimit-Remaining": "0",
+        },
+    )
+
+
+@app.exception_handler(AuthenticationError)
+async def authentication_error_handler(request: Request, exc: AuthenticationError) -> JSONResponse:
+    """Handle authentication failures with a 401.
+
+    The same generic message is returned for expired, malformed, and
+    missing tokens to prevent token-state enumeration.
+    """
+    request_id = getattr(request.state, "request_id", "unknown")
+    # Log at WARNING — auth failures are expected traffic, not bugs
+    logger.warning(
+        "auth_error | request_id=%s path=%s",
+        request_id,
+        request.url.path,
+    )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=ErrorResponse(
+            error=exc.safe_message,
+            request_id=request_id,
+        ).model_dump(),
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
+@app.exception_handler(AgentError)
+async def agent_error_handler(request: Request, exc: AgentError) -> JSONResponse:
+    """Handle individual agent failures.
+
+    When a single agent in the pipeline fails, the orchestrator can
+    continue with the remaining agents. This handler is for cases where
+    the failure bubbles up to the API layer directly.
+    """
+    request_id = getattr(request.state, "request_id", "unknown")
+    logger.error(
+        "agent_error | request_id=%s path=%s agent_role=%s error=%s",
+        request_id,
+        request.url.path,
+        exc.agent_role,
+        str(exc)[:200],
+    )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=ErrorResponse(
+            error=exc.safe_message,
+            request_id=request_id,
+        ).model_dump(),
+    )
+
+
+@app.exception_handler(CyphergyError)
+async def cyphergy_error_handler(request: Request, exc: CyphergyError) -> JSONResponse:
+    """Catch-all for any CyphergyError subclass not handled above.
+
+    This ensures that new error types added to src/errors.py will
+    automatically get safe handling even before a dedicated handler
+    is registered.
+    """
+    request_id = getattr(request.state, "request_id", "unknown")
+    logger.error(
+        "cyphergy_error | request_id=%s path=%s error_type=%s error=%s",
+        request_id,
+        request.url.path,
+        type(exc).__name__,
+        str(exc)[:200],
+    )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=ErrorResponse(
+            error=exc.safe_message,
+            request_id=request_id,
+        ).model_dump(),
+    )
 
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    """Catch-all exception handler to prevent stack traces from leaking.
+    """Catch-all for any unhandled exception.
 
     Legal data platforms must never expose internal error details to
     clients. This handler logs the full error server-side and returns
-    a sanitized 500 response.
+    a sanitized 500 response. No stack traces, no PII (@M:010).
     """
     request_id = getattr(request.state, "request_id", "unknown")
     logger.error(

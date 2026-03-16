@@ -1,22 +1,23 @@
 """Case persistence API routes.
 
 Endpoints:
-    POST   /api/v1/cases              — create a new case
-    GET    /api/v1/cases              — list the authenticated user's cases
-    GET    /api/v1/cases/{case_id}    — get a single case with messages
-    POST   /api/v1/cases/{case_id}/messages — add a message to a case
+    POST   /api/v1/cases              -- create a new case
+    GET    /api/v1/cases              -- list the authenticated user's cases
+    GET    /api/v1/cases/{case_id}    -- get a single case with messages
+    POST   /api/v1/cases/{case_id}/messages -- add a message to a case
 """
 
 from __future__ import annotations
 
+import uuid
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.database import get_session
-from src.database.crud import add_message, create_case, get_case, list_cases
+from src.database import get_db
+from src.database.crud import create_case, create_message, get_case_with_messages, get_cases_for_user
 
 router = APIRouter(prefix="/api/v1/cases", tags=["cases"])
 
@@ -29,9 +30,8 @@ router = APIRouter(prefix="/api/v1/cases", tags=["cases"])
 class CreateCaseRequest(BaseModel):
     """Payload for creating a new case."""
 
-    title: str = Field(..., min_length=1, max_length=500, description="Case title.")
-    description: str = Field(default="", max_length=10_000, description="Optional case description.")
-    jurisdiction: Optional[str] = Field(default=None, max_length=100, description="Optional jurisdiction.")
+    name: str = Field(..., min_length=1, max_length=512, description="Case name.")
+    jurisdiction: Optional[str] = Field(default=None, max_length=64, description="Optional jurisdiction.")
 
 
 class MessageOut(BaseModel):
@@ -53,8 +53,7 @@ class CaseOut(BaseModel):
 
     id: str
     user_id: str
-    title: str
-    description: str
+    name: str
     jurisdiction: Optional[str] = None
     status: str
     created_at: str
@@ -70,7 +69,7 @@ class CaseDetailOut(CaseOut):
 class AddMessageRequest(BaseModel):
     """Payload for adding a message to a case."""
 
-    role: str = Field(..., min_length=1, max_length=50, description="Message role (e.g. 'user', 'assistant').")
+    role: str = Field(..., min_length=1, max_length=16, description="Message role (e.g. 'user', 'assistant').")
     content: str = Field(..., min_length=1, max_length=100_000, description="Message content.")
 
 
@@ -79,15 +78,18 @@ class AddMessageRequest(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-def _get_user_id(request: Request) -> str:
+def _get_user_id(request: Request) -> uuid.UUID:
     """Extract user_id from the JWT payload attached by auth middleware."""
     payload = getattr(request.state, "jwt_payload", None)
     if payload is None:
         raise HTTPException(status_code=401, detail="Authentication required.")
-    user_id: Optional[str] = payload.get("sub")
-    if not user_id:
+    sub: Optional[str] = payload.get("sub")
+    if not sub:
         raise HTTPException(status_code=401, detail="Token missing 'sub' claim.")
-    return user_id
+    try:
+        return uuid.UUID(sub)
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid 'sub' claim in token.")
 
 
 # ---------------------------------------------------------------------------
@@ -99,22 +101,20 @@ def _get_user_id(request: Request) -> str:
 async def create_case_endpoint(
     body: CreateCaseRequest,
     request: Request,
-    session: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(get_db),
 ) -> CaseOut:
     """Create a new case for the authenticated user."""
     user_id = _get_user_id(request)
     case = await create_case(
-        session,
+        db,
         user_id=user_id,
-        title=body.title,
-        description=body.description,
+        name=body.name,
         jurisdiction=body.jurisdiction,
     )
     return CaseOut(
-        id=case.id,
-        user_id=case.user_id,
-        title=case.title,
-        description=case.description,
+        id=str(case.id),
+        user_id=str(case.user_id),
+        name=case.name,
         jurisdiction=case.jurisdiction,
         status=case.status,
         created_at=case.created_at.isoformat(),
@@ -125,17 +125,16 @@ async def create_case_endpoint(
 @router.get("", response_model=List[CaseOut])
 async def list_cases_endpoint(
     request: Request,
-    session: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(get_db),
 ) -> List[CaseOut]:
     """List all cases belonging to the authenticated user."""
     user_id = _get_user_id(request)
-    cases = await list_cases(session, user_id=user_id)
+    cases = await get_cases_for_user(db, user_id=user_id)
     return [
         CaseOut(
-            id=c.id,
-            user_id=c.user_id,
-            title=c.title,
-            description=c.description,
+            id=str(c.id),
+            user_id=str(c.user_id),
+            name=c.name,
             jurisdiction=c.jurisdiction,
             status=c.status,
             created_at=c.created_at.isoformat(),
@@ -149,26 +148,29 @@ async def list_cases_endpoint(
 async def get_case_endpoint(
     case_id: str,
     request: Request,
-    session: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(get_db),
 ) -> CaseDetailOut:
     """Get a single case with all its messages."""
     user_id = _get_user_id(request)
-    case = await get_case(session, case_id=case_id, user_id=user_id)
+    try:
+        cid = uuid.UUID(case_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Case not found.")
+    case = await get_case_with_messages(db, case_id=cid, user_id=user_id)
     if case is None:
         raise HTTPException(status_code=404, detail="Case not found.")
     return CaseDetailOut(
-        id=case.id,
-        user_id=case.user_id,
-        title=case.title,
-        description=case.description,
+        id=str(case.id),
+        user_id=str(case.user_id),
+        name=case.name,
         jurisdiction=case.jurisdiction,
         status=case.status,
         created_at=case.created_at.isoformat(),
         updated_at=case.updated_at.isoformat(),
         messages=[
             MessageOut(
-                id=m.id,
-                case_id=m.case_id,
+                id=str(m.id),
+                case_id=str(m.case_id),
                 role=m.role,
                 content=m.content,
                 created_at=m.created_at.isoformat(),
@@ -183,23 +185,27 @@ async def add_message_endpoint(
     case_id: str,
     body: AddMessageRequest,
     request: Request,
-    session: AsyncSession = Depends(get_session),
+    db: AsyncSession = Depends(get_db),
 ) -> MessageOut:
     """Add a message to an existing case."""
     user_id = _get_user_id(request)
+    try:
+        cid = uuid.UUID(case_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Case not found.")
     # Verify case exists and belongs to user
-    case = await get_case(session, case_id=case_id, user_id=user_id)
+    case = await get_case_with_messages(db, case_id=cid, user_id=user_id)
     if case is None:
         raise HTTPException(status_code=404, detail="Case not found.")
-    message = await add_message(
-        session,
-        case_id=case_id,
+    message = await create_message(
+        db,
+        case_id=cid,
         role=body.role,
         content=body.content,
     )
     return MessageOut(
-        id=message.id,
-        case_id=message.case_id,
+        id=str(message.id),
+        case_id=str(message.case_id),
         role=message.role,
         content=message.content,
         created_at=message.created_at.isoformat(),

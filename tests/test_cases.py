@@ -7,22 +7,26 @@ PostgreSQL instance is required.
 from __future__ import annotations
 
 import time
-from typing import AsyncIterator
+import uuid
+from collections.abc import AsyncIterator
 
 import jwt
 import pytest
+import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from src.database import Base, get_session
-from src.database.models import Case, Message  # noqa: F401 — ensure models are registered
+from src.database import get_db
+from src.database.engine import Base
+from src.database.models import Case, Deadline, Message, User  # noqa: F401
 
 # ---------------------------------------------------------------------------
 # Test database setup (sqlite+aiosqlite, in-memory)
 # ---------------------------------------------------------------------------
 
 _TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
-_TEST_JWT_SECRET = "test-secret-key-for-case-tests"
+_TEST_JWT_SECRET = "test-secret-key-for-case-tests-32ch"
 
 
 @pytest.fixture(autouse=True)
@@ -33,7 +37,9 @@ def _set_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("DATABASE_URL", _TEST_DB_URL)
 
 
-def _make_token(sub: str = "user1") -> str:
+def _make_token(sub: str | None = None) -> str:
+    if sub is None:
+        sub = str(uuid.uuid4())
     now = int(time.time())
     return jwt.encode(
         {"sub": sub, "iat": now, "exp": now + 3600},
@@ -42,9 +48,16 @@ def _make_token(sub: str = "user1") -> str:
     )
 
 
-@pytest.fixture()
+@pytest_asyncio.fixture
 async def db_engine():
     engine = create_async_engine(_TEST_DB_URL, echo=False)
+
+    @event.listens_for(engine.sync_engine, "connect")
+    def set_sqlite_pragma(dbapi_conn, connection_record):
+        cursor = dbapi_conn.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield engine
@@ -53,25 +66,48 @@ async def db_engine():
     await engine.dispose()
 
 
-@pytest.fixture()
+@pytest_asyncio.fixture
 async def db_session(db_engine) -> AsyncIterator[AsyncSession]:
-    session_factory = async_sessionmaker(db_engine, expire_on_commit=False)
+    session_factory = async_sessionmaker(
+        bind=db_engine, class_=AsyncSession, expire_on_commit=False
+    )
     async with session_factory() as session:
         yield session
 
 
-@pytest.fixture()
+async def _create_test_user(session: AsyncSession) -> User:
+    """Helper to create a user required by the FK constraint on cases."""
+    user = User(
+        id=uuid.uuid4(),
+        email=f"test-{uuid.uuid4().hex[:8]}@cyphergy.ai",
+        password_hash="$2b$12$fakehashfortesting000000000000000000000000000000",
+        name="Test User",
+    )
+    session.add(user)
+    await session.flush()
+    await session.refresh(user)
+    return user
+
+
+@pytest_asyncio.fixture
 async def client(db_engine) -> AsyncIterator[AsyncClient]:
     """Provide an async test client with the DB session overridden."""
     from src.api import app
 
-    session_factory = async_sessionmaker(db_engine, expire_on_commit=False)
+    session_factory = async_sessionmaker(
+        bind=db_engine, class_=AsyncSession, expire_on_commit=False
+    )
 
-    async def _override_get_session() -> AsyncIterator[AsyncSession]:
+    async def _override_get_db() -> AsyncIterator[AsyncSession]:
         async with session_factory() as session:
-            yield session
+            try:
+                yield session
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
 
-    app.dependency_overrides[get_session] = _override_get_session
+    app.dependency_overrides[get_db] = _override_get_db
 
     transport = ASGITransport(app=app)  # type: ignore[arg-type]
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
@@ -86,50 +122,70 @@ async def client(db_engine) -> AsyncIterator[AsyncClient]:
 
 
 class TestCreateCase:
-    async def test_create_case_success(self, client: AsyncClient) -> None:
+    @pytest.mark.asyncio
+    async def test_create_case_success(self, client: AsyncClient, db_session: AsyncSession) -> None:
+        user = await _create_test_user(db_session)
+        await db_session.commit()
+        token = _make_token(str(user.id))
+
         resp = await client.post(
             "/api/v1/cases",
-            json={"title": "Smith v. Jones", "description": "Contract dispute"},
-            headers={"Authorization": f"Bearer {_make_token()}"},
+            json={"name": "Smith v. Jones"},
+            headers={"Authorization": f"Bearer {token}"},
         )
         assert resp.status_code == 201
         data = resp.json()
-        assert data["title"] == "Smith v. Jones"
-        assert data["description"] == "Contract dispute"
-        assert data["user_id"] == "user1"
-        assert data["status"] == "open"
+        assert data["name"] == "Smith v. Jones"
+        assert data["user_id"] == str(user.id)
+        assert data["status"] == "active"
         assert "id" in data
         assert "created_at" in data
 
-    async def test_create_case_with_jurisdiction(self, client: AsyncClient) -> None:
+    @pytest.mark.asyncio
+    async def test_create_case_with_jurisdiction(self, client: AsyncClient, db_session: AsyncSession) -> None:
+        user = await _create_test_user(db_session)
+        await db_session.commit()
+        token = _make_token(str(user.id))
+
         resp = await client.post(
             "/api/v1/cases",
-            json={"title": "Case A", "jurisdiction": "federal"},
-            headers={"Authorization": f"Bearer {_make_token()}"},
+            json={"name": "Case A", "jurisdiction": "federal"},
+            headers={"Authorization": f"Bearer {token}"},
         )
         assert resp.status_code == 201
         assert resp.json()["jurisdiction"] == "federal"
 
-    async def test_create_case_missing_title_returns_422(self, client: AsyncClient) -> None:
+    @pytest.mark.asyncio
+    async def test_create_case_missing_name_returns_422(self, client: AsyncClient, db_session: AsyncSession) -> None:
+        user = await _create_test_user(db_session)
+        await db_session.commit()
+        token = _make_token(str(user.id))
+
         resp = await client.post(
             "/api/v1/cases",
-            json={"description": "no title"},
-            headers={"Authorization": f"Bearer {_make_token()}"},
+            json={"jurisdiction": "federal"},
+            headers={"Authorization": f"Bearer {token}"},
         )
         assert resp.status_code == 422
 
-    async def test_create_case_empty_title_returns_422(self, client: AsyncClient) -> None:
+    @pytest.mark.asyncio
+    async def test_create_case_empty_name_returns_422(self, client: AsyncClient, db_session: AsyncSession) -> None:
+        user = await _create_test_user(db_session)
+        await db_session.commit()
+        token = _make_token(str(user.id))
+
         resp = await client.post(
             "/api/v1/cases",
-            json={"title": ""},
-            headers={"Authorization": f"Bearer {_make_token()}"},
+            json={"name": ""},
+            headers={"Authorization": f"Bearer {token}"},
         )
         assert resp.status_code == 422
 
+    @pytest.mark.asyncio
     async def test_create_case_no_auth_returns_401(self, client: AsyncClient) -> None:
         resp = await client.post(
             "/api/v1/cases",
-            json={"title": "Unauthorized"},
+            json={"name": "Unauthorized"},
         )
         assert resp.status_code == 401
 
@@ -140,25 +196,33 @@ class TestCreateCase:
 
 
 class TestListCases:
-    async def test_list_cases_empty(self, client: AsyncClient) -> None:
+    @pytest.mark.asyncio
+    async def test_list_cases_empty(self, client: AsyncClient, db_session: AsyncSession) -> None:
+        user = await _create_test_user(db_session)
+        await db_session.commit()
+        token = _make_token(str(user.id))
+
         resp = await client.get(
             "/api/v1/cases",
-            headers={"Authorization": f"Bearer {_make_token()}"},
+            headers={"Authorization": f"Bearer {token}"},
         )
         assert resp.status_code == 200
         assert resp.json() == []
 
-    async def test_list_cases_returns_own_cases(self, client: AsyncClient) -> None:
-        token = _make_token("user_a")
-        # Create two cases
+    @pytest.mark.asyncio
+    async def test_list_cases_returns_own_cases(self, client: AsyncClient, db_session: AsyncSession) -> None:
+        user = await _create_test_user(db_session)
+        await db_session.commit()
+        token = _make_token(str(user.id))
+
         await client.post(
             "/api/v1/cases",
-            json={"title": "Case 1"},
+            json={"name": "Case 1"},
             headers={"Authorization": f"Bearer {token}"},
         )
         await client.post(
             "/api/v1/cases",
-            json={"title": "Case 2"},
+            json={"name": "Case 2"},
             headers={"Authorization": f"Bearer {token}"},
         )
         resp = await client.get(
@@ -169,21 +233,27 @@ class TestListCases:
         cases = resp.json()
         assert len(cases) == 2
 
-    async def test_list_cases_does_not_return_other_users(self, client: AsyncClient) -> None:
-        # user_a creates a case
+    @pytest.mark.asyncio
+    async def test_list_cases_does_not_return_other_users(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        user_a = await _create_test_user(db_session)
+        user_b = await _create_test_user(db_session)
+        await db_session.commit()
+
         await client.post(
             "/api/v1/cases",
-            json={"title": "User A's case"},
-            headers={"Authorization": f"Bearer {_make_token('user_a')}"},
+            json={"name": "User A case"},
+            headers={"Authorization": f"Bearer {_make_token(str(user_a.id))}"},
         )
-        # user_b sees nothing
         resp = await client.get(
             "/api/v1/cases",
-            headers={"Authorization": f"Bearer {_make_token('user_b')}"},
+            headers={"Authorization": f"Bearer {_make_token(str(user_b.id))}"},
         )
         assert resp.status_code == 200
         assert resp.json() == []
 
+    @pytest.mark.asyncio
     async def test_list_cases_no_auth_returns_401(self, client: AsyncClient) -> None:
         resp = await client.get("/api/v1/cases")
         assert resp.status_code == 401
@@ -195,17 +265,19 @@ class TestListCases:
 
 
 class TestGetCase:
-    async def test_get_case_with_messages(self, client: AsyncClient) -> None:
-        token = _make_token()
-        # Create a case
+    @pytest.mark.asyncio
+    async def test_get_case_with_messages(self, client: AsyncClient, db_session: AsyncSession) -> None:
+        user = await _create_test_user(db_session)
+        await db_session.commit()
+        token = _make_token(str(user.id))
+
         create_resp = await client.post(
             "/api/v1/cases",
-            json={"title": "Detail case"},
+            json={"name": "Detail case"},
             headers={"Authorization": f"Bearer {token}"},
         )
         case_id = create_resp.json()["id"]
 
-        # Add a message
         await client.post(
             f"/api/v1/cases/{case_id}/messages",
             json={"role": "user", "content": "Hello"},
@@ -223,26 +295,35 @@ class TestGetCase:
         assert data["messages"][0]["role"] == "user"
         assert data["messages"][0]["content"] == "Hello"
 
-    async def test_get_case_not_found(self, client: AsyncClient) -> None:
+    @pytest.mark.asyncio
+    async def test_get_case_not_found(self, client: AsyncClient, db_session: AsyncSession) -> None:
+        user = await _create_test_user(db_session)
+        await db_session.commit()
+        token = _make_token(str(user.id))
+
+        fake_id = str(uuid.uuid4())
         resp = await client.get(
-            "/api/v1/cases/nonexistent-id",
-            headers={"Authorization": f"Bearer {_make_token()}"},
+            f"/api/v1/cases/{fake_id}",
+            headers={"Authorization": f"Bearer {token}"},
         )
         assert resp.status_code == 404
 
-    async def test_get_case_other_user_returns_404(self, client: AsyncClient) -> None:
-        # user_a creates a case
+    @pytest.mark.asyncio
+    async def test_get_case_other_user_returns_404(self, client: AsyncClient, db_session: AsyncSession) -> None:
+        user_a = await _create_test_user(db_session)
+        user_b = await _create_test_user(db_session)
+        await db_session.commit()
+
         create_resp = await client.post(
             "/api/v1/cases",
-            json={"title": "Private case"},
-            headers={"Authorization": f"Bearer {_make_token('user_a')}"},
+            json={"name": "Private case"},
+            headers={"Authorization": f"Bearer {_make_token(str(user_a.id))}"},
         )
         case_id = create_resp.json()["id"]
 
-        # user_b cannot access it
         resp = await client.get(
             f"/api/v1/cases/{case_id}",
-            headers={"Authorization": f"Bearer {_make_token('user_b')}"},
+            headers={"Authorization": f"Bearer {_make_token(str(user_b.id))}"},
         )
         assert resp.status_code == 404
 
@@ -253,11 +334,15 @@ class TestGetCase:
 
 
 class TestAddMessage:
-    async def test_add_message_success(self, client: AsyncClient) -> None:
-        token = _make_token()
+    @pytest.mark.asyncio
+    async def test_add_message_success(self, client: AsyncClient, db_session: AsyncSession) -> None:
+        user = await _create_test_user(db_session)
+        await db_session.commit()
+        token = _make_token(str(user.id))
+
         create_resp = await client.post(
             "/api/v1/cases",
-            json={"title": "Msg case"},
+            json={"name": "Msg case"},
             headers={"Authorization": f"Bearer {token}"},
         )
         case_id = create_resp.json()["id"]
@@ -273,19 +358,31 @@ class TestAddMessage:
         assert data["content"] == "What are my options?"
         assert data["case_id"] == case_id
 
-    async def test_add_message_to_nonexistent_case(self, client: AsyncClient) -> None:
+    @pytest.mark.asyncio
+    async def test_add_message_to_nonexistent_case(self, client: AsyncClient, db_session: AsyncSession) -> None:
+        user = await _create_test_user(db_session)
+        await db_session.commit()
+        token = _make_token(str(user.id))
+
+        fake_id = str(uuid.uuid4())
         resp = await client.post(
-            "/api/v1/cases/nonexistent-id/messages",
+            f"/api/v1/cases/{fake_id}/messages",
             json={"role": "user", "content": "Hello"},
-            headers={"Authorization": f"Bearer {_make_token()}"},
+            headers={"Authorization": f"Bearer {token}"},
         )
         assert resp.status_code == 404
 
-    async def test_add_message_missing_content_returns_422(self, client: AsyncClient) -> None:
-        token = _make_token()
+    @pytest.mark.asyncio
+    async def test_add_message_missing_content_returns_422(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        user = await _create_test_user(db_session)
+        await db_session.commit()
+        token = _make_token(str(user.id))
+
         create_resp = await client.post(
             "/api/v1/cases",
-            json={"title": "Validation case"},
+            json={"name": "Validation case"},
             headers={"Authorization": f"Bearer {token}"},
         )
         case_id = create_resp.json()["id"]
@@ -297,19 +394,24 @@ class TestAddMessage:
         )
         assert resp.status_code == 422
 
-    async def test_add_message_other_user_returns_404(self, client: AsyncClient) -> None:
-        # user_a creates a case
+    @pytest.mark.asyncio
+    async def test_add_message_other_user_returns_404(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        user_a = await _create_test_user(db_session)
+        user_b = await _create_test_user(db_session)
+        await db_session.commit()
+
         create_resp = await client.post(
             "/api/v1/cases",
-            json={"title": "Private msg case"},
-            headers={"Authorization": f"Bearer {_make_token('user_a')}"},
+            json={"name": "Private msg case"},
+            headers={"Authorization": f"Bearer {_make_token(str(user_a.id))}"},
         )
         case_id = create_resp.json()["id"]
 
-        # user_b cannot add messages
         resp = await client.post(
             f"/api/v1/cases/{case_id}/messages",
             json={"role": "user", "content": "Intruder"},
-            headers={"Authorization": f"Bearer {_make_token('user_b')}"},
+            headers={"Authorization": f"Bearer {_make_token(str(user_b.id))}"},
         )
         assert resp.status_code == 404
