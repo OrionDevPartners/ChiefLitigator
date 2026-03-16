@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "command": "bash \"/Users/bopennington/LOCAL ONLY /DEV-OPS/hooks/memory-inject.sh\"",
+        "description": "Load global + project memory at session start"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "command": "bash \"/Users/bopennington/LOCAL ONLY /DEV-OPS/hooks/memory-guard.sh\"",
+        "description": "Warn if writing memory files outside canonical locations"
+      }
+    ]
+  }
+}
