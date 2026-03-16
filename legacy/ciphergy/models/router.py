@@ -6,7 +6,6 @@ preferences and automatic fallback chains.
 """
 
 import logging
-import os
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
@@ -165,8 +164,7 @@ class ModelRouter:
         model_id = SUPPORTED_MODELS[model_key]["model_id"]
         # Also accept inference profile prefix matches
         return any(
-            model_id in avail or avail.startswith(model_id.split("-2025")[0])
-            for avail in (self._available_cache or [])
+            model_id in avail or avail.startswith(model_id.split("-2025")[0]) for avail in (self._available_cache or [])
         )
 
     def _check_for_upgrades(self, model_key: str) -> str:
@@ -186,10 +184,7 @@ class ModelRouter:
             return model_key
 
         family = "sonnet" if "sonnet" in model_key else "opus"
-        candidates = [
-            k for k, v in SUPPORTED_MODELS.items()
-            if family in k and v["priority"] <= current["priority"]
-        ]
+        candidates = [k for k, v in SUPPORTED_MODELS.items() if family in k and v["priority"] <= current["priority"]]
         if candidates:
             best = sorted(candidates, key=lambda k: SUPPORTED_MODELS[k]["priority"])[0]
             if best != model_key:
@@ -236,10 +231,7 @@ class ModelRouter:
             logger.warning("Preferred model %s unavailable, falling back to %s", preferred, fallback)
             return fallback
 
-        raise RuntimeError(
-            f"No available model for task '{task_type.value}'. "
-            f"Tried: {preferred}, {fallback}"
-        )
+        raise RuntimeError(f"No available model for task '{task_type.value}'. Tried: {preferred}, {fallback}")
 
     def get_preference(self, task_type: TaskType) -> ModelPreference:
         """Return the ModelPreference for a task type."""

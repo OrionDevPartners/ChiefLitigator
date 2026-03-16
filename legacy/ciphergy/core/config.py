@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 # Try to import PyYAML; fall back to a stub if not installed
 try:
     import yaml  # type: ignore[import-untyped]
+
     _HAS_YAML = True
 except ImportError:
     _HAS_YAML = False
@@ -54,9 +55,7 @@ class AgentConfig:
 
     max_parallel: int = 20
     default_timeout: int = 300  # seconds
-    agent_types: List[str] = field(
-        default_factory=lambda: ["general", "research", "execution", "review", "red_team"]
-    )
+    agent_types: List[str] = field(default_factory=lambda: ["general", "research", "execution", "review", "red_team"])
 
 
 @dataclass

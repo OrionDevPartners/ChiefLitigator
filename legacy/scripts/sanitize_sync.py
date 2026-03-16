@@ -11,9 +11,9 @@ Usage:
     python3 scripts/sanitize_sync.py audit <dir>       — Scan directory for leaked case data
 """
 
+import os
 import re
 import sys
-import os
 from pathlib import Path
 
 # ================================================================
@@ -26,21 +26,16 @@ TIER1_PATTERNS = {
         # These are EXAMPLES — replaced during project-specific configuration
         # In a real deployment, this list is populated from the source project
     ],
-
     # Email patterns
-    "emails": re.compile(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'),
-
+    "emails": re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"),
     # Phone patterns (US)
-    "phones": re.compile(r'\b\d{3}[-.]?\d{3}[-.]?\d{4}\b'),
-
+    "phones": re.compile(r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b"),
     # Dollar amounts
-    "amounts": re.compile(r'\$[\d,]+\.?\d*'),
-
+    "amounts": re.compile(r"\$[\d,]+\.?\d*"),
     # Asana GIDs (13+ digit numbers)
-    "gids": re.compile(r'\b\d{13,}\b'),
-
+    "gids": re.compile(r"\b\d{13,}\b"),
     # Street addresses
-    "addresses": re.compile(r'\b\d+\s+[A-Z][a-z]+\s+(Ave|St|Rd|Blvd|Dr|Ln|Ct|Way|Pl)\b', re.IGNORECASE),
+    "addresses": re.compile(r"\b\d+\s+[A-Z][a-z]+\s+(Ave|St|Rd|Blvd|Dr|Ln|Ct|Way|Pl)\b", re.IGNORECASE),
 }
 
 # ================================================================
@@ -49,10 +44,12 @@ TIER1_PATTERNS = {
 # ================================================================
 
 TIER2_PATTERNS = {
-    "fl_statutes": re.compile(r'(?:Fla\.\s*Stat\.\s*)?§\s*\d+\.\d+(?:\(\d+\))?(?:\([a-z]\))?'),
-    "fl_urls": re.compile(r'https?://www\.flsenate\.gov/Laws/Statutes/\d{4}/[\d.]+'),
-    "case_citations": re.compile(r'\b\d+\s+So\.\s*(?:2d|3d)\s+\d+\b'),
-    "reporter_citations": re.compile(r'\b\d+\s+(?:F\.\s*(?:Supp\.\s*)?(?:2d|3d)?|So\.\s*(?:2d|3d)?|S\.Ct\.|L\.Ed\.)\s*\d+\b'),
+    "fl_statutes": re.compile(r"(?:Fla\.\s*Stat\.\s*)?§\s*\d+\.\d+(?:\(\d+\))?(?:\([a-z]\))?"),
+    "fl_urls": re.compile(r"https?://www\.flsenate\.gov/Laws/Statutes/\d{4}/[\d.]+"),
+    "case_citations": re.compile(r"\b\d+\s+So\.\s*(?:2d|3d)\s+\d+\b"),
+    "reporter_citations": re.compile(
+        r"\b\d+\s+(?:F\.\s*(?:Supp\.\s*)?(?:2d|3d)?|So\.\s*(?:2d|3d)?|S\.Ct\.|L\.Ed\.)\s*\d+\b"
+    ),
 }
 
 # ================================================================
@@ -60,9 +57,11 @@ TIER2_PATTERNS = {
 # ================================================================
 
 TIER3_PATTERNS = {
-    "confidence_scores": re.compile(r'\b\d{1,3}%\b'),  # Only in context of scoring
-    "date_specifics": re.compile(r'\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b'),
-    "date_numeric": re.compile(r'\b20\d{2}-\d{2}-\d{2}\b'),
+    "confidence_scores": re.compile(r"\b\d{1,3}%\b"),  # Only in context of scoring
+    "date_specifics": re.compile(
+        r"\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b"
+    ),
+    "date_numeric": re.compile(r"\b20\d{2}-\d{2}-\d{2}\b"),
 }
 
 # ================================================================
@@ -77,7 +76,7 @@ TIER3_PATTERNS = {
 
 TIER5_PATTERNS = {
     "file_paths": re.compile(r'/Users/[a-zA-Z]+/[^\s\'"]+'),
-    "session_ids": re.compile(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'),
+    "session_ids": re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"),
 }
 
 # ================================================================
@@ -85,14 +84,17 @@ TIER5_PATTERNS = {
 # the 5 agents. Handled by the agent creation process, not sanitization.
 # ================================================================
 
+
 def load_project_specific_names(config_path=None):
     """Load project-specific names from a sanitization config file."""
     if config_path and Path(config_path).exists():
         with open(config_path) as f:
             import json
+
             config = json.load(f)
             return config.get("names_to_sanitize", [])
     return []
+
 
 def sanitize_text(text, names=None, tier_level=6):
     """
@@ -172,6 +174,7 @@ def sanitize_text(text, names=None, tier_level=6):
 
     return result, findings
 
+
 def cmd_check(filepath):
     """Preview what would be sanitized in a file."""
     with open(filepath) as f:
@@ -180,13 +183,14 @@ def cmd_check(filepath):
     _, findings = sanitize_text(text, names=[], tier_level=6)
 
     print(f"\nSANITIZATION CHECK: {filepath}")
-    print(f"{'─'*60}")
+    print(f"{'─' * 60}")
     if findings:
         for f_item in findings:
             print(f"  ⚠ {f_item}")
         print(f"\n  {len(findings)} items would be sanitized")
     else:
-        print(f"  ✓ Clean — no case-specific data detected")
+        print("  ✓ Clean — no case-specific data detected")
+
 
 def cmd_audit(directory):
     """Scan a directory for any leaked case-specific data."""
@@ -195,9 +199,9 @@ def cmd_audit(directory):
 
     for root, dirs, files in os.walk(directory):
         # Skip hidden dirs and common non-text
-        dirs[:] = [d for d in dirs if not d.startswith('.')]
+        dirs[:] = [d for d in dirs if not d.startswith(".")]
         for fname in files:
-            if not fname.endswith(('.md', '.py', '.sh', '.yaml', '.yml', '.json', '.txt')):
+            if not fname.endswith((".md", ".py", ".sh", ".yaml", ".yml", ".json", ".txt")):
                 continue
 
             fpath = os.path.join(root, fname)
@@ -212,7 +216,7 @@ def cmd_audit(directory):
                     for item in findings[:5]:
                         print(f"    {item}")
                     if len(findings) > 5:
-                        print(f"    ... and {len(findings)-5} more")
+                        print(f"    ... and {len(findings) - 5} more")
             except (UnicodeDecodeError, PermissionError):
                 continue
 
@@ -222,6 +226,7 @@ def cmd_audit(directory):
         print(f"\n  ⚠ {total_findings} total findings across {directory}")
 
     return clean
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:

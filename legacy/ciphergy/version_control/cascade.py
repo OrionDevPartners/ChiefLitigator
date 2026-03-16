@@ -88,14 +88,16 @@ class CascadeEngine:
         result["duration_s"] = round(result["completed_at"] - result["started_at"], 3)
 
         # Audit log
-        reg.setdefault("audit_log", []).append({
-            "action": "cascade",
-            "trigger": trigger,
-            "status": result["status"],
-            "ts": result["completed_at"],
-            "duration_s": result["duration_s"],
-            "steps_run": len(result["steps"]),
-        })
+        reg.setdefault("audit_log", []).append(
+            {
+                "action": "cascade",
+                "trigger": trigger,
+                "status": result["status"],
+                "ts": result["completed_at"],
+                "duration_s": result["duration_s"],
+                "steps_run": len(result["steps"]),
+            }
+        )
         self._save_registry(reg)
 
         return result

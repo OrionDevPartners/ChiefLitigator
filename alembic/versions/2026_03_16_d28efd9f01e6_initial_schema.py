@@ -1,19 +1,16 @@
 """initial schema
 
 Revision ID: d28efd9f01e6
-Revises: 
+Revises:
 Create Date: 2026-03-16 20:34:16.087787+00:00
 """
+
 from __future__ import annotations
 
 from typing import Sequence, Union
 
-from alembic import op
-import sqlalchemy as sa
-
-
 # revision identifiers, used by Alembic.
-revision: str = 'd28efd9f01e6'
+revision: str = "d28efd9f01e6"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

@@ -141,9 +141,7 @@ class AWSConnector(BaseConnector):
 
     # ── S3 operations ───────────────────────────────────────────────
 
-    def s3_upload(
-        self, bucket: str, key: str, body: bytes, content_type: str = "application/octet-stream"
-    ) -> bool:
+    def s3_upload(self, bucket: str, key: str, body: bytes, content_type: str = "application/octet-stream") -> bool:
         """
         Upload an object to S3.
 
@@ -180,9 +178,7 @@ class AWSConnector(BaseConnector):
             The file content as bytes.
         """
         s3 = self._get_client("s3")
-        response = self._with_retry(
-            f"S3 download {bucket}/{key}", s3.get_object, Bucket=bucket, Key=key
-        )
+        response = self._with_retry(f"S3 download {bucket}/{key}", s3.get_object, Bucket=bucket, Key=key)
         return response["Body"].read()
 
     def s3_list(self, bucket: str, prefix: str = "", max_keys: int = 1000) -> List[Dict[str, Any]]:
@@ -372,7 +368,9 @@ class AWSConnector(BaseConnector):
             The SES MessageId.
         """
         ses = self._get_client("ses")
-        sender = from_addr or self.config.extra.get("ses_from", os.environ.get("SES_FROM_EMAIL", "noreply@ciphergy.local"))
+        sender = from_addr or self.config.extra.get(
+            "ses_from", os.environ.get("SES_FROM_EMAIL", "noreply@ciphergy.local")
+        )
 
         body: Dict[str, Any] = {}
         if body_text:
@@ -548,36 +546,44 @@ class AWSConnector(BaseConnector):
 
         # Build request based on model family
         if "anthropic" in model_id or "claude" in model_id:
-            body = json.dumps({
-                "anthropic_version": "bedrock-2023-05-31",
-                "max_tokens": max_tokens,
-                "temperature": temperature,
-                "messages": [{"role": "user", "content": prompt}],
-            })
+            body = json.dumps(
+                {
+                    "anthropic_version": "bedrock-2023-05-31",
+                    "max_tokens": max_tokens,
+                    "temperature": temperature,
+                    "messages": [{"role": "user", "content": prompt}],
+                }
+            )
             accept = "application/json"
         elif "mistral" in model_id:
-            body = json.dumps({
-                "prompt": f"<s>[INST] {prompt} [/INST]",
-                "max_tokens": max_tokens,
-                "temperature": temperature,
-            })
+            body = json.dumps(
+                {
+                    "prompt": f"<s>[INST] {prompt} [/INST]",
+                    "max_tokens": max_tokens,
+                    "temperature": temperature,
+                }
+            )
             accept = "application/json"
         elif "amazon" in model_id or "nova" in model_id:
-            body = json.dumps({
-                "inputText": prompt,
-                "textGenerationConfig": {
-                    "maxTokenCount": max_tokens,
-                    "temperature": temperature,
-                },
-            })
+            body = json.dumps(
+                {
+                    "inputText": prompt,
+                    "textGenerationConfig": {
+                        "maxTokenCount": max_tokens,
+                        "temperature": temperature,
+                    },
+                }
+            )
             accept = "application/json"
         else:
             # Generic fallback
-            body = json.dumps({
-                "prompt": prompt,
-                "max_tokens": max_tokens,
-                "temperature": temperature,
-            })
+            body = json.dumps(
+                {
+                    "prompt": prompt,
+                    "max_tokens": max_tokens,
+                    "temperature": temperature,
+                }
+            )
             accept = "application/json"
 
         response = self._with_retry(
@@ -627,6 +633,7 @@ class AWSConnector(BaseConnector):
         if cache_key not in self._clients:
             if self._session is None:
                 import boto3
+
                 self._session = boto3.Session(region_name=self._region)
 
             if resource:
@@ -652,7 +659,9 @@ class AWSConnector(BaseConnector):
             body = payload.get("body", b"")
             if isinstance(body, str):
                 body = body.encode("utf-8")
-            self.s3_upload(payload["bucket"], payload["key"], body, payload.get("content_type", "application/octet-stream"))
+            self.s3_upload(
+                payload["bucket"], payload["key"], body, payload.get("content_type", "application/octet-stream")
+            )
         elif operation == "delete":
             self.s3_delete(payload["bucket"], payload["key"])
         else:

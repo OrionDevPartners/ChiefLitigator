@@ -23,11 +23,11 @@ Programmatic:
     decrypted = vault.decrypt(encrypted)
 """
 
-import os
-import sys
 import base64
 import hashlib
+import os
 import secrets
+import sys
 from pathlib import Path
 
 # ================================================================
@@ -43,6 +43,7 @@ ENCRYPTED_PREFIX = "🔐CIPHERGY:"
 # AES-256-GCM IMPLEMENTATION
 # ================================================================
 
+
 class CiphergyVault:
     """AES-256-GCM encryption/decryption for inter-agent communications."""
 
@@ -57,8 +58,7 @@ class CiphergyVault:
         if self._key is None:
             if not self.key_path.exists():
                 raise FileNotFoundError(
-                    f"No encryption key found at {self.key_path}. "
-                    f"Run: python3 scripts/crypto.py keygen"
+                    f"No encryption key found at {self.key_path}. Run: python3 scripts/crypto.py keygen"
                 )
             with open(self.key_path, "rb") as f:
                 self._key = f.read()
@@ -106,7 +106,7 @@ class CiphergyVault:
             raise ValueError("Message is not encrypted (missing prefix)")
 
         # Strip prefix and decode base64
-        encoded = encrypted[len(ENCRYPTED_PREFIX):]
+        encoded = encrypted[len(ENCRYPTED_PREFIX) :]
         packed = base64.b64decode(encoded)
 
         # Unpack: nonce (12 bytes) + ciphertext+tag (rest)
@@ -121,9 +121,7 @@ class CiphergyVault:
         try:
             plaintext_bytes = aesgcm.decrypt(nonce, ciphertext, None)
         except Exception:
-            raise ValueError(
-                "Decryption failed — wrong key, corrupted message, or tampered data"
-            )
+            raise ValueError("Decryption failed — wrong key, corrupted message, or tampered data")
 
         return plaintext_bytes.decode("utf-8")
 
@@ -131,9 +129,11 @@ class CiphergyVault:
         """Check if a message is encrypted."""
         return message.startswith(ENCRYPTED_PREFIX)
 
+
 # ================================================================
 # KEY MANAGEMENT
 # ================================================================
+
 
 def generate_key(key_path=None):
     """Generate a new AES-256 key and save to file."""
@@ -160,6 +160,7 @@ def generate_key(key_path=None):
 
     return key, fingerprint
 
+
 def get_key_fingerprint(key_path=None):
     """Get the fingerprint of the current key."""
     key_path = Path(key_path) if key_path else KEY_FILE
@@ -168,6 +169,7 @@ def get_key_fingerprint(key_path=None):
     with open(key_path, "rb") as f:
         key = f.read()
     return hashlib.sha256(key).hexdigest()[:8]
+
 
 # ================================================================
 # CLI
@@ -180,12 +182,13 @@ CYAN = "\033[96m"
 BOLD = "\033[1m"
 RESET = "\033[0m"
 
+
 def cmd_keygen():
     """Generate a new AES-256 key."""
     if KEY_FILE.exists():
         fingerprint = get_key_fingerprint()
         print(f"{YELLOW}[WARN]{RESET} Key already exists (fingerprint: {fingerprint})")
-        print(f"  Overwriting will make all previously encrypted messages unreadable.")
+        print("  Overwriting will make all previously encrypted messages unreadable.")
         print(f"  To proceed, delete {KEY_FILE} first.")
         return
 
@@ -193,20 +196,22 @@ def cmd_keygen():
     print(f"{GREEN}[KEYGEN]{RESET} AES-256 key generated")
     print(f"  Location: {KEY_FILE}")
     print(f"  Fingerprint: {fingerprint}")
-    print(f"  Permissions: 600 (owner read/write only)")
-    print(f"")
+    print("  Permissions: 600 (owner read/write only)")
+    print("")
     print(f"  {BOLD}IMPORTANT:{RESET}")
-    print(f"  - This key NEVER leaves this machine")
+    print("  - This key NEVER leaves this machine")
     print(f"  - Share the fingerprint ({fingerprint}) with the other agent to confirm key match")
-    print(f"  - Copy the key file to the other machine via secure channel (USB, AirDrop, encrypted transfer)")
-    print(f"  - Both agents must have the SAME key file to communicate")
-    print(f"  - The .keys/ directory is gitignored — it will never be committed")
+    print("  - Copy the key file to the other machine via secure channel (USB, AirDrop, encrypted transfer)")
+    print("  - Both agents must have the SAME key file to communicate")
+    print("  - The .keys/ directory is gitignored — it will never be committed")
+
 
 def cmd_encrypt(plaintext):
     """Encrypt a message."""
     vault = CiphergyVault()
     encrypted = vault.encrypt(plaintext)
     print(encrypted)
+
 
 def cmd_decrypt(ciphertext):
     """Decrypt a message."""
@@ -218,13 +223,15 @@ def cmd_decrypt(ciphertext):
         print(f"{RED}[ERROR]{RESET} {e}", file=sys.stderr)
         sys.exit(1)
 
+
 def cmd_test():
     """Run encryption self-test."""
     print(f"\n{BOLD}CIPHERGY CRYPTO — SELF TEST{RESET}")
-    print(f"{'─'*50}")
+    print(f"{'─' * 50}")
 
     # Generate temp key for testing
     import tempfile
+
     with tempfile.NamedTemporaryFile(suffix=".key", delete=False) as f:
         test_key_path = f.name
 
@@ -299,6 +306,7 @@ def cmd_test():
 
     finally:
         os.unlink(test_key_path)
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:

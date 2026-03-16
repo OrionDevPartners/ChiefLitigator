@@ -20,8 +20,8 @@ import json
 import os
 import sys
 import time
-import urllib.request
 import urllib.error
+import urllib.request
 from datetime import datetime, timezone
 
 try:
@@ -56,6 +56,7 @@ PRIORITIES = {
 # ---------------------------------------------------------------------------
 # AsanaBridge Class
 # ---------------------------------------------------------------------------
+
 
 class AsanaBridge:
     """Asana API wrapper for Ciphergy Pipeline communication."""
@@ -168,13 +169,15 @@ class AsanaBridge:
         for story in stories:
             if story.get("resource_subtype") != "comment_added":
                 continue
-            messages.append({
-                "id": story.get("gid"),
-                "author": story.get("created_by", {}).get("name", "Unknown"),
-                "text": story.get("text", ""),
-                "created_at": story.get("created_at", ""),
-                "type": self._detect_message_type(story.get("text", "")),
-            })
+            messages.append(
+                {
+                    "id": story.get("gid"),
+                    "author": story.get("created_by", {}).get("name", "Unknown"),
+                    "text": story.get("text", ""),
+                    "created_at": story.get("created_at", ""),
+                    "type": self._detect_message_type(story.get("text", "")),
+                }
+            )
 
         return messages
 
@@ -189,9 +192,7 @@ class AsanaBridge:
         Returns:
             dict: The created story data
         """
-        response = self._request("POST", f"tasks/{task_gid}/stories", {
-            "data": {"text": message}
-        })
+        response = self._request("POST", f"tasks/{task_gid}/stories", {"data": {"text": message}})
         return response.get("data", {})
 
     def get_pending(self, task_gid):
@@ -276,6 +277,7 @@ class AsanaBridge:
 # CLI Interface
 # ---------------------------------------------------------------------------
 
+
 def find_config():
     """Find the ciphergy.yaml config file."""
     candidates = [
@@ -296,11 +298,11 @@ def cli_read(args, bridge):
         return
 
     for msg in messages:
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"  From: {msg['author']}")
         print(f"  Date: {msg['created_at']}")
         print(f"  Type: {msg['type']}")
-        print(f"  {'='*56}")
+        print(f"  {'=' * 56}")
         print(f"  {msg['text']}")
 
     print(f"\n  Total: {len(messages)} message(s)")

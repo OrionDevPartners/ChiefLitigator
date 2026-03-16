@@ -56,6 +56,7 @@ def info(text):
 # Resolve base directory
 # ---------------------------------------------------------------------------
 
+
 def get_base() -> Path:
     return Path(os.environ.get("CIPHERGY_BASE", Path.cwd()))
 
@@ -70,6 +71,7 @@ def load_registry(base: Path) -> dict:
 # ---------------------------------------------------------------------------
 # Commands
 # ---------------------------------------------------------------------------
+
 
 def cmd_init(args):
     """Initialize a new Ciphergy project."""
@@ -99,8 +101,13 @@ def cmd_init(args):
         cfg = {
             "project_name": base.name,
             "priority_order": [
-                "detect", "classify", "update_files",
-                "re_score", "check_thresholds", "sync_check", "notify",
+                "detect",
+                "classify",
+                "update_files",
+                "re_score",
+                "check_thresholds",
+                "sync_check",
+                "notify",
             ],
             "thresholds": {"min_score": 0.5, "max_stale_hours": 24},
             "notify": {"enabled": False},
@@ -203,6 +210,7 @@ def cmd_sync(args):
     heading("Sync Status")
 
     from ciphergy.sync.manager import SyncManager
+
     mgr = SyncManager(base_dir=base)
 
     manifest = mgr.get_manifest()
@@ -229,6 +237,7 @@ def cmd_push(args):
     heading("Creating Sync Delta")
 
     from ciphergy.sync.manager import SyncManager
+
     mgr = SyncManager(base_dir=base)
 
     trigger = args.trigger if hasattr(args, "trigger") and args.trigger else "cli-push"
@@ -246,6 +255,7 @@ def cmd_cascade(args):
     heading("Running Cascade")
 
     from ciphergy.version_control.cascade import CascadeEngine
+
     engine = CascadeEngine(base_dir=base)
 
     trigger = args.trigger if hasattr(args, "trigger") and args.trigger else "cli-cascade"
@@ -254,7 +264,7 @@ def cmd_cascade(args):
     status_color = "green" if result["status"] == "complete" else "yellow"
     info(f"Status:   {c(result['status'], status_color)}")
     info(f"Duration: {result.get('duration_s', 0):.3f}s")
-    info(f"Steps:")
+    info("Steps:")
 
     for step, detail in result.get("steps", {}).items():
         icon = c("[OK]", "green") if detail["status"] == "ok" else c("[!!]", "yellow")
@@ -269,6 +279,7 @@ def cmd_serve(args):
     info(f"Listening on {host}:{port}")
 
     from ciphergy.api.server import serve
+
     serve(host=host, port=port)
 
 
@@ -280,6 +291,7 @@ def cmd_dashboard(args):
     info(f"Dashboard at http://{host}:{port}")
 
     from ciphergy.dashboard.app import serve
+
     serve(host=host, port=port, debug=args.debug if hasattr(args, "debug") else False)
 
 
@@ -292,6 +304,7 @@ def cmd_onboard(args):
     info(f"Scanning: {project_path}")
 
     from ciphergy.version_control.tracker import VersionTracker
+
     tracker = VersionTracker(base_dir=base)
 
     project = Path(project_path)
@@ -321,14 +334,17 @@ def cmd_agents(args):
 
     for aid, agent in agents.items():
         status_color = "green" if agent.get("status") == "running" else "dim"
-        print(f"  {c(aid, 'cyan')}  {agent.get('name', '?')}  "
-              f"role={agent.get('role', '?')}  "
-              f"status={c(agent.get('status', '?'), status_color)}")
+        print(
+            f"  {c(aid, 'cyan')}  {agent.get('name', '?')}  "
+            f"role={agent.get('role', '?')}  "
+            f"status={c(agent.get('status', '?'), status_color)}"
+        )
 
 
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
 
 def main():
     parser = argparse.ArgumentParser(

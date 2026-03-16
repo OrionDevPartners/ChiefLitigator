@@ -46,12 +46,14 @@ class VersionTracker:
         files[file_name]["updated_at"] = time.time()
         new_ver = files[file_name]["version"]
 
-        reg.setdefault("audit_log", []).append({
-            "action": "increment_version",
-            "file": file_name,
-            "new_version": new_ver,
-            "ts": time.time(),
-        })
+        reg.setdefault("audit_log", []).append(
+            {
+                "action": "increment_version",
+                "file": file_name,
+                "new_version": new_ver,
+                "ts": time.time(),
+            }
+        )
         self._save_registry(reg)
         return new_ver
 
@@ -66,11 +68,13 @@ class VersionTracker:
         files[file_name]["locked"] = True
         files[file_name]["locked_at"] = time.time()
 
-        reg.setdefault("audit_log", []).append({
-            "action": "lock",
-            "file": file_name,
-            "ts": time.time(),
-        })
+        reg.setdefault("audit_log", []).append(
+            {
+                "action": "lock",
+                "file": file_name,
+                "ts": time.time(),
+            }
+        )
         self._save_registry(reg)
         return not was_locked
 
@@ -110,22 +114,21 @@ class VersionTracker:
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(str(src), str(dst))
 
-        reg.setdefault("audit_log", []).append({
-            "action": "create_new_version",
-            "file": file_name,
-            "version": new_ver,
-            "ts": time.time(),
-        })
+        reg.setdefault("audit_log", []).append(
+            {
+                "action": "create_new_version",
+                "file": file_name,
+                "version": new_ver,
+                "ts": time.time(),
+            }
+        )
         self._save_registry(reg)
         return dst
 
     def get_locked_files(self) -> List[str]:
         """Return list of locked file names."""
         reg = self._load_registry()
-        return [
-            name for name, info in reg.get("files", {}).items()
-            if info.get("locked", False)
-        ]
+        return [name for name, info in reg.get("files", {}).items() if info.get("locked", False)]
 
     def get_brackets(self) -> List[dict]:
         """Scan tracked files for unfilled [BRACKET] placeholders."""
@@ -144,11 +147,13 @@ class VersionTracker:
 
             matches = bracket_re.findall(content)
             if matches:
-                results.append({
-                    "file": file_name,
-                    "brackets": list(set(matches)),
-                    "count": len(matches),
-                })
+                results.append(
+                    {
+                        "file": file_name,
+                        "brackets": list(set(matches)),
+                        "count": len(matches),
+                    }
+                )
 
         return results
 

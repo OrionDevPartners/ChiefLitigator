@@ -124,9 +124,7 @@ class ConnectorRegistry:
             TypeError: If connector_class does not subclass BaseConnector.
         """
         if not (isinstance(connector_class, type) and issubclass(connector_class, BaseConnector)):
-            raise TypeError(
-                f"Connector class must subclass BaseConnector, got {connector_class}"
-            )
+            raise TypeError(f"Connector class must subclass BaseConnector, got {connector_class}")
 
         # Merge with built-in catalog metadata if available
         builtin = BUILTIN_CATALOG.get(name, {})
@@ -161,10 +159,7 @@ class ConnectorRegistry:
             KeyError: If the connector name is not registered.
         """
         if name not in self._catalog:
-            raise KeyError(
-                f"Connector '{name}' not registered. "
-                f"Available: {', '.join(self._catalog.keys())}"
-            )
+            raise KeyError(f"Connector '{name}' not registered. Available: {', '.join(self._catalog.keys())}")
 
         if config_kwargs or name not in self._instances:
             entry = self._catalog[name]
@@ -226,9 +221,7 @@ class ConnectorRegistry:
 
         # Then check all registered connectors for matching use_cases
         for name, entry in self._catalog.items():
-            if name not in mapped_names and use_case.lower() in [
-                uc.lower() for uc in entry.use_cases
-            ]:
+            if name not in mapped_names and use_case.lower() in [uc.lower() for uc in entry.use_cases]:
                 results.append(entry)
 
         if not results:
@@ -270,15 +263,9 @@ class ConnectorRegistry:
                 continue
 
             for attr_name, obj in inspect.getmembers(module, inspect.isclass):
-                if (
-                    issubclass(obj, BaseConnector)
-                    and obj is not BaseConnector
-                    and obj.__module__ == module.__name__
-                ):
+                if issubclass(obj, BaseConnector) and obj is not BaseConnector and obj.__module__ == module.__name__:
                     # Use CONNECTOR_NAME class attribute or derive from module name
-                    connector_name = getattr(
-                        obj, "CONNECTOR_NAME", module_name.replace("_connector", "")
-                    )
+                    connector_name = getattr(obj, "CONNECTOR_NAME", module_name.replace("_connector", ""))
                     if connector_name not in self._catalog:
                         self.register(connector_name, obj)
                         discovered += 1

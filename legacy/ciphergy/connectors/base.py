@@ -142,9 +142,7 @@ class BaseConnector(ABC):
         window = 60.0  # 1 minute window
 
         # Prune timestamps older than the window
-        self._request_timestamps = [
-            ts for ts in self._request_timestamps if now - ts < window
-        ]
+        self._request_timestamps = [ts for ts in self._request_timestamps if now - ts < window]
 
         if len(self._request_timestamps) >= self.config.rate_limit:
             oldest = self._request_timestamps[0]
@@ -196,9 +194,7 @@ class BaseConnector(ABC):
                     delay = self.config.retry_delay * (2 ** (attempt - 1))
                     time.sleep(delay)
 
-        raise RuntimeError(
-            f"{operation} failed after {self.config.max_retries} retries: {last_error}"
-        )
+        raise RuntimeError(f"{operation} failed after {self.config.max_retries} retries: {last_error}")
 
     # ── Message bus protocol ────────────────────────────────────────
 

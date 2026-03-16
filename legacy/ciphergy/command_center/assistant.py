@@ -8,7 +8,6 @@ This module does NOT call Claude directly. It prepares prompts that can be
 pasted into Claude Code sessions for execution.
 """
 
-import json
 import logging
 import re
 from datetime import datetime, timezone
@@ -22,13 +21,38 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 _DEFAULT_EMOTIONAL_WORDS = [
-    "outrageous", "unbelievable", "disgusting", "shocking",
-    "furious", "angry", "frustrated", "upset", "terrible",
-    "ridiculous", "absurd", "insane", "crazy", "stupid",
-    "liar", "cheat", "thief", "criminal", "corrupt",
-    "demand", "insist", "threaten", "warn", "promise",
-    "always", "never", "everyone", "nobody",
-    "obviously", "clearly", "certainly", "definitely",
+    "outrageous",
+    "unbelievable",
+    "disgusting",
+    "shocking",
+    "furious",
+    "angry",
+    "frustrated",
+    "upset",
+    "terrible",
+    "ridiculous",
+    "absurd",
+    "insane",
+    "crazy",
+    "stupid",
+    "liar",
+    "cheat",
+    "thief",
+    "criminal",
+    "corrupt",
+    "demand",
+    "insist",
+    "threaten",
+    "warn",
+    "promise",
+    "always",
+    "never",
+    "everyone",
+    "nobody",
+    "obviously",
+    "clearly",
+    "certainly",
+    "definitely",
 ]
 
 # Phrases that suggest fabricated or placeholder content
@@ -47,9 +71,16 @@ _PLACEHOLDER_PATTERNS = [
 
 # Threshold / trigger keywords that require extra review
 _DEFAULT_TRIGGER_KEYWORDS = [
-    "emergency", "ex parte", "TRO", "restraining order",
-    "immediate", "irreparable harm", "contempt",
-    "sanctions", "default judgment", "summary judgment",
+    "emergency",
+    "ex parte",
+    "TRO",
+    "restraining order",
+    "immediate",
+    "irreparable harm",
+    "contempt",
+    "sanctions",
+    "default judgment",
+    "summary judgment",
 ]
 
 
@@ -101,12 +132,14 @@ class TemplateRunner:
 
         for path in sorted(self.templates_dir.glob("*.template.md")):
             meta = self._parse_front_matter(path)
-            templates.append({
-                "name": meta.get("name", path.stem.replace(".template", "")),
-                "file": path.name,
-                "description": meta.get("description", ""),
-                "trigger_phrases": meta.get("trigger_phrases", []),
-            })
+            templates.append(
+                {
+                    "name": meta.get("name", path.stem.replace(".template", "")),
+                    "file": path.name,
+                    "description": meta.get("description", ""),
+                    "trigger_phrases": meta.get("trigger_phrases", []),
+                }
+            )
 
         return templates
 
@@ -181,21 +214,25 @@ class TemplateRunner:
         for key, value in params.items():
             lines.append(f"- **{key}**: {value}")
 
-        lines.extend([
-            "",
-            "## Instructions",
-            "",
-            content,
-        ])
+        lines.extend(
+            [
+                "",
+                "## Instructions",
+                "",
+                content,
+            ]
+        )
 
         # Append case directory context
-        lines.extend([
-            "",
-            f"## Case directory: {self.case_dir}",
-            "",
-            "Use files from the case directory for evidence and reference. "
-            "All output should be saved within the case directory structure.",
-        ])
+        lines.extend(
+            [
+                "",
+                f"## Case directory: {self.case_dir}",
+                "",
+                "Use files from the case directory for evidence and reference. "
+                "All output should be saved within the case directory structure.",
+            ]
+        )
 
         return "\n".join(lines)
 
@@ -269,6 +306,7 @@ class TemplateRunner:
         # Try YAML parser first, fall back to simple key-value parsing
         try:
             import yaml  # type: ignore[import-untyped]
+
             data = yaml.safe_load(front)
             return data if isinstance(data, dict) else {}
         except ImportError:
@@ -303,7 +341,7 @@ class TemplateRunner:
         if end == -1:
             return text
 
-        return text[end + 3:].strip()
+        return text[end + 3 :].strip()
 
 
 # ---------------------------------------------------------------------------
@@ -336,15 +374,10 @@ class DraftGuardian:
         self._config = config or {}
 
         # Load word lists from config or use defaults
-        self._emotional_words = self._config.get(
-            "emotional_words", _DEFAULT_EMOTIONAL_WORDS
-        )
-        self._trigger_keywords = self._config.get(
-            "trigger_keywords", _DEFAULT_TRIGGER_KEYWORDS
-        )
+        self._emotional_words = self._config.get("emotional_words", _DEFAULT_EMOTIONAL_WORDS)
+        self._trigger_keywords = self._config.get("trigger_keywords", _DEFAULT_TRIGGER_KEYWORDS)
         self._placeholder_patterns = [
-            re.compile(p, re.IGNORECASE)
-            for p in self._config.get("placeholder_patterns", _PLACEHOLDER_PATTERNS)
+            re.compile(p, re.IGNORECASE) for p in self._config.get("placeholder_patterns", _PLACEHOLDER_PATTERNS)
         ]
 
     # ------------------------------------------------------------------
@@ -410,9 +443,7 @@ class DraftGuardian:
         g7 = self._gate_trigger_check(draft_text)
         gates.append(g7)
         if not g7["passed"]:
-            warnings.extend(
-                f"Trigger keyword found: '{kw}'" for kw in g7.get("found_triggers", [])
-            )
+            warnings.extend(f"Trigger keyword found: '{kw}'" for kw in g7.get("found_triggers", []))
 
         all_passed = all(g["passed"] for g in gates)
 
@@ -491,16 +522,16 @@ class DraftGuardian:
 
         # Look for common legal citation patterns
         citation_patterns = [
-            r"\bF\.S\.\s*\d+",            # Florida Statute
-            r"\bFla\.\s*Stat\.",           # Florida Statute alt
-            r"\b\d+\s*U\.S\.C\.",          # US Code
-            r"\bFed\.\s*R\.\s*Civ\.\s*P\.", # Federal Rules
-            r"\bFla\.\s*R\.\s*Civ\.\s*P\.", # Florida Rules
-            r"\bFla\.\s*Fam\.\s*L\.\s*R\.", # Florida Family Law Rules
-            r"\b\d+\s*F\.\s*\d+d\s+\d+",   # Federal Reporter
+            r"\bF\.S\.\s*\d+",  # Florida Statute
+            r"\bFla\.\s*Stat\.",  # Florida Statute alt
+            r"\b\d+\s*U\.S\.C\.",  # US Code
+            r"\bFed\.\s*R\.\s*Civ\.\s*P\.",  # Federal Rules
+            r"\bFla\.\s*R\.\s*Civ\.\s*P\.",  # Florida Rules
+            r"\bFla\.\s*Fam\.\s*L\.\s*R\.",  # Florida Family Law Rules
+            r"\b\d+\s*F\.\s*\d+d\s+\d+",  # Federal Reporter
             r"\b\d+\s*So\.\s*\d+d\s+\d+",  # Southern Reporter
-            r"\bSection\s+\d+",             # Generic section reference
-            r"\bRule\s+\d+",                # Generic rule reference
+            r"\bSection\s+\d+",  # Generic section reference
+            r"\bRule\s+\d+",  # Generic rule reference
         ]
 
         found_citations = False
@@ -615,9 +646,7 @@ class DraftGuardian:
 
         passed = len(found_triggers) == 0
         notes = (
-            "No trigger keywords found"
-            if passed
-            else f"Trigger keywords requiring review: {', '.join(found_triggers)}"
+            "No trigger keywords found" if passed else f"Trigger keywords requiring review: {', '.join(found_triggers)}"
         )
         return {
             "name": "Trigger Check",

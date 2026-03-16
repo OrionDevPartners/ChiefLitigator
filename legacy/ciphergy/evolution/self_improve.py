@@ -8,8 +8,6 @@ evolution log and respects GUARDRAILS.md hard constraints.
 
 import json
 import logging
-import os
-import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -173,7 +171,10 @@ class EvolutionEngine:
 
         logger.info(
             "Recorded execution %s: trigger=%s duration=%.1fs success=%s",
-            execution_id, trigger, record.duration_seconds, success,
+            execution_id,
+            trigger,
+            record.duration_seconds,
+            success,
         )
         return record
 
@@ -187,12 +188,15 @@ class EvolutionEngine:
             override: What the user changed it to.
             reason: Why the user overrode.
         """
-        self._append_log("user_override", {
-            "execution_id": execution_id,
-            "original": str(original),
-            "override": str(override),
-            "reason": reason,
-        })
+        self._append_log(
+            "user_override",
+            {
+                "execution_id": execution_id,
+                "original": str(original),
+                "override": str(override),
+                "reason": reason,
+            },
+        )
 
     def record_panel_disagreement(
         self, execution_id: str, topic: str, model_votes: Dict[str, str], final_decision: str
@@ -207,13 +211,16 @@ class EvolutionEngine:
             final_decision: The final consensus decision.
         """
         unique_positions = set(model_votes.values())
-        self._append_log("panel_disagreement", {
-            "execution_id": execution_id,
-            "topic": topic,
-            "model_votes": model_votes,
-            "final_decision": final_decision,
-            "disagreement_level": len(unique_positions) / max(len(model_votes), 1),
-        })
+        self._append_log(
+            "panel_disagreement",
+            {
+                "execution_id": execution_id,
+                "topic": topic,
+                "model_votes": model_votes,
+                "final_decision": final_decision,
+                "disagreement_level": len(unique_positions) / max(len(model_votes), 1),
+            },
+        )
 
     # ── Analysis ────────────────────────────────────────────────────
 
@@ -274,11 +281,16 @@ class EvolutionEngine:
             model_call_total=sum(e.model_calls for e in self._executions),
         )
 
-        self._append_log("analyze", {"metrics": {
-            "total": metrics.total_executions,
-            "error_rate": metrics.error_rate,
-            "avg_duration": metrics.avg_duration_seconds,
-        }})
+        self._append_log(
+            "analyze",
+            {
+                "metrics": {
+                    "total": metrics.total_executions,
+                    "error_rate": metrics.error_rate,
+                    "avg_duration": metrics.avg_duration_seconds,
+                }
+            },
+        )
 
         return metrics
 
@@ -325,13 +337,17 @@ class EvolutionEngine:
         # Guardrail check
         if not self._check_guardrails(improvement):
             improvement.guardrail_check = False
-            self._append_log("reject", {
-                "improvement_id": improvement.improvement_id,
-                "reason": "blocked by guardrails",
-            })
+            self._append_log(
+                "reject",
+                {
+                    "improvement_id": improvement.improvement_id,
+                    "reason": "blocked by guardrails",
+                },
+            )
             logger.warning(
                 "Improvement %s blocked by guardrails: %s",
-                improvement.improvement_id, improvement.description,
+                improvement.improvement_id,
+                improvement.description,
             )
             return False
 
@@ -349,22 +365,28 @@ class EvolutionEngine:
             improvement.applied = True
             improvement.applied_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-            self._append_log("apply", {
-                "improvement_id": improvement.improvement_id,
-                "target": improvement.target,
-                "old_value": str(improvement.current_value),
-                "new_value": str(improvement.suggested_value),
-            })
+            self._append_log(
+                "apply",
+                {
+                    "improvement_id": improvement.improvement_id,
+                    "target": improvement.target,
+                    "old_value": str(improvement.current_value),
+                    "new_value": str(improvement.suggested_value),
+                },
+            )
 
             self._save_state()
             logger.info("Applied improvement: %s", improvement.description)
             return True
 
         except Exception as exc:
-            self._append_log("apply_failed", {
-                "improvement_id": improvement.improvement_id,
-                "error": str(exc),
-            })
+            self._append_log(
+                "apply_failed",
+                {
+                    "improvement_id": improvement.improvement_id,
+                    "error": str(exc),
+                },
+            )
             logger.error("Failed to apply improvement %s: %s", improvement.improvement_id, exc)
             return False
 
@@ -398,14 +420,17 @@ class EvolutionEngine:
                     suggested_value="increase by 0.1",
                     confidence=min(0.9, 0.5 + (count * 0.05)),
                     rationale=f"Users consistently rate {category} outputs low ({avg_rating:.1f}/5). "
-                             f"Increasing confidence weight will trigger more thorough analysis.",
+                    f"Increasing confidence weight will trigger more thorough analysis.",
                 )
                 suggestions.append(suggestion)
 
-        self._append_log("feedback_analysis", {
-            "weak_areas_count": len(weak_areas),
-            "suggestions_generated": len(suggestions),
-        })
+        self._append_log(
+            "feedback_analysis",
+            {
+                "weak_areas_count": len(weak_areas),
+                "suggestions_generated": len(suggestions),
+            },
+        )
 
         return suggestions
 
@@ -416,6 +441,7 @@ class EvolutionEngine:
         if self._bedrock_client is None:
             try:
                 import boto3
+
                 session = boto3.Session(region_name=self._region)
                 self._bedrock_client = session.client("bedrock-runtime", region_name=self._region)
             except ImportError:
@@ -459,12 +485,14 @@ Suggest 1-5 specific, actionable improvements. For each:
 
 Respond with ONLY valid JSON: {{"improvements": [...]}}"""
 
-        body = json.dumps({
-            "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 4096,
-            "temperature": 0.2,
-            "messages": [{"role": "user", "content": prompt}],
-        })
+        body = json.dumps(
+            {
+                "anthropic_version": "bedrock-2023-05-31",
+                "max_tokens": 4096,
+                "temperature": 0.2,
+                "messages": [{"role": "user", "content": prompt}],
+            }
+        )
 
         response = self._bedrock_client.invoke_model(
             modelId=self._model_id,
@@ -511,70 +539,80 @@ Respond with ONLY valid JSON: {{"improvements": [...]}}"""
 
         # High error rate
         if metrics.error_rate > 0.2:
-            suggestions.append(Improvement(
-                improvement_id=f"heuristic-{timestamp}-{idx}",
-                category="reliability",
-                description=f"Error rate is {metrics.error_rate:.0%}. Increase retry count and add error recovery.",
-                target="pipeline.max_retries",
-                current_value=3,
-                suggested_value=5,
-                confidence=0.8,
-                rationale="High error rate suggests transient failures. More retries help.",
-            ))
+            suggestions.append(
+                Improvement(
+                    improvement_id=f"heuristic-{timestamp}-{idx}",
+                    category="reliability",
+                    description=f"Error rate is {metrics.error_rate:.0%}. Increase retry count and add error recovery.",
+                    target="pipeline.max_retries",
+                    current_value=3,
+                    suggested_value=5,
+                    confidence=0.8,
+                    rationale="High error rate suggests transient failures. More retries help.",
+                )
+            )
             idx += 1
 
         # Slow executions
         if metrics.avg_duration_seconds > 60:
-            suggestions.append(Improvement(
-                improvement_id=f"heuristic-{timestamp}-{idx}",
-                category="performance",
-                description=f"Average execution time is {metrics.avg_duration_seconds:.0f}s. Consider parallel step execution.",
-                target="pipeline.parallel_steps",
-                current_value=False,
-                suggested_value=True,
-                confidence=0.7,
-                rationale="Serial step execution is a bottleneck when durations exceed 60s.",
-            ))
+            suggestions.append(
+                Improvement(
+                    improvement_id=f"heuristic-{timestamp}-{idx}",
+                    category="performance",
+                    description=f"Average execution time is {metrics.avg_duration_seconds:.0f}s. Consider parallel step execution.",
+                    target="pipeline.parallel_steps",
+                    current_value=False,
+                    suggested_value=True,
+                    confidence=0.7,
+                    rationale="Serial step execution is a bottleneck when durations exceed 60s.",
+                )
+            )
             idx += 1
 
         # Many model calls
         if metrics.model_call_total > 100 and metrics.total_executions > 0:
             avg_calls = metrics.model_call_total / metrics.total_executions
             if avg_calls > 10:
-                suggestions.append(Improvement(
-                    improvement_id=f"heuristic-{timestamp}-{idx}",
-                    category="performance",
-                    description=f"Average {avg_calls:.0f} model calls per execution. Enable response caching.",
-                    target="pipeline.cache_model_responses",
-                    current_value=False,
-                    suggested_value=True,
-                    confidence=0.75,
-                    rationale="Caching repeated model calls reduces latency and cost.",
-                ))
+                suggestions.append(
+                    Improvement(
+                        improvement_id=f"heuristic-{timestamp}-{idx}",
+                        category="performance",
+                        description=f"Average {avg_calls:.0f} model calls per execution. Enable response caching.",
+                        target="pipeline.cache_model_responses",
+                        current_value=False,
+                        suggested_value=True,
+                        confidence=0.75,
+                        rationale="Caching repeated model calls reduces latency and cost.",
+                    )
+                )
                 idx += 1
 
         # Slowest trigger optimization
         for trigger_info in metrics.slowest_triggers[:2]:
             if trigger_info["avg_duration"] > 120:
-                suggestions.append(Improvement(
-                    improvement_id=f"heuristic-{timestamp}-{idx}",
-                    category="performance",
-                    description=f"Trigger '{trigger_info['trigger']}' averages {trigger_info['avg_duration']:.0f}s. Review step list for unnecessary operations.",
-                    target=f"cascades.{trigger_info['trigger']}.steps",
-                    confidence=0.6,
-                    rationale="Long-running triggers should be audited for step reduction.",
-                ))
+                suggestions.append(
+                    Improvement(
+                        improvement_id=f"heuristic-{timestamp}-{idx}",
+                        category="performance",
+                        description=f"Trigger '{trigger_info['trigger']}' averages {trigger_info['avg_duration']:.0f}s. Review step list for unnecessary operations.",
+                        target=f"cascades.{trigger_info['trigger']}.steps",
+                        confidence=0.6,
+                        rationale="Long-running triggers should be audited for step reduction.",
+                    )
+                )
                 idx += 1
 
         if not suggestions:
-            suggestions.append(Improvement(
-                improvement_id=f"heuristic-{timestamp}-0",
-                category="coverage",
-                description="System performing well. Consider adding more cascade triggers for comprehensive monitoring.",
-                target="cascades",
-                confidence=0.4,
-                rationale="No performance issues detected. Expansion recommended.",
-            ))
+            suggestions.append(
+                Improvement(
+                    improvement_id=f"heuristic-{timestamp}-0",
+                    category="coverage",
+                    description="System performing well. Consider adding more cascade triggers for comprehensive monitoring.",
+                    target="cascades",
+                    confidence=0.4,
+                    rationale="No performance issues detected. Expansion recommended.",
+                )
+            )
 
         self._append_log("heuristic_suggest", {"count": len(suggestions)})
         return suggestions
@@ -636,7 +674,8 @@ Respond with ONLY valid JSON: {{"improvements": [...]}}"""
         if improvement.confidence < 0.3:
             logger.info(
                 "Improvement %s has low confidence (%.2f). Requires manual review.",
-                improvement.improvement_id, improvement.confidence,
+                improvement.improvement_id,
+                improvement.confidence,
             )
             return False
 
@@ -652,6 +691,7 @@ Respond with ONLY valid JSON: {{"improvements": [...]}}"""
 
         try:
             import yaml as yaml_mod
+
             with open(config_path) as f:
                 return yaml_mod.safe_load(f)
         except ImportError:
@@ -668,6 +708,7 @@ Respond with ONLY valid JSON: {{"improvements": [...]}}"""
 
         try:
             import yaml as yaml_mod
+
             with open(config_path, "w") as f:
                 yaml_mod.dump(config, f, default_flow_style=False, sort_keys=False)
         except ImportError:
@@ -699,12 +740,8 @@ Respond with ONLY valid JSON: {{"improvements": [...]}}"""
             with open(state_path) as f:
                 data = json.load(f)
 
-            self._executions = [
-                ExecutionRecord(**rec) for rec in data.get("executions", [])
-            ]
-            self._evolution_log = [
-                EvolutionLogEntry(**entry) for entry in data.get("evolution_log", [])
-            ]
+            self._executions = [ExecutionRecord(**rec) for rec in data.get("executions", [])]
+            self._evolution_log = [EvolutionLogEntry(**entry) for entry in data.get("evolution_log", [])]
         except Exception as exc:
             logger.warning("Failed to load evolution state: %s", exc)
 

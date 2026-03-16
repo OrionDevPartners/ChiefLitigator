@@ -8,7 +8,6 @@ analysis when available, falls back to rule-based matching.
 
 import json
 import logging
-import os
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -56,7 +55,11 @@ DOMAIN_CONNECTORS: Dict[str, List[Dict[str, Any]]] = {
             "why": "Version control for legal documents, briefs, and evidence files",
             "priority": 2,
             "category": "version_control",
-            "setup_steps": ["Create GitHub PAT with repo scope", "Set GITHUB_TOKEN env var", "Create private repo per matter"],
+            "setup_steps": [
+                "Create GitHub PAT with repo scope",
+                "Set GITHUB_TOKEN env var",
+                "Create private repo per matter",
+            ],
             "required_credentials": ["GITHUB_TOKEN"],
             "estimated_setup_time": "10 minutes",
         },
@@ -65,7 +68,12 @@ DOMAIN_CONNECTORS: Dict[str, List[Dict[str, Any]]] = {
             "why": "S3 for document storage, DynamoDB for case indexing, SES for notifications, Bedrock for AI analysis",
             "priority": 1,
             "category": "cloud",
-            "setup_steps": ["Configure AWS credentials", "Create S3 bucket for documents", "Create DynamoDB table for case index", "Verify Bedrock model access"],
+            "setup_steps": [
+                "Configure AWS credentials",
+                "Create S3 bucket for documents",
+                "Create DynamoDB table for case index",
+                "Verify Bedrock model access",
+            ],
             "required_credentials": ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"],
             "estimated_setup_time": "20 minutes",
         },
@@ -76,7 +84,11 @@ DOMAIN_CONNECTORS: Dict[str, List[Dict[str, Any]]] = {
             "why": "Track due diligence tasks, team assignments, and progress",
             "priority": 1,
             "category": "project_mgmt",
-            "setup_steps": ["Create Asana PAT", "Set ASANA_PAT env var", "Create DD project with sections per workstream"],
+            "setup_steps": [
+                "Create Asana PAT",
+                "Set ASANA_PAT env var",
+                "Create DD project with sections per workstream",
+            ],
             "required_credentials": ["ASANA_PAT"],
             "estimated_setup_time": "10 minutes",
         },
@@ -94,7 +106,11 @@ DOMAIN_CONNECTORS: Dict[str, List[Dict[str, Any]]] = {
             "why": "S3 for document room, DynamoDB for findings database, Bedrock for AI analysis",
             "priority": 1,
             "category": "cloud",
-            "setup_steps": ["Configure AWS credentials", "Create S3 bucket for data room", "Create DynamoDB table for findings"],
+            "setup_steps": [
+                "Configure AWS credentials",
+                "Create S3 bucket for data room",
+                "Create DynamoDB table for findings",
+            ],
             "required_credentials": ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"],
             "estimated_setup_time": "20 minutes",
         },
@@ -114,7 +130,12 @@ DOMAIN_CONNECTORS: Dict[str, List[Dict[str, Any]]] = {
             "why": "HIPAA-eligible S3 for records, DynamoDB for patient index, SES for alerts, Bedrock for clinical AI",
             "priority": 1,
             "category": "cloud",
-            "setup_steps": ["Configure AWS credentials in HIPAA account", "Enable S3 encryption", "Configure CloudTrail for audit logging", "Verify Bedrock access"],
+            "setup_steps": [
+                "Configure AWS credentials in HIPAA account",
+                "Enable S3 encryption",
+                "Configure CloudTrail for audit logging",
+                "Verify Bedrock access",
+            ],
             "required_credentials": ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"],
             "estimated_setup_time": "30 minutes",
         },
@@ -125,7 +146,11 @@ DOMAIN_CONNECTORS: Dict[str, List[Dict[str, Any]]] = {
             "why": "Source code analysis, PR management, CI/CD workflows, issue tracking",
             "priority": 1,
             "category": "version_control",
-            "setup_steps": ["Create GitHub PAT with full repo + actions scope", "Set GITHUB_TOKEN env var", "Configure repo webhooks"],
+            "setup_steps": [
+                "Create GitHub PAT with full repo + actions scope",
+                "Set GITHUB_TOKEN env var",
+                "Configure repo webhooks",
+            ],
             "required_credentials": ["GITHUB_TOKEN"],
             "estimated_setup_time": "10 minutes",
         },
@@ -143,7 +168,11 @@ DOMAIN_CONNECTORS: Dict[str, List[Dict[str, Any]]] = {
             "why": "Infrastructure monitoring, S3 artifacts, CloudWatch metrics, Bedrock for code review AI",
             "priority": 1,
             "category": "cloud",
-            "setup_steps": ["Configure AWS credentials", "Set up CloudWatch log groups", "Configure Bedrock model access"],
+            "setup_steps": [
+                "Configure AWS credentials",
+                "Set up CloudWatch log groups",
+                "Configure Bedrock model access",
+            ],
             "required_credentials": ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"],
             "estimated_setup_time": "20 minutes",
         },
@@ -152,7 +181,11 @@ DOMAIN_CONNECTORS: Dict[str, List[Dict[str, Any]]] = {
             "why": "Edge deployment via Workers, DNS management, KV for feature flags, R2 for assets",
             "priority": 3,
             "category": "edge",
-            "setup_steps": ["Create Cloudflare API token", "Set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID", "Configure zone"],
+            "setup_steps": [
+                "Create Cloudflare API token",
+                "Set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID",
+                "Configure zone",
+            ],
             "required_credentials": ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"],
             "estimated_setup_time": "15 minutes",
         },
@@ -161,9 +194,41 @@ DOMAIN_CONNECTORS: Dict[str, List[Dict[str, Any]]] = {
 
 # Keywords that trigger connector recommendations
 KEYWORD_TRIGGERS: Dict[str, List[str]] = {
-    "asana": ["project management", "task tracking", "sprint", "workflow", "team", "deadline", "milestone", "kanban", "agile"],
-    "github": ["code", "repository", "git", "source control", "pull request", "ci/cd", "deployment", "version control", "open source"],
-    "aws": ["cloud", "storage", "database", "email", "notification", "ai", "machine learning", "bedrock", "s3", "dynamodb", "lambda"],
+    "asana": [
+        "project management",
+        "task tracking",
+        "sprint",
+        "workflow",
+        "team",
+        "deadline",
+        "milestone",
+        "kanban",
+        "agile",
+    ],
+    "github": [
+        "code",
+        "repository",
+        "git",
+        "source control",
+        "pull request",
+        "ci/cd",
+        "deployment",
+        "version control",
+        "open source",
+    ],
+    "aws": [
+        "cloud",
+        "storage",
+        "database",
+        "email",
+        "notification",
+        "ai",
+        "machine learning",
+        "bedrock",
+        "s3",
+        "dynamodb",
+        "lambda",
+    ],
     "cloudflare": ["cdn", "edge", "dns", "worker", "serverless", "kv", "r2", "pages", "domain", "ssl"],
 }
 
@@ -234,13 +299,12 @@ class ConnectorAdvisor:
 
     # ── AI-powered recommendation ───────────────────────────────────
 
-    def _ai_recommend(
-        self, description: str, domain: Optional[str], existing: List[str]
-    ) -> Optional[AdvisorResult]:
+    def _ai_recommend(self, description: str, domain: Optional[str], existing: List[str]) -> Optional[AdvisorResult]:
         """Use Bedrock AI to generate recommendations."""
         if self._bedrock_client is None:
             try:
                 import boto3
+
                 session = boto3.Session(region_name=self._region)
                 self._bedrock_client = session.client("bedrock-runtime", region_name=self._region)
             except ImportError:
@@ -249,8 +313,8 @@ class ConnectorAdvisor:
         prompt = f"""Analyze this project and recommend Ciphergy connectors.
 
 PROJECT: {description}
-DOMAIN: {domain or 'auto-detect'}
-EXISTING TOOLS: {', '.join(existing) or 'none'}
+DOMAIN: {domain or "auto-detect"}
+EXISTING TOOLS: {", ".join(existing) or "none"}
 
 Available connectors:
 1. asana — Project management, task tracking, inter-agent messaging
@@ -273,12 +337,14 @@ Also provide:
 Respond with ONLY valid JSON:
 {{"recommendations": [...], "analysis_summary": "...", "detected_domain": "..."}}"""
 
-        body = json.dumps({
-            "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 4096,
-            "temperature": 0.2,
-            "messages": [{"role": "user", "content": prompt}],
-        })
+        body = json.dumps(
+            {
+                "anthropic_version": "bedrock-2023-05-31",
+                "max_tokens": 4096,
+                "temperature": 0.2,
+                "messages": [{"role": "user", "content": prompt}],
+            }
+        )
 
         response = self._bedrock_client.invoke_model(
             modelId=self._model_id,
@@ -321,9 +387,7 @@ Respond with ONLY valid JSON:
 
     # ── Rule-based recommendation ───────────────────────────────────
 
-    def _rule_based_recommend(
-        self, description: str, domain: Optional[str], existing: List[str]
-    ) -> AdvisorResult:
+    def _rule_based_recommend(self, description: str, domain: Optional[str], existing: List[str]) -> AdvisorResult:
         """Generate recommendations using keyword matching and domain templates."""
         detected_domain = domain or self._detect_domain(description)
         recommendations: List[ConnectorRecommendation] = []
@@ -338,15 +402,17 @@ Respond with ONLY valid JSON:
             if name in [t.lower() for t in existing]:
                 priority = max(1, priority - 1)  # Boost priority for existing tools
 
-            recommendations.append(ConnectorRecommendation(
-                name=name,
-                why=rec_data["why"],
-                priority=priority,
-                setup_steps=rec_data["setup_steps"],
-                required_credentials=rec_data["required_credentials"],
-                estimated_setup_time=rec_data["estimated_setup_time"],
-                category=rec_data["category"],
-            ))
+            recommendations.append(
+                ConnectorRecommendation(
+                    name=name,
+                    why=rec_data["why"],
+                    priority=priority,
+                    setup_steps=rec_data["setup_steps"],
+                    required_credentials=rec_data["required_credentials"],
+                    estimated_setup_time=rec_data["estimated_setup_time"],
+                    category=rec_data["category"],
+                )
+            )
 
         # Check for keyword-triggered connectors not already recommended
         recommended_names = {r.name for r in recommendations}
@@ -361,15 +427,17 @@ Respond with ONLY valid JSON:
                 for domain_recs_list in DOMAIN_CONNECTORS.values():
                     for rec_data in domain_recs_list:
                         if rec_data["name"] == connector_name:
-                            recommendations.append(ConnectorRecommendation(
-                                name=connector_name,
-                                why=f"Detected keywords suggest {connector_name} would be useful",
-                                priority=3,
-                                setup_steps=rec_data["setup_steps"],
-                                required_credentials=rec_data["required_credentials"],
-                                estimated_setup_time=rec_data["estimated_setup_time"],
-                                category=rec_data["category"],
-                            ))
+                            recommendations.append(
+                                ConnectorRecommendation(
+                                    name=connector_name,
+                                    why=f"Detected keywords suggest {connector_name} would be useful",
+                                    priority=3,
+                                    setup_steps=rec_data["setup_steps"],
+                                    required_credentials=rec_data["required_credentials"],
+                                    estimated_setup_time=rec_data["estimated_setup_time"],
+                                    category=rec_data["category"],
+                                )
+                            )
                             break
                     else:
                         continue
@@ -381,7 +449,7 @@ Respond with ONLY valid JSON:
         return AdvisorResult(
             recommendations=recommendations,
             analysis_summary=f"Rule-based analysis for {detected_domain} domain project. "
-                           f"Found {len(recommendations)} recommended connector(s).",
+            f"Found {len(recommendations)} recommended connector(s).",
             detected_domain=detected_domain,
             ai_powered=False,
         )
@@ -391,10 +459,56 @@ Respond with ONLY valid JSON:
         desc_lower = description.lower()
 
         domain_keywords: Dict[str, List[str]] = {
-            "legal": ["legal", "law", "court", "litigation", "plaintiff", "defendant", "filing", "brief", "deposition", "pro se", "case", "attorney", "counsel"],
-            "startup_dd": ["startup", "due diligence", "investment", "funding", "valuation", "equity", "cap table", "pitch", "venture"],
-            "medical": ["medical", "clinical", "patient", "diagnosis", "treatment", "health", "hipaa", "pharma", "hospital", "healthcare"],
-            "software": ["software", "code", "development", "api", "deploy", "infrastructure", "devops", "frontend", "backend", "microservice"],
+            "legal": [
+                "legal",
+                "law",
+                "court",
+                "litigation",
+                "plaintiff",
+                "defendant",
+                "filing",
+                "brief",
+                "deposition",
+                "pro se",
+                "case",
+                "attorney",
+                "counsel",
+            ],
+            "startup_dd": [
+                "startup",
+                "due diligence",
+                "investment",
+                "funding",
+                "valuation",
+                "equity",
+                "cap table",
+                "pitch",
+                "venture",
+            ],
+            "medical": [
+                "medical",
+                "clinical",
+                "patient",
+                "diagnosis",
+                "treatment",
+                "health",
+                "hipaa",
+                "pharma",
+                "hospital",
+                "healthcare",
+            ],
+            "software": [
+                "software",
+                "code",
+                "development",
+                "api",
+                "deploy",
+                "infrastructure",
+                "devops",
+                "frontend",
+                "backend",
+                "microservice",
+            ],
         }
 
         scores: Dict[str, int] = {}

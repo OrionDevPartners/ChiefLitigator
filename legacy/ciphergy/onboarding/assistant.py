@@ -9,8 +9,6 @@ monitored file lists.
 
 import json
 import logging
-import os
-import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -21,16 +19,18 @@ logger = logging.getLogger(__name__)
 # Optional rich formatting
 try:
     from rich.console import Console
-    from rich.panel import Panel
-    from rich.prompt import Prompt, Confirm
     from rich.markdown import Markdown
+    from rich.panel import Panel
+    from rich.prompt import Confirm, Prompt
     from rich.table import Table
+
     HAS_RICH = True
 except ImportError:
     HAS_RICH = False
 
 try:
     import yaml
+
     HAS_YAML = True
 except ImportError:
     HAS_YAML = False
@@ -236,11 +236,11 @@ PROJECT DETAILS:
 - Name: {self._state.project_name}
 - Description: {self._state.project_description}
 - Domain: {self._state.domain}
-- Data Sources: {', '.join(self._state.data_sources) or 'not specified'}
-- Desired Outputs: {', '.join(self._state.desired_outputs) or 'not specified'}
-- Existing Tools: {', '.join(self._state.existing_tools) or 'none'}
+- Data Sources: {", ".join(self._state.data_sources) or "not specified"}
+- Desired Outputs: {", ".join(self._state.desired_outputs) or "not specified"}
+- Existing Tools: {", ".join(self._state.existing_tools) or "none"}
 - Sensitivity: {self._state.sensitivity_level}
-- Notes: {self._state.custom_notes or 'none'}
+- Notes: {self._state.custom_notes or "none"}
 
 Generate a JSON response with these exact keys:
 
@@ -283,17 +283,20 @@ Respond with ONLY valid JSON, no markdown fences or explanation."""
         if self._bedrock_client is None:
             try:
                 import boto3
+
                 session = boto3.Session(region_name=self._region)
                 self._bedrock_client = session.client("bedrock-runtime", region_name=self._region)
             except ImportError:
                 raise RuntimeError("boto3 is required for AI generation. Install with: pip install boto3")
 
-        body = json.dumps({
-            "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 8192,
-            "temperature": 0.3,
-            "messages": [{"role": "user", "content": prompt}],
-        })
+        body = json.dumps(
+            {
+                "anthropic_version": "bedrock-2023-05-31",
+                "max_tokens": 8192,
+                "temperature": 0.3,
+                "messages": [{"role": "user", "content": prompt}],
+            }
+        )
 
         response = self._bedrock_client.invoke_model(
             modelId=self._model_id,
@@ -331,28 +334,98 @@ Respond with ONLY valid JSON, no markdown fences or explanation."""
         # Domain-specific trap templates
         trap_templates: Dict[str, List[Dict[str, str]]] = {
             "legal": [
-                {"trap_id": "TRAP-001", "description": "Citing overruled precedent", "severity": "critical", "mitigation": "Cross-reference with Shepard's/KeyCite"},
-                {"trap_id": "TRAP-002", "description": "Jurisdiction mismatch", "severity": "high", "mitigation": "Verify jurisdiction applies to the case"},
-                {"trap_id": "TRAP-003", "description": "Statute of limitations expired", "severity": "critical", "mitigation": "Calendar all deadlines on intake"},
-                {"trap_id": "TRAP-004", "description": "Conflicting evidence not flagged", "severity": "high", "mitigation": "Run contradiction detection in WDC panel"},
+                {
+                    "trap_id": "TRAP-001",
+                    "description": "Citing overruled precedent",
+                    "severity": "critical",
+                    "mitigation": "Cross-reference with Shepard's/KeyCite",
+                },
+                {
+                    "trap_id": "TRAP-002",
+                    "description": "Jurisdiction mismatch",
+                    "severity": "high",
+                    "mitigation": "Verify jurisdiction applies to the case",
+                },
+                {
+                    "trap_id": "TRAP-003",
+                    "description": "Statute of limitations expired",
+                    "severity": "critical",
+                    "mitigation": "Calendar all deadlines on intake",
+                },
+                {
+                    "trap_id": "TRAP-004",
+                    "description": "Conflicting evidence not flagged",
+                    "severity": "high",
+                    "mitigation": "Run contradiction detection in WDC panel",
+                },
             ],
             "software": [
-                {"trap_id": "TRAP-001", "description": "Outdated dependency versions", "severity": "high", "mitigation": "Run dependency audit before analysis"},
-                {"trap_id": "TRAP-002", "description": "Missing security vulnerabilities", "severity": "critical", "mitigation": "Cross-reference CVE databases"},
+                {
+                    "trap_id": "TRAP-001",
+                    "description": "Outdated dependency versions",
+                    "severity": "high",
+                    "mitigation": "Run dependency audit before analysis",
+                },
+                {
+                    "trap_id": "TRAP-002",
+                    "description": "Missing security vulnerabilities",
+                    "severity": "critical",
+                    "mitigation": "Cross-reference CVE databases",
+                },
             ],
             "medical": [
-                {"trap_id": "TRAP-001", "description": "Contraindication not flagged", "severity": "critical", "mitigation": "Cross-reference drug interaction databases"},
-                {"trap_id": "TRAP-002", "description": "Outdated clinical guidelines", "severity": "high", "mitigation": "Verify against current guidelines"},
+                {
+                    "trap_id": "TRAP-001",
+                    "description": "Contraindication not flagged",
+                    "severity": "critical",
+                    "mitigation": "Cross-reference drug interaction databases",
+                },
+                {
+                    "trap_id": "TRAP-002",
+                    "description": "Outdated clinical guidelines",
+                    "severity": "high",
+                    "mitigation": "Verify against current guidelines",
+                },
             ],
         }
 
         # WDC panel personas
         personas = [
-            {"name": "Analyst", "role": "Primary analysis and evidence synthesis", "model_id": "us.anthropic.claude-sonnet-4-6-20250514-v1:0", "system_prompt": f"You are a senior {domain} analyst. Synthesize evidence methodically.", "weight": 0.3},
-            {"name": "Critic", "role": "Devil's advocate — challenges assumptions", "model_id": "mistral.mistral-large-2407-v1:0", "system_prompt": f"You are a critical reviewer in {domain}. Challenge every assumption.", "weight": 0.25},
-            {"name": "Researcher", "role": "Deep research and fact verification", "model_id": "us.deepseek.deepseek-v3-2-20250523-v1:0", "system_prompt": f"You are a meticulous researcher in {domain}. Verify every claim.", "weight": 0.2},
-            {"name": "Strategist", "role": "Strategic implications and risk assessment", "model_id": "us.zhipu.glm-4-7b-20250515-v1:0", "system_prompt": f"You are a strategic advisor in {domain}. Assess risks and opportunities.", "weight": 0.15},
-            {"name": "Integrator", "role": "Synthesis and consensus building", "model_id": "amazon.nova-pro-v1:0", "system_prompt": "You synthesize multiple perspectives into a coherent conclusion.", "weight": 0.1},
+            {
+                "name": "Analyst",
+                "role": "Primary analysis and evidence synthesis",
+                "model_id": "us.anthropic.claude-sonnet-4-6-20250514-v1:0",
+                "system_prompt": f"You are a senior {domain} analyst. Synthesize evidence methodically.",
+                "weight": 0.3,
+            },
+            {
+                "name": "Critic",
+                "role": "Devil's advocate — challenges assumptions",
+                "model_id": "mistral.mistral-large-2407-v1:0",
+                "system_prompt": f"You are a critical reviewer in {domain}. Challenge every assumption.",
+                "weight": 0.25,
+            },
+            {
+                "name": "Researcher",
+                "role": "Deep research and fact verification",
+                "model_id": "us.deepseek.deepseek-v3-2-20250523-v1:0",
+                "system_prompt": f"You are a meticulous researcher in {domain}. Verify every claim.",
+                "weight": 0.2,
+            },
+            {
+                "name": "Strategist",
+                "role": "Strategic implications and risk assessment",
+                "model_id": "us.zhipu.glm-4-7b-20250515-v1:0",
+                "system_prompt": f"You are a strategic advisor in {domain}. Assess risks and opportunities.",
+                "weight": 0.15,
+            },
+            {
+                "name": "Integrator",
+                "role": "Synthesis and consensus building",
+                "model_id": "amazon.nova-pro-v1:0",
+                "system_prompt": "You synthesize multiple perspectives into a coherent conclusion.",
+                "weight": 0.1,
+            },
         ]
 
         # Confidence categories
@@ -367,15 +440,50 @@ Respond with ONLY valid JSON, no markdown fences or explanation."""
         # Connectors
         connector_map: Dict[str, List[Dict[str, Any]]] = {
             "legal": [
-                {"name": "asana", "description": "Case management and task tracking", "priority": 1, "setup_notes": "Create project per case"},
-                {"name": "github", "description": "Document version control and filing storage", "priority": 2, "setup_notes": "One repo per matter"},
-                {"name": "aws", "description": "S3 for document storage, DynamoDB for case index", "priority": 1, "setup_notes": "Configure S3 bucket and DynamoDB table"},
+                {
+                    "name": "asana",
+                    "description": "Case management and task tracking",
+                    "priority": 1,
+                    "setup_notes": "Create project per case",
+                },
+                {
+                    "name": "github",
+                    "description": "Document version control and filing storage",
+                    "priority": 2,
+                    "setup_notes": "One repo per matter",
+                },
+                {
+                    "name": "aws",
+                    "description": "S3 for document storage, DynamoDB for case index",
+                    "priority": 1,
+                    "setup_notes": "Configure S3 bucket and DynamoDB table",
+                },
             ],
             "software": [
-                {"name": "github", "description": "Source code analysis and PR management", "priority": 1, "setup_notes": "Configure repo access"},
-                {"name": "asana", "description": "Sprint tracking and issue management", "priority": 2, "setup_notes": "Map to existing project"},
-                {"name": "aws", "description": "Infrastructure monitoring and deployment", "priority": 1, "setup_notes": "Configure CloudWatch access"},
-                {"name": "cloudflare", "description": "Edge deployment and DNS management", "priority": 3, "setup_notes": "Configure zone access"},
+                {
+                    "name": "github",
+                    "description": "Source code analysis and PR management",
+                    "priority": 1,
+                    "setup_notes": "Configure repo access",
+                },
+                {
+                    "name": "asana",
+                    "description": "Sprint tracking and issue management",
+                    "priority": 2,
+                    "setup_notes": "Map to existing project",
+                },
+                {
+                    "name": "aws",
+                    "description": "Infrastructure monitoring and deployment",
+                    "priority": 1,
+                    "setup_notes": "Configure CloudWatch access",
+                },
+                {
+                    "name": "cloudflare",
+                    "description": "Edge deployment and DNS management",
+                    "priority": 3,
+                    "setup_notes": "Configure zone access",
+                },
             ],
         }
 
@@ -392,14 +500,9 @@ Respond with ONLY valid JSON, no markdown fences or explanation."""
                 c["name"]: {"enabled": True, "priority": c["priority"]}
                 for c in connector_map.get(domain, connector_map.get("legal", []))
             },
-            "confidence_monitor": {
-                "categories": {c["name"]: {"weight": float(c["weight"])} for c in categories}
-            },
+            "confidence_monitor": {"categories": {c["name"]: {"weight": float(c["weight"])} for c in categories}},
             "wdc_panel": {
-                "models": {
-                    p["name"].lower(): {"model_id": p["model_id"], "weight": p["weight"]}
-                    for p in personas
-                }
+                "models": {p["name"].lower(): {"model_id": p["model_id"], "weight": p["weight"]} for p in personas}
             },
             "cascades": {
                 "new-evidence": {
@@ -410,12 +513,24 @@ Respond with ONLY valid JSON, no markdown fences or explanation."""
                 "phase-change": {
                     "description": "Project phase transition",
                     "priority": 2,
-                    "steps": ["update_registry", "recompute_hashes", "full_integrity_check", "escalate_open_items", "notify_asana"],
+                    "steps": [
+                        "update_registry",
+                        "recompute_hashes",
+                        "full_integrity_check",
+                        "escalate_open_items",
+                        "notify_asana",
+                    ],
                 },
                 "correction": {
                     "description": "Error correction applied",
                     "priority": 1,
-                    "steps": ["update_registry", "recompute_hashes", "log_correction", "check_cascading_impacts", "notify_asana"],
+                    "steps": [
+                        "update_registry",
+                        "recompute_hashes",
+                        "log_correction",
+                        "check_cascading_impacts",
+                        "notify_asana",
+                    ],
                 },
             },
             "sync": {"auto_push": True, "interval_minutes": 30},
@@ -514,10 +629,10 @@ Respond with ONLY valid JSON, no markdown fences or explanation."""
         if self._console:
             self._console.print(Panel(f"[bold]{title}[/bold]\n{subtitle}", style="blue"))
         else:
-            print(f"\n{'='*60}")
+            print(f"\n{'=' * 60}")
             print(f"  {title}")
             print(f"  {subtitle}")
-            print(f"{'='*60}\n")
+            print(f"{'=' * 60}\n")
 
     def _print_header(self, text: str) -> None:
         """Print a section header."""
@@ -602,6 +717,7 @@ Respond with ONLY valid JSON, no markdown fences or explanation."""
 
 # ── CLI entry point ─────────────────────────────────────────────────
 
+
 def main() -> None:
     """Run the onboarding assistant from the command line."""
     import argparse
@@ -624,11 +740,16 @@ def main() -> None:
 
     if args.description:
         config = assistant.generate_from_description(args.description)
-        print(json.dumps({
-            "connectors": config.recommended_connectors,
-            "traps": config.known_traps,
-            "personas": config.wdc_panel_personas,
-        }, indent=2))
+        print(
+            json.dumps(
+                {
+                    "connectors": config.recommended_connectors,
+                    "traps": config.known_traps,
+                    "personas": config.wdc_panel_personas,
+                },
+                indent=2,
+            )
+        )
     elif args.update:
         assistant.run_update()
     else:

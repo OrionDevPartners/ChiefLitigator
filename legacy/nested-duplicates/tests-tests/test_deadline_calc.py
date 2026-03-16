@@ -7,8 +7,9 @@ been manually verified against published court rules and a calendar.
 Test IDs follow the spec: DC-01 through DC-17.
 """
 
-import pytest
 from datetime import date
+
+import pytest
 
 from src.legal.deadline_calc import (
     DeadlineCalculator,
@@ -29,9 +30,7 @@ def calc() -> DeadlineCalculator:
 # No weekend/holiday adjustment needed.
 # -----------------------------------------------------------------------
 def test_dc01_federal_answer(calc: DeadlineCalculator) -> None:
-    result = calc.compute(
-        date(2026, 3, 2), DeadlineType.ANSWER, Jurisdiction.FEDERAL
-    )
+    result = calc.compute(date(2026, 3, 2), DeadlineType.ANSWER, Jurisdiction.FEDERAL)
     assert result.deadline_date == date(2026, 3, 23)
     assert result.days_allowed == 21
     assert "FRCP Rule 12" in result.rule_citation
@@ -43,9 +42,7 @@ def test_dc01_federal_answer(calc: DeadlineCalculator) -> None:
 # Conservative: domiciliary 15-day period (shorter than 30-day non-dom).
 # -----------------------------------------------------------------------
 def test_dc02_louisiana_answer(calc: DeadlineCalculator) -> None:
-    result = calc.compute(
-        date(2026, 3, 2), DeadlineType.ANSWER, Jurisdiction.LOUISIANA
-    )
+    result = calc.compute(date(2026, 3, 2), DeadlineType.ANSWER, Jurisdiction.LOUISIANA)
     assert result.days_allowed == 15
     assert "La. C.C.P. art. 1001" in result.rule_citation
 
@@ -56,9 +53,7 @@ def test_dc02_louisiana_answer(calc: DeadlineCalculator) -> None:
 # Saturday is not a business day → extends to Monday 2026-03-30.
 # -----------------------------------------------------------------------
 def test_dc03_weekend_extension(calc: DeadlineCalculator) -> None:
-    result = calc.compute(
-        date(2026, 3, 7), DeadlineType.ANSWER, Jurisdiction.FEDERAL
-    )
+    result = calc.compute(date(2026, 3, 7), DeadlineType.ANSWER, Jurisdiction.FEDERAL)
     assert result.deadline_date.weekday() < 5  # Must be a weekday
     assert result.deadline_date == date(2026, 3, 30)
     assert len(result.adjustments) > 0
@@ -69,9 +64,7 @@ def test_dc03_weekend_extension(calc: DeadlineCalculator) -> None:
 # Event: Monday 2026-03-02.  +30 days → Wednesday 2026-04-01.
 # -----------------------------------------------------------------------
 def test_dc04_discovery_response(calc: DeadlineCalculator) -> None:
-    result = calc.compute(
-        date(2026, 3, 2), DeadlineType.DISCOVERY_RESPONSE, Jurisdiction.FEDERAL
-    )
+    result = calc.compute(date(2026, 3, 2), DeadlineType.DISCOVERY_RESPONSE, Jurisdiction.FEDERAL)
     assert result.days_allowed == 30
     assert "FRCP Rule 3" in result.rule_citation
 
@@ -81,9 +74,7 @@ def test_dc04_discovery_response(calc: DeadlineCalculator) -> None:
 # Event: Monday 2026-03-02.  +30 days → Wednesday 2026-04-01.
 # -----------------------------------------------------------------------
 def test_dc05_appeal_deadline(calc: DeadlineCalculator) -> None:
-    result = calc.compute(
-        date(2026, 3, 2), DeadlineType.APPEAL_NOTICE, Jurisdiction.FEDERAL
-    )
+    result = calc.compute(date(2026, 3, 2), DeadlineType.APPEAL_NOTICE, Jurisdiction.FEDERAL)
     assert result.days_allowed == 30
     assert "FRAP Rule 4" in result.rule_citation
 
@@ -93,9 +84,7 @@ def test_dc05_appeal_deadline(calc: DeadlineCalculator) -> None:
 # Event: Monday 2026-03-02.  +14 days → Monday 2026-03-16.
 # -----------------------------------------------------------------------
 def test_dc06_motion_to_dismiss(calc: DeadlineCalculator) -> None:
-    result = calc.compute(
-        date(2026, 3, 2), DeadlineType.MOTION_TO_DISMISS, Jurisdiction.FEDERAL
-    )
+    result = calc.compute(date(2026, 3, 2), DeadlineType.MOTION_TO_DISMISS, Jurisdiction.FEDERAL)
     assert result.days_allowed == 14
 
 
@@ -127,9 +116,7 @@ def test_dc07_mail_extension(calc: DeadlineCalculator) -> None:
 # Thanksgiving is a federal holiday → rolls to 2026-11-27 (Friday).
 # -----------------------------------------------------------------------
 def test_dc08_holiday_exclusion(calc: DeadlineCalculator) -> None:
-    result = calc.compute(
-        date(2026, 11, 5), DeadlineType.ANSWER, Jurisdiction.FEDERAL
-    )
+    result = calc.compute(date(2026, 11, 5), DeadlineType.ANSWER, Jurisdiction.FEDERAL)
     assert result.deadline_date != date(2026, 11, 26)  # Not on Thanksgiving
     assert result.deadline_date == date(2026, 11, 27)  # Rolls to Friday
     assert len(result.adjustments) > 0
@@ -155,9 +142,7 @@ def test_dc09_cross_jurisdictional(calc: DeadlineCalculator) -> None:
 # Conservative mode selects 15 days (shorter / earlier deadline).
 # -----------------------------------------------------------------------
 def test_dc10_conservative(calc: DeadlineCalculator) -> None:
-    result = calc.compute(
-        date(2026, 3, 2), DeadlineType.ANSWER, Jurisdiction.LOUISIANA
-    )
+    result = calc.compute(date(2026, 3, 2), DeadlineType.ANSWER, Jurisdiction.LOUISIANA)
     assert result.conservative or result.confidence == "high"
     # Verify it actually used the shorter 15-day period
     assert result.days_allowed == 15
@@ -170,13 +155,9 @@ def test_dc10_conservative(calc: DeadlineCalculator) -> None:
 # 2028-02-08 + 21 days = 2028-02-29 (Tuesday — leap day, business day).
 # -----------------------------------------------------------------------
 def test_dc11_leap_year(calc: DeadlineCalculator) -> None:
-    result = calc.compute(
-        date(2028, 2, 8), DeadlineType.ANSWER, Jurisdiction.FEDERAL
-    )
+    result = calc.compute(date(2028, 2, 8), DeadlineType.ANSWER, Jurisdiction.FEDERAL)
     # Feb 29, 2028 is a Tuesday — valid business day, no holiday
-    assert result.deadline_date == date(2028, 2, 29) or result.deadline_date == date(
-        2028, 3, 2
-    )
+    assert result.deadline_date == date(2028, 2, 29) or result.deadline_date == date(2028, 3, 2)
 
 
 # -----------------------------------------------------------------------
@@ -184,9 +165,7 @@ def test_dc11_leap_year(calc: DeadlineCalculator) -> None:
 # 2026-12-15 + 21 = 2027-01-05 (Tuesday — business day, no holiday).
 # -----------------------------------------------------------------------
 def test_dc12_year_end(calc: DeadlineCalculator) -> None:
-    result = calc.compute(
-        date(2026, 12, 15), DeadlineType.ANSWER, Jurisdiction.FEDERAL
-    )
+    result = calc.compute(date(2026, 12, 15), DeadlineType.ANSWER, Jurisdiction.FEDERAL)
     assert result.deadline_date.year == 2027
 
 
@@ -196,9 +175,7 @@ def test_dc12_year_end(calc: DeadlineCalculator) -> None:
 # Holiday → Jan 2 (Sat) → Jan 3 (Sun) → Jan 4 (Mon) = next business day.
 # -----------------------------------------------------------------------
 def test_dc13_new_years(calc: DeadlineCalculator) -> None:
-    result = calc.compute(
-        date(2026, 12, 2), DeadlineType.DISCOVERY_RESPONSE, Jurisdiction.FEDERAL
-    )
+    result = calc.compute(date(2026, 12, 2), DeadlineType.DISCOVERY_RESPONSE, Jurisdiction.FEDERAL)
     # 2027-01-01 (Friday) = New Year's Day holiday
     # 2027-01-02 (Saturday) = weekend
     # 2027-01-03 (Sunday) = weekend
@@ -215,9 +192,7 @@ def test_dc13_new_years(calc: DeadlineCalculator) -> None:
 # Must land on a business day.
 # -----------------------------------------------------------------------
 def test_dc14_short_deadline(calc: DeadlineCalculator) -> None:
-    result = calc.compute(
-        date(2026, 3, 2), DeadlineType.MOTION_RESPONSE, Jurisdiction.FEDERAL
-    )
+    result = calc.compute(date(2026, 3, 2), DeadlineType.MOTION_RESPONSE, Jurisdiction.FEDERAL)
     assert result.deadline_date.weekday() < 5  # Must land on business day
 
 
@@ -232,12 +207,8 @@ def test_dc14_short_deadline(calc: DeadlineCalculator) -> None:
 def test_dc15_multiple_deadlines(calc: DeadlineCalculator) -> None:
     event = date(2026, 3, 2)
     answer = calc.compute(event, DeadlineType.ANSWER, Jurisdiction.FEDERAL)
-    discovery = calc.compute(
-        event, DeadlineType.DISCOVERY_RESPONSE, Jurisdiction.FEDERAL
-    )
-    motion = calc.compute(
-        event, DeadlineType.MOTION_TO_DISMISS, Jurisdiction.FEDERAL
-    )
+    discovery = calc.compute(event, DeadlineType.DISCOVERY_RESPONSE, Jurisdiction.FEDERAL)
+    motion = calc.compute(event, DeadlineType.MOTION_TO_DISMISS, Jurisdiction.FEDERAL)
     assert len({answer.deadline_date, discovery.deadline_date, motion.deadline_date}) == 3
 
 
@@ -248,9 +219,7 @@ def test_dc15_multiple_deadlines(calc: DeadlineCalculator) -> None:
 # Texas Monday rule: already Monday, so no further change.
 # -----------------------------------------------------------------------
 def test_dc16_texas_answer(calc: DeadlineCalculator) -> None:
-    result = calc.compute(
-        date(2026, 3, 2), DeadlineType.ANSWER, Jurisdiction.TEXAS
-    )
+    result = calc.compute(date(2026, 3, 2), DeadlineType.ANSWER, Jurisdiction.TEXAS)
     assert result.days_allowed == 20
     assert "Tex. R. Civ. P." in result.rule_citation
 
@@ -260,8 +229,6 @@ def test_dc16_texas_answer(calc: DeadlineCalculator) -> None:
 # 2026-03-02 + 30 = 2026-04-01 (Wednesday — business day).
 # -----------------------------------------------------------------------
 def test_dc17_california_answer(calc: DeadlineCalculator) -> None:
-    result = calc.compute(
-        date(2026, 3, 2), DeadlineType.ANSWER, Jurisdiction.CALIFORNIA
-    )
+    result = calc.compute(date(2026, 3, 2), DeadlineType.ANSWER, Jurisdiction.CALIFORNIA)
     assert result.days_allowed == 30
     assert "Cal. C.C.P." in result.rule_citation

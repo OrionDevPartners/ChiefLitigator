@@ -8,16 +8,16 @@ from the .keys/ directory and never stored in code.
 
 import json
 import logging
-import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 logger = logging.getLogger(__name__)
 
 # Try to import requests; provide a clear error if missing
 try:
     import requests
+
     _HAS_REQUESTS = True
 except ImportError:
     _HAS_REQUESTS = False
@@ -63,9 +63,7 @@ class CertifiedMailer:
         self._base_url = self._PROVIDER_URLS.get(self.provider, "")
 
         if not self.api_key:
-            logger.warning(
-                "No API key configured for %s. Mail sending will fail.", self.provider
-            )
+            logger.warning("No API key configured for %s. Mail sending will fail.", self.provider)
 
     # ------------------------------------------------------------------
     # Public API
@@ -107,14 +105,12 @@ class CertifiedMailer:
 
         if not _HAS_REQUESTS:
             raise RuntimeError(
-                "The 'requests' library is required for sending mail. "
-                "Install it with: pip install requests"
+                "The 'requests' library is required for sending mail. Install it with: pip install requests"
             )
 
         if not self.api_key:
             raise RuntimeError(
-                f"No API key configured for provider '{self.provider}'. "
-                "Set the key in .keys/ and pass it via config."
+                f"No API key configured for provider '{self.provider}'. Set the key in .keys/ and pass it via config."
             )
 
         # Dispatch to provider-specific implementation
@@ -344,8 +340,12 @@ class CertifiedMailer:
             "to[provinceOrState]": recipient["state"],
             "to[postalOrZip]": recipient["zip"],
             "to[country]": "US",
-            "from[firstName]": self.return_address.get("name", "").split()[0] if self.return_address.get("name") else "",
-            "from[lastName]": self.return_address.get("name", "").split()[-1] if self.return_address.get("name") else "",
+            "from[firstName]": self.return_address.get("name", "").split()[0]
+            if self.return_address.get("name")
+            else "",
+            "from[lastName]": self.return_address.get("name", "").split()[-1]
+            if self.return_address.get("name")
+            else "",
             "from[addressLine1]": self.return_address.get("address_line1", ""),
             "from[city]": self.return_address.get("city", ""),
             "from[provinceOrState]": self.return_address.get("state", ""),
@@ -477,12 +477,15 @@ class MailTracker:
             ``document``, ``sent_at``, ``status``.
         """
         records = self._load()
-        mail_record.setdefault("status_history", [
-            {
-                "status": mail_record.get("status", "queued"),
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            }
-        ])
+        mail_record.setdefault(
+            "status_history",
+            [
+                {
+                    "status": mail_record.get("status", "queued"),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+            ],
+        )
         records.append(mail_record)
         self._save(records)
         logger.info("Tracked new mail: %s", mail_record.get("tracking_number", "unknown"))
@@ -503,10 +506,12 @@ class MailTracker:
         for record in records:
             if record.get("tracking_number") == tracking_number:
                 record["status"] = status
-                record.setdefault("status_history", []).append({
-                    "status": status,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                })
+                record.setdefault("status_history", []).append(
+                    {
+                        "status": status,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    }
+                )
                 updated = True
                 break
 
@@ -534,7 +539,8 @@ class MailTracker:
         records = self._load()
         name_lower = recipient_name.lower()
         return [
-            r for r in records
+            r
+            for r in records
             if name_lower in r.get("recipient", {}).get("name", "").lower()
             or name_lower in str(r.get("recipient", "")).lower()
         ]

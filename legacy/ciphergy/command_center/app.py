@@ -4,21 +4,18 @@ All data pulled LIVE from the case repo. Zero stubs. Zero placeholders.
 Binds to localhost only. All rendering server-side via Jinja2.
 """
 
+import base64
 import os
 import re
-import json
 import secrets
-import base64
 from datetime import datetime
 from pathlib import Path
-
-from flask import Flask, render_template, jsonify, abort, request, g
 
 # ---------------------------------------------------------------------------
 # Import the REAL data layer
 # ---------------------------------------------------------------------------
-
 from data import CaseData
+from flask import Flask, abort, g, jsonify, render_template, request
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -35,10 +32,12 @@ app = Flask(
 app.config["SECRET_KEY"] = os.urandom(32)
 
 # Case data directory — configurable via env var
-CASE_DIR = Path(os.environ.get(
-    "CIPHERGY_CASE_DIR",
-    os.path.expanduser("~/LEGAL 2026 Pro Se/CAMPENNI_CASE"),
-))
+CASE_DIR = Path(
+    os.environ.get(
+        "CIPHERGY_CASE_DIR",
+        os.path.expanduser("~/LEGAL 2026 Pro Se/CAMPENNI_CASE"),
+    )
+)
 
 # Initialize the live data layer
 case_data = CaseData(str(CASE_DIR))
@@ -47,10 +46,11 @@ case_data = CaseData(str(CASE_DIR))
 # Security — CSP nonce generation + response headers
 # ---------------------------------------------------------------------------
 
+
 @app.before_request
 def generate_csp_nonce():
     """Generate a unique nonce per request for Content-Security-Policy."""
-    g.csp_nonce = base64.b64encode(secrets.token_bytes(16)).decode('ascii')
+    g.csp_nonce = base64.b64encode(secrets.token_bytes(16)).decode("ascii")
 
 
 @app.context_processor
@@ -65,21 +65,19 @@ def add_security_headers(response):
     nonce = g.get("csp_nonce", "")
 
     # Prevent embedding in iframes (clickjacking defense)
-    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers["X-Frame-Options"] = "DENY"
 
     # Prevent MIME type sniffing
-    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers["X-Content-Type-Options"] = "nosniff"
 
     # XSS protection (legacy browsers)
-    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers["X-XSS-Protection"] = "1; mode=block"
 
     # Strict transport security (when behind HTTPS)
-    response.headers['Strict-Transport-Security'] = (
-        'max-age=31536000; includeSubDomains'
-    )
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
     # Content Security Policy — nonce-based for inline scripts
-    response.headers['Content-Security-Policy'] = (
+    response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         f"script-src 'self' 'nonce-{nonce}'; "
         "style-src 'self' 'unsafe-inline'; "
@@ -93,18 +91,17 @@ def add_security_headers(response):
     )
 
     # Referrer policy — leak nothing
-    response.headers['Referrer-Policy'] = 'no-referrer'
+    response.headers["Referrer-Policy"] = "no-referrer"
 
     # Permissions policy — disable unused browser APIs
-    response.headers['Permissions-Policy'] = (
-        'camera=(), microphone=(), geolocation=(), '
-        'payment=(), usb=(), magnetometer=(), gyroscope=()'
+    response.headers["Permissions-Policy"] = (
+        "camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=()"
     )
 
     # Prevent caching of sensitive pages
-    if not request.path.startswith('/static/'):
-        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate'
-        response.headers['Pragma'] = 'no-cache'
+    if not request.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
 
     return response
 
@@ -112,6 +109,7 @@ def add_security_headers(response):
 # ---------------------------------------------------------------------------
 # Template helpers
 # ---------------------------------------------------------------------------
+
 
 def _deadline_status(days_remaining):
     if days_remaining < 0:
@@ -124,6 +122,7 @@ def _deadline_status(days_remaining):
         return "caution"
     return "on-track"
 
+
 def _threat_level(score):
     if score >= 90:
         return "critical"
@@ -133,8 +132,10 @@ def _threat_level(score):
         return "medium"
     return "low"
 
+
 app.jinja_env.globals["deadline_status"] = _deadline_status
 app.jinja_env.globals["threat_level"] = _threat_level
+
 
 @app.context_processor
 def inject_globals():
@@ -157,15 +158,15 @@ def inject_globals():
         "critical_deadline_count": len(critical_deadlines),
         "alert_count": len(alerts),
         "nav_items": [
-            {"href": "/",         "label": "Situation Board"},
+            {"href": "/", "label": "Situation Board"},
             {"href": "/entities", "label": "Entity Hub"},
             {"href": "/evidence", "label": "Evidence Vault"},
             {"href": "/timeline", "label": "Timeline"},
-            {"href": "/filings",  "label": "Filings"},
+            {"href": "/filings", "label": "Filings"},
             {"href": "/strategy", "label": "Strategy Room"},
-            {"href": "/law",      "label": "Legal Library"},
-            {"href": "/comms",    "label": "Communications"},
-            {"href": "/assistant","label": "AI Assistant"},
+            {"href": "/law", "label": "Legal Library"},
+            {"href": "/comms", "label": "Communications"},
+            {"href": "/assistant", "label": "AI Assistant"},
             {"href": "/settings", "label": "Settings"},
         ],
     }
@@ -174,6 +175,7 @@ def inject_globals():
 # ---------------------------------------------------------------------------
 # Routes — SITUATION BOARD (Home)
 # ---------------------------------------------------------------------------
+
 
 @app.route("/")
 def dashboard():
@@ -208,6 +210,7 @@ def dashboard():
 # ---------------------------------------------------------------------------
 # Routes — ENTITY HUB
 # ---------------------------------------------------------------------------
+
 
 @app.route("/entities")
 def entities():
@@ -261,6 +264,7 @@ def entity_detail(entity_id):
 # Routes — EVIDENCE VAULT
 # ---------------------------------------------------------------------------
 
+
 @app.route("/evidence")
 def evidence():
     scores = case_data.get_evidence_scores()
@@ -275,6 +279,7 @@ def evidence():
 # ---------------------------------------------------------------------------
 # Routes — TIMELINE
 # ---------------------------------------------------------------------------
+
 
 @app.route("/timeline")
 def timeline():
@@ -296,6 +301,7 @@ def timeline():
 # Routes — FILINGS CENTER
 # ---------------------------------------------------------------------------
 
+
 @app.route("/filings")
 def filings():
     filing_data = case_data.get_filings()
@@ -311,6 +317,7 @@ def filings():
 # ---------------------------------------------------------------------------
 # Routes — STRATEGY WAR ROOM
 # ---------------------------------------------------------------------------
+
 
 @app.route("/strategy")
 def strategy():
@@ -329,6 +336,7 @@ def strategy():
 # Routes — LEGAL LIBRARY
 # ---------------------------------------------------------------------------
 
+
 @app.route("/law")
 def law():
     library = case_data.get_law_library()
@@ -345,6 +353,7 @@ def law():
 # Routes — COMMUNICATIONS
 # ---------------------------------------------------------------------------
 
+
 @app.route("/comms")
 def comms():
     signals = case_data.get_signals()
@@ -360,6 +369,7 @@ def comms():
 # ---------------------------------------------------------------------------
 # Routes — AI ASSISTANT
 # ---------------------------------------------------------------------------
+
 
 @app.route("/assistant")
 def assistant():
@@ -383,26 +393,57 @@ def api_draft_check():
     recipient_type = request.form.get("recipient_type", "external-adversary")
 
     emotional_words = [
-        "outrageous", "unbelievable", "disgusting", "shocking",
-        "furious", "angry", "frustrated", "upset", "terrible",
-        "ridiculous", "absurd", "insane", "crazy", "stupid",
-        "liar", "cheat", "thief", "criminal", "corrupt",
-        "demand", "insist", "threaten", "warn", "promise",
-        "always", "never", "everyone", "nobody",
-        "obviously", "clearly", "certainly", "definitely",
+        "outrageous",
+        "unbelievable",
+        "disgusting",
+        "shocking",
+        "furious",
+        "angry",
+        "frustrated",
+        "upset",
+        "terrible",
+        "ridiculous",
+        "absurd",
+        "insane",
+        "crazy",
+        "stupid",
+        "liar",
+        "cheat",
+        "thief",
+        "criminal",
+        "corrupt",
+        "demand",
+        "insist",
+        "threaten",
+        "warn",
+        "promise",
+        "always",
+        "never",
+        "everyone",
+        "nobody",
+        "obviously",
+        "clearly",
+        "certainly",
+        "definitely",
     ]
     found_emotional = [w for w in emotional_words if w.lower() in text.lower()]
-    brackets = re.findall(r'\[[A-Z_\s]+\]', text)
+    brackets = re.findall(r"\[[A-Z_\s]+\]", text)
 
     gates = [
         {"name": "Classify", "passed": True, "notes": f"Type: {recipient_type}"},
         {"name": "Evidence Check", "passed": True, "notes": "Manual review needed"},
         {"name": "Standards Verification", "passed": True, "notes": "Check citations"},
-        {"name": "Discipline Check", "passed": len(found_emotional) == 0,
-         "notes": f"Emotional words: {found_emotional}" if found_emotional else "Clean — glacier mode"},
+        {
+            "name": "Discipline Check",
+            "passed": len(found_emotional) == 0,
+            "notes": f"Emotional words: {found_emotional}" if found_emotional else "Clean — glacier mode",
+        },
         {"name": "Separation Check", "passed": True, "notes": "Manual review needed"},
-        {"name": "Guardrails", "passed": len(brackets) == 0,
-         "notes": f"Unfilled brackets: {brackets}" if brackets else "Clean"},
+        {
+            "name": "Guardrails",
+            "passed": len(brackets) == 0,
+            "notes": f"Unfilled brackets: {brackets}" if brackets else "Clean",
+        },
         {"name": "Trigger Check", "passed": True, "notes": "Manual review needed"},
     ]
 
@@ -412,6 +453,7 @@ def api_draft_check():
 # ---------------------------------------------------------------------------
 # Routes — SETTINGS
 # ---------------------------------------------------------------------------
+
 
 @app.route("/settings")
 def settings():
@@ -434,6 +476,7 @@ def settings():
 # ---------------------------------------------------------------------------
 # Routes — API (JSON)
 # ---------------------------------------------------------------------------
+
 
 @app.route("/api/deadlines")
 def api_deadlines():
@@ -470,7 +513,7 @@ def api_refresh():
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    print(f"\n  CIPHERGY COMMAND CENTER")
+    print("\n  CIPHERGY COMMAND CENTER")
     print(f"  Case: {CASE_DIR}")
-    print(f"  URL:  http://127.0.0.1:5000\n")
+    print("  URL:  http://127.0.0.1:5000\n")
     app.run(host="127.0.0.1", port=5000, debug=True)

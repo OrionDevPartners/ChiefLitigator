@@ -10,7 +10,7 @@ import logging
 import os
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, Generator, List, Optional, Sequence
+from typing import Any, Dict, Generator, List, Optional
 
 import boto3
 from botocore.config import Config as BotoConfig
@@ -85,7 +85,7 @@ def _should_retry(error: ClientError) -> bool:
 
 
 def _backoff_delay(attempt: int) -> float:
-    return min(_BASE_DELAY * (2 ** attempt), 30.0)
+    return min(_BASE_DELAY * (2**attempt), 30.0)
 
 
 # ---------------------------------------------------------------------------
@@ -179,13 +179,15 @@ class BedrockClient:
             results: List[Dict[str, Any]] = []
             for page in paginator.paginate(byProvider="Anthropic"):
                 for summary in page.get("modelSummaries", []):
-                    results.append({
-                        "modelId": summary.get("modelId"),
-                        "modelName": summary.get("modelName"),
-                        "providerName": summary.get("providerName"),
-                        "inputModalities": summary.get("inputModalities", []),
-                        "outputModalities": summary.get("outputModalities", []),
-                    })
+                    results.append(
+                        {
+                            "modelId": summary.get("modelId"),
+                            "modelName": summary.get("modelName"),
+                            "providerName": summary.get("providerName"),
+                            "inputModalities": summary.get("inputModalities", []),
+                            "outputModalities": summary.get("outputModalities", []),
+                        }
+                    )
             logger.info("Found %d Anthropic models on Bedrock", len(results))
             return results
         except ClientError as exc:
@@ -254,7 +256,10 @@ class BedrockClient:
                     delay = _backoff_delay(attempt)
                     logger.warning(
                         "Bedrock throttled (attempt %d/%d), retrying in %.1fs: %s",
-                        attempt + 1, self.max_retries, delay, exc,
+                        attempt + 1,
+                        self.max_retries,
+                        delay,
+                        exc,
                     )
                     time.sleep(delay)
                 else:
@@ -272,11 +277,13 @@ class BedrockClient:
             if block.get("type") == "text":
                 text_parts.append(block.get("text", ""))
             elif block.get("type") == "tool_use":
-                tool_calls.append({
-                    "id": block.get("id"),
-                    "name": block.get("name"),
-                    "input": block.get("input", {}),
-                })
+                tool_calls.append(
+                    {
+                        "id": block.get("id"),
+                        "name": block.get("name"),
+                        "input": block.get("input", {}),
+                    }
+                )
 
         usage_data = data.get("usage", {})
         usage = TokenUsage(
@@ -335,8 +342,12 @@ class BedrockClient:
         """
         model_id = self._resolve_model_id(model)
         body = self._build_body(
-            messages, system=system, max_tokens=max_tokens,
-            temperature=temperature, top_p=top_p, stop_sequences=stop_sequences,
+            messages,
+            system=system,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            top_p=top_p,
+            stop_sequences=stop_sequences,
         )
         logger.debug("invoke_model: model=%s, messages=%d, max_tokens=%d", model_id, len(messages), max_tokens)
         resp = self._invoke_with_retry(model_id, body)
@@ -381,8 +392,11 @@ class BedrockClient:
         """
         model_id = self._resolve_model_id(model)
         body = self._build_body(
-            messages, system=system, max_tokens=max_tokens,
-            temperature=temperature, tools=tools,
+            messages,
+            system=system,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            tools=tools,
         )
         logger.debug("invoke_with_tools: model=%s, tools=%d", model_id, len(tools))
         resp = self._invoke_with_retry(model_id, body)
@@ -413,7 +427,10 @@ class BedrockClient:
         """
         model_id = self._resolve_model_id(model)
         body = self._build_body(
-            messages, system=system, max_tokens=max_tokens, temperature=temperature,
+            messages,
+            system=system,
+            max_tokens=max_tokens,
+            temperature=temperature,
         )
         logger.debug("stream_model: model=%s", model_id)
         resp = self._invoke_with_retry(model_id, body, stream=True)
@@ -482,8 +499,11 @@ class BedrockClient:
         BedrockResponse
         """
         gen = self.stream_model(
-            messages, model=model, system=system,
-            max_tokens=max_tokens, temperature=temperature,
+            messages,
+            model=model,
+            system=system,
+            max_tokens=max_tokens,
+            temperature=temperature,
         )
         try:
             while True:

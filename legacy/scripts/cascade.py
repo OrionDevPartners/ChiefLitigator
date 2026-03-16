@@ -10,11 +10,11 @@ Usage:
 """
 
 import argparse
-import json
 import hashlib
+import json
 import os
-import sys
 import shutil
+import sys
 from datetime import datetime, timezone
 
 try:
@@ -60,6 +60,7 @@ def log_step(n, msg):
 # Cascade Steps
 # ---------------------------------------------------------------------------
 
+
 def step_update_registry(ctx):
     """Re-scan project files and update registry entries."""
     log_step(ctx["step_num"], "Updating file registry")
@@ -85,12 +86,14 @@ def step_update_registry(ctx):
                         file_hash = hashlib.md5(fh.read()).hexdigest()
                 except (IOError, OSError):
                     file_hash = ""
-                registry.setdefault("files", []).append({
-                    "path": rel_path,
-                    "hash": file_hash,
-                    "tracked_since": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                    "category": "document",
-                })
+                registry.setdefault("files", []).append(
+                    {
+                        "path": rel_path,
+                        "hash": file_hash,
+                        "tracked_since": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        "category": "document",
+                    }
+                )
                 new_count += 1
                 log_info(f"  New file tracked: {rel_path}")
 
@@ -140,7 +143,11 @@ def step_check_alerts(ctx):
         content = f.read()
 
     # Count non-header table rows
-    lines = [l for l in content.split("\n") if l.strip().startswith("|") and not l.strip().startswith("| #") and not l.strip().startswith("|---")]
+    lines = [
+        l
+        for l in content.split("\n")
+        if l.strip().startswith("|") and not l.strip().startswith("| #") and not l.strip().startswith("|---")
+    ]
     if lines:
         log_warn(f"  {len(lines)} active alert(s) found.")
     else:
@@ -217,11 +224,13 @@ def step_log_correction(ctx):
     ctx["step_num"] += 1
 
     registry = ctx["registry"]
-    registry.setdefault("corrections", []).append({
-        "date": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "trigger_file": ctx.get("trigger_file", ""),
-        "note": "Correction cascade executed",
-    })
+    registry.setdefault("corrections", []).append(
+        {
+            "date": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "trigger_file": ctx.get("trigger_file", ""),
+            "note": "Correction cascade executed",
+        }
+    )
 
     log_ok("  Correction logged.")
     return True
@@ -330,6 +339,7 @@ STEP_MAP = {
 # Main
 # ---------------------------------------------------------------------------
 
+
 def create_delta_version(ctx):
     """Create a delta version folder if files changed."""
     if ctx["files_changed"] == 0:
@@ -365,13 +375,15 @@ def create_delta_version(ctx):
         dest = os.path.join(version_dir, os.path.basename(fpath))
         shutil.copy2(full_path, dest)
 
-    registry.setdefault("version_history", []).append({
-        "version": next_version,
-        "date": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "trigger": ctx["trigger"],
-        "files_changed": len(delta_files),
-        "files": [f[0] for f in delta_files],
-    })
+    registry.setdefault("version_history", []).append(
+        {
+            "version": next_version,
+            "date": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "trigger": ctx["trigger"],
+            "files_changed": len(delta_files),
+            "files": [f[0] for f in delta_files],
+        }
+    )
     registry["sync"]["current_version"] = next_version
 
     log_info(f"\n  Delta version {next_version} created with {len(delta_files)} file(s).")
@@ -459,12 +471,14 @@ def main():
             create_delta_version(ctx)
 
     # Log to version history
-    registry.setdefault("cascade_log", []).append({
-        "trigger": args.trigger,
-        "date": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "files_changed": ctx["files_changed"],
-        "success": success,
-    })
+    registry.setdefault("cascade_log", []).append(
+        {
+            "trigger": args.trigger,
+            "date": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "files_changed": ctx["files_changed"],
+            "success": success,
+        }
+    )
 
     # Save registry
     with open(registry_path, "w") as f:

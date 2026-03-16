@@ -1,27 +1,47 @@
 #!/usr/bin/env python3
 """Tests for sanitize_sync.py — Verifies zero case data leaks."""
 
+import os
 import subprocess
 import sys
-import os
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Case-specific terms that must NEVER appear in CIPHERGY
 FORBIDDEN_TERMS = [
-    "Pennington", "Campenni", "Palmisano", "Rapprich", "Collado", "Erickson",
-    "Yupon", "Southard", "Flagler", "New Smyrna", "Volusia",
-    "penningtonbros", "cpmproperties", "cfllawyer", "colladorealestate",
-    "fortified-title", "touchstoneclosing",
-    "504-343-3620", "603-234-0535", "386-451-5564",
-    "1213575903318304", "1213575903318306", "1212370427563682",
-    "bo@penningtonbros", "jim@cpmproperties", "bo@symio",
+    "Pennington",
+    "Campenni",
+    "Palmisano",
+    "Rapprich",
+    "Collado",
+    "Erickson",
+    "Yupon",
+    "Southard",
+    "Flagler",
+    "New Smyrna",
+    "Volusia",
+    "penningtonbros",
+    "cpmproperties",
+    "cfllawyer",
+    "colladorealestate",
+    "fortified-title",
+    "touchstoneclosing",
+    "504-343-3620",
+    "603-234-0535",
+    "386-451-5564",
+    "1213575903318304",
+    "1213575903318306",
+    "1212370427563682",
+    "bo@penningtonbros",
+    "jim@cpmproperties",
+    "bo@symio",
     "OrionDevPartners",
 ]
 
 # Directories to scan (exclude legacy, node_modules, etc.)
 SCAN_DIRS = ["agents", "config", "core", "docs", "scripts", "templates", ".claude"]
 SCAN_EXTENSIONS = {".md", ".py", ".sh", ".yaml", ".yml", ".json", ".txt"}
+
 
 def scan_file(filepath):
     """Scan a single file for forbidden terms. Returns list of (term, line_num, line)."""
@@ -36,6 +56,7 @@ def scan_file(filepath):
         pass
     return hits
 
+
 def test_no_case_data_in_ciphergy():
     """Full scan of CIPHERGY for forbidden case-specific terms."""
     all_hits = []
@@ -45,7 +66,7 @@ def test_no_case_data_in_ciphergy():
         if not os.path.exists(dir_path):
             continue
         for root, dirs, files in os.walk(dir_path):
-            dirs[:] = [d for d in dirs if not d.startswith('.') or d == '.claude']
+            dirs[:] = [d for d in dirs if not d.startswith(".") or d == ".claude"]
             for fname in files:
                 ext = os.path.splitext(fname)[1]
                 if ext not in SCAN_EXTENSIONS:
@@ -67,6 +88,7 @@ def test_no_case_data_in_ciphergy():
     print(f"  PASS: Zero case data in {len(SCAN_DIRS)} directories")
     return True
 
+
 def test_no_legacy_brand_references():
     """Verify old DuelAI branding is fully removed."""
     # NOTE: We search for the OLD brand name. "Ciphergy" is the CURRENT brand — it SHOULD be there.
@@ -76,14 +98,16 @@ def test_no_legacy_brand_references():
         dir_path = os.path.join(BASE, scan_dir) if scan_dir != "." else BASE
         files_to_check = []
         if scan_dir == ".":
-            files_to_check = [os.path.join(BASE, f) for f in os.listdir(BASE)
-                             if os.path.isfile(os.path.join(BASE, f))
-                             and os.path.splitext(f)[1] in SCAN_EXTENSIONS]
+            files_to_check = [
+                os.path.join(BASE, f)
+                for f in os.listdir(BASE)
+                if os.path.isfile(os.path.join(BASE, f)) and os.path.splitext(f)[1] in SCAN_EXTENSIONS
+            ]
         else:
             if not os.path.exists(dir_path):
                 continue
             for root, dirs, files in os.walk(dir_path):
-                dirs[:] = [d for d in dirs if not d.startswith('.') or d == '.claude']
+                dirs[:] = [d for d in dirs if not d.startswith(".") or d == ".claude"]
                 for fname in files:
                     if os.path.splitext(fname)[1] in SCAN_EXTENSIONS:
                         files_to_check.append(os.path.join(root, fname))
@@ -105,18 +129,21 @@ def test_no_legacy_brand_references():
             print(f"    {os.path.relpath(f, BASE)} — '{term}'")
         return False
 
-    print(f"  PASS: Zero legacy brand references")
+    print("  PASS: Zero legacy brand references")
     return True
+
 
 def test_sanitizer_runs():
     """sanitize_sync.py audit should run without errors."""
     result = subprocess.run(
         [sys.executable, os.path.join(BASE, "scripts", "sanitize_sync.py"), "audit", BASE],
-        capture_output=True, text=True
+        capture_output=True,
+        text=True,
     )
     assert result.returncode == 0, f"Audit failed: {result.stderr}"
-    print(f"  PASS: sanitize_sync.py audit runs clean")
+    print("  PASS: sanitize_sync.py audit runs clean")
     return True
+
 
 if __name__ == "__main__":
     print("\nCIPHERGY — SANITIZATION TESTS")

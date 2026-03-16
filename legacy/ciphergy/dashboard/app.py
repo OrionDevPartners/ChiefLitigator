@@ -8,7 +8,7 @@ import os
 import time
 from pathlib import Path
 
-from flask import Flask, render_template, jsonify
+from flask import Flask, jsonify, render_template
 from flask_socketio import SocketIO
 
 # ---------------------------------------------------------------------------
@@ -43,15 +43,18 @@ def _load_json(path: Path, default=None):
 
 
 def _load_registry():
-    return _load_json(REGISTRY_PATH, {
-        "version": 1,
-        "files": {},
-        "monitored_files": [],
-        "last_sync": None,
-        "agents": {},
-        "connectors": {},
-        "audit_log": [],
-    })
+    return _load_json(
+        REGISTRY_PATH,
+        {
+            "version": 1,
+            "files": {},
+            "monitored_files": [],
+            "last_sync": None,
+            "agents": {},
+            "connectors": {},
+            "audit_log": [],
+        },
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -67,15 +70,17 @@ def index():
 @app.route("/api/status")
 def api_status():
     reg = _load_registry()
-    return jsonify({
-        "registry_version": reg.get("version", 0),
-        "file_count": len(reg.get("files", {})),
-        "agent_count": len(reg.get("agents", {})),
-        "connector_count": len(reg.get("connectors", {})),
-        "last_sync": reg.get("last_sync"),
-        "monitored_count": len(reg.get("monitored_files", [])),
-        "ts": time.time(),
-    })
+    return jsonify(
+        {
+            "registry_version": reg.get("version", 0),
+            "file_count": len(reg.get("files", {})),
+            "agent_count": len(reg.get("agents", {})),
+            "connector_count": len(reg.get("connectors", {})),
+            "last_sync": reg.get("last_sync"),
+            "monitored_count": len(reg.get("monitored_files", [])),
+            "ts": time.time(),
+        }
+    )
 
 
 @app.route("/api/files")
@@ -112,11 +117,13 @@ def api_audit():
 @app.route("/api/sync")
 def api_sync():
     reg = _load_registry()
-    return jsonify({
-        "last_sync": reg.get("last_sync"),
-        "monitored_files": reg.get("monitored_files", []),
-        "version": reg.get("version", 0),
-    })
+    return jsonify(
+        {
+            "last_sync": reg.get("last_sync"),
+            "monitored_files": reg.get("monitored_files", []),
+            "version": reg.get("version", 0),
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -127,23 +134,29 @@ def api_sync():
 @socketio.on("connect")
 def handle_connect():
     reg = _load_registry()
-    socketio.emit("status_update", {
-        "registry_version": reg.get("version", 0),
-        "file_count": len(reg.get("files", {})),
-        "agent_count": len(reg.get("agents", {})),
-        "ts": time.time(),
-    })
+    socketio.emit(
+        "status_update",
+        {
+            "registry_version": reg.get("version", 0),
+            "file_count": len(reg.get("files", {})),
+            "agent_count": len(reg.get("agents", {})),
+            "ts": time.time(),
+        },
+    )
 
 
 @socketio.on("request_update")
 def handle_request_update():
     reg = _load_registry()
-    socketio.emit("status_update", {
-        "registry_version": reg.get("version", 0),
-        "file_count": len(reg.get("files", {})),
-        "agent_count": len(reg.get("agents", {})),
-        "ts": time.time(),
-    })
+    socketio.emit(
+        "status_update",
+        {
+            "registry_version": reg.get("version", 0),
+            "file_count": len(reg.get("files", {})),
+            "agent_count": len(reg.get("agents", {})),
+            "ts": time.time(),
+        },
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -173,9 +173,7 @@ class GitHubConnector(BaseConnector):
         Returns:
             List of branch dicts.
         """
-        result = self._with_retry(
-            "List branches", self._api_request, "GET", f"{self._repo_prefix}/branches"
-        )
+        result = self._with_retry("List branches", self._api_request, "GET", f"{self._repo_prefix}/branches")
         return result if isinstance(result, list) else []
 
     # ── Issue management ────────────────────────────────────────────
@@ -209,9 +207,7 @@ class GitHubConnector(BaseConnector):
         if milestone:
             payload["milestone"] = milestone
 
-        result = self._with_retry(
-            "Create issue", self._api_request, "POST", f"{self._repo_prefix}/issues", payload
-        )
+        result = self._with_retry("Create issue", self._api_request, "POST", f"{self._repo_prefix}/issues", payload)
         self._logger.info("Created issue #%s: %s", result.get("number"), title)
         return result
 
@@ -291,9 +287,7 @@ class GitHubConnector(BaseConnector):
             "body": body,
             "draft": draft,
         }
-        result = self._with_retry(
-            "Create PR", self._api_request, "POST", f"{self._repo_prefix}/pulls", payload
-        )
+        result = self._with_retry("Create PR", self._api_request, "POST", f"{self._repo_prefix}/pulls", payload)
         self._logger.info("Created PR #%s: %s", result.get("number"), title)
         return result
 
@@ -395,9 +389,7 @@ class GitHubConnector(BaseConnector):
         if status:
             params += f"&status={status}"
 
-        result = self._with_retry(
-            "List workflow runs", self._api_request, "GET", f"{endpoint}{params}"
-        )
+        result = self._with_retry("List workflow runs", self._api_request, "GET", f"{endpoint}{params}")
         return result.get("workflow_runs", [])
 
     # ── File operations via API ─────────────────────────────────────
@@ -549,9 +541,7 @@ class GitHubConnector(BaseConnector):
         Returns:
             List of webhook dicts.
         """
-        result = self._with_retry(
-            "List webhooks", self._api_request, "GET", f"{self._repo_prefix}/hooks"
-        )
+        result = self._with_retry("List webhooks", self._api_request, "GET", f"{self._repo_prefix}/hooks")
         return result if isinstance(result, list) else []
 
     def delete_webhook(self, hook_id: int) -> bool:
@@ -574,9 +564,7 @@ class GitHubConnector(BaseConnector):
 
     # ── Private helpers ─────────────────────────────────────────────
 
-    def _api_request(
-        self, method: str, endpoint: str, data: Optional[Dict[str, Any]] = None
-    ) -> Any:
+    def _api_request(self, method: str, endpoint: str, data: Optional[Dict[str, Any]] = None) -> Any:
         """Make an authenticated GitHub API request."""
         url = f"{self.BASE_URL}/{endpoint.lstrip('/')}"
         headers = {

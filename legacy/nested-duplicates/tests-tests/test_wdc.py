@@ -12,8 +12,7 @@ import pytest
 
 from src.agents.base_agent import AgentRole, WDCScore
 from src.config.settings import Settings
-from src.orchestrator.wdc import WDCEngine, WDCResult, WDCVerdict
-
+from src.orchestrator.wdc import WDCEngine, WDCVerdict
 
 # ── Helpers ──────────────────────────────────────────────────────────
 
@@ -280,11 +279,11 @@ def test_weighted_score_calculation() -> None:
     engine = WDCEngine(settings=settings)
 
     scores = [
-        _make_score(AgentRole.LEAD_COUNSEL, 10.0, 0.30),      # 3.00
-        _make_score(AgentRole.RESEARCH_COUNSEL, 8.0, 0.25),   # 2.00
-        _make_score(AgentRole.DRAFTING_COUNSEL, 6.0, 0.15),   # 0.90
-        _make_score(AgentRole.RED_TEAM, 7.0, 0.20),           # 1.40
-        _make_score(AgentRole.COMPLIANCE_COUNSEL, 9.0, 0.10), # 0.90
+        _make_score(AgentRole.LEAD_COUNSEL, 10.0, 0.30),  # 3.00
+        _make_score(AgentRole.RESEARCH_COUNSEL, 8.0, 0.25),  # 2.00
+        _make_score(AgentRole.DRAFTING_COUNSEL, 6.0, 0.15),  # 0.90
+        _make_score(AgentRole.RED_TEAM, 7.0, 0.20),  # 1.40
+        _make_score(AgentRole.COMPLIANCE_COUNSEL, 9.0, 0.10),  # 0.90
     ]
 
     result = engine.score(scores)

@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from ciphergy.models.bedrock import BedrockClient, BedrockResponse, TokenUsage
+from ciphergy.models.bedrock import BedrockClient, TokenUsage
 
 logger = logging.getLogger(__name__)
 
@@ -194,7 +194,10 @@ class Agent:
 
         logger.debug(
             "Agent created: id=%s name=%s type=%s model=%s",
-            self.agent_id[:8], self.name, self.agent_type.value, self.model,
+            self.agent_id[:8],
+            self.name,
+            self.agent_type.value,
+            self.model,
         )
 
     # ------------------------------------------------------------------
@@ -284,12 +287,14 @@ class Agent:
                 if response.content:
                     assistant_content.append({"type": "text", "text": response.content})
                 for tc in response.tool_calls:
-                    assistant_content.append({
-                        "type": "tool_use",
-                        "id": tc["id"],
-                        "name": tc["name"],
-                        "input": tc["input"],
-                    })
+                    assistant_content.append(
+                        {
+                            "type": "tool_use",
+                            "id": tc["id"],
+                            "name": tc["name"],
+                            "input": tc["input"],
+                        }
+                    )
                     all_tool_calls.append(tc)
 
                 messages.append({"role": "assistant", "content": assistant_content})
@@ -298,17 +303,21 @@ class Agent:
                 tool_results_content: List[Dict[str, Any]] = []
                 for tc in response.tool_calls:
                     logger.info(
-                        "Agent %s calling tool: %s", self.name, tc["name"],
+                        "Agent %s calling tool: %s",
+                        self.name,
+                        tc["name"],
                     )
                     result = _execute_tool(tc["name"], tc["input"], self.tools_map)
                     result["tool_use_id"] = tc["id"]
                     tool_results_content.append(result)
-                    all_tool_results.append({
-                        "tool_name": tc["name"],
-                        "tool_input": tc["input"],
-                        "result": result["content"],
-                        "is_error": result.get("is_error", False),
-                    })
+                    all_tool_results.append(
+                        {
+                            "tool_name": tc["name"],
+                            "tool_input": tc["input"],
+                            "result": result["content"],
+                            "is_error": result.get("is_error", False),
+                        }
+                    )
 
                 messages.append({"role": "user", "content": tool_results_content})
 

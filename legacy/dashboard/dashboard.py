@@ -9,14 +9,14 @@ Usage:
     Opens at http://localhost:5050
 """
 
+import hashlib
 import json
 import os
 import sys
-import hashlib
 from datetime import datetime, timezone
 
 try:
-    from flask import Flask, render_template, jsonify, send_from_directory
+    from flask import Flask, jsonify, render_template, send_from_directory
 except ImportError:
     print("[ERROR] Flask is required. Install with: pip install flask")
     sys.exit(1)
@@ -43,6 +43,7 @@ app = Flask(__name__, template_folder=SCRIPT_DIR, static_folder=SCRIPT_DIR)
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def load_config():
     """Load the YAML config."""
@@ -95,12 +96,14 @@ def compute_sync_state(registry):
         else:
             state = "new"
 
-        states.append({
-            "path": fpath,
-            "state": state,
-            "hash": current_hash[:12] if current_hash else "---",
-            "category": entry.get("category", "other"),
-        })
+        states.append(
+            {
+                "path": fpath,
+                "state": state,
+                "hash": current_hash[:12] if current_hash else "---",
+                "category": entry.get("category", "other"),
+            }
+        )
 
     return states
 
@@ -108,6 +111,7 @@ def compute_sync_state(registry):
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
+
 
 @app.route("/")
 def index():
@@ -128,35 +132,38 @@ def api_status():
     for s in sync_states:
         state_counts[s["state"]] = state_counts.get(s["state"], 0) + 1
 
-    return jsonify({
-        "project": config.get("project", {}),
-        "agents": registry.get("agents", {}),
-        "files": sync_states,
-        "file_count": len(registry.get("files", [])),
-        "sync": {
-            "current_version": registry.get("sync", {}).get("current_version", "v0"),
-            "last_synced": registry.get("sync", {}).get("last_synced", "never"),
-            "counts": state_counts,
-        },
-        "version_history": registry.get("version_history", [])[-10:],
-        "cascade_log": registry.get("cascade_log", [])[-10:],
-        "alerts": alerts_content,
-        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-    })
+    return jsonify(
+        {
+            "project": config.get("project", {}),
+            "agents": registry.get("agents", {}),
+            "files": sync_states,
+            "file_count": len(registry.get("files", [])),
+            "sync": {
+                "current_version": registry.get("sync", {}).get("current_version", "v0"),
+                "last_synced": registry.get("sync", {}).get("last_synced", "never"),
+                "counts": state_counts,
+            },
+            "version_history": registry.get("version_history", [])[-10:],
+            "cascade_log": registry.get("cascade_log", [])[-10:],
+            "alerts": alerts_content,
+            "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main():
     config = load_config()
     port = config.get("dashboard", {}).get("port", 5050)
 
-    print(f"\n  Ciphergy Dashboard")
+    print("\n  Ciphergy Dashboard")
     print(f"  Project: {config.get('project', {}).get('name', 'Unknown')}")
     print(f"  URL: http://localhost:{port}")
-    print(f"  Press Ctrl+C to stop.\n")
+    print("  Press Ctrl+C to stop.\n")
 
     app.run(host="0.0.0.0", port=port, debug=False)
 

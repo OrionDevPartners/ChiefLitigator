@@ -9,11 +9,11 @@ Usage:
 """
 
 import argparse
+import hashlib
 import json
 import os
-import sys
-import hashlib
 import shutil
+import sys
 from datetime import datetime, timezone
 
 # ---------------------------------------------------------------------------
@@ -192,12 +192,14 @@ def create_registry(registry_path, project_root, name, domain, config):
             except (IOError, OSError):
                 file_hash = ""
 
-            tracked_files.append({
-                "path": rel_path,
-                "hash": file_hash,
-                "tracked_since": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "category": categorize_file(rel_path),
-            })
+            tracked_files.append(
+                {
+                    "path": rel_path,
+                    "hash": file_hash,
+                    "tracked_since": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "category": categorize_file(rel_path),
+                }
+            )
 
     registry = {
         "project": {
@@ -331,14 +333,14 @@ def create_templated_files(project_root, domain):
     template = domain_info["red_alert_template"]
     with open(alerts_path, "w") as f:
         f.write(template)
-    print(f"  [OK] Created: _RED_ALERTS.md")
+    print("  [OK] Created: _RED_ALERTS.md")
 
     # QUESTIONS
     questions_path = os.path.join(project_root, "_QUESTIONS.md")
     template = domain_info["questions_template"].replace("{date}", now)
     with open(questions_path, "w") as f:
         f.write(template)
-    print(f"  [OK] Created: _QUESTIONS.md")
+    print("  [OK] Created: _QUESTIONS.md")
 
 
 def validate_asana(config):
@@ -356,8 +358,8 @@ def validate_asana(config):
         return False
 
     try:
-        import urllib.request
         import urllib.error
+        import urllib.request
 
         req = urllib.request.Request(
             "https://app.asana.com/api/1.0/users/me",
@@ -396,12 +398,7 @@ def post_asana_init(config, name):
         import urllib.request
 
         now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-        message = (
-            f"[Ciphergy Pipeline] Project Initialized\n"
-            f"Project: {name}\n"
-            f"Time: {now}\n"
-            f"Status: Ready for first sync"
-        )
+        message = f"[Ciphergy Pipeline] Project Initialized\nProject: {name}\nTime: {now}\nStatus: Ready for first sync"
 
         payload = json.dumps({"data": {"text": message}}).encode()
         req = urllib.request.Request(
@@ -467,7 +464,7 @@ def main():
     # Summary
     print()
     print("  " + "=" * 50)
-    print(f"  Ciphergy Project Initialized Successfully")
+    print("  Ciphergy Project Initialized Successfully")
     print("  " + "=" * 50)
     print(f"  Project:    {args.name}")
     print(f"  Domain:     {args.domain}")

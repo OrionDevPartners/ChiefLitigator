@@ -153,7 +153,9 @@ class FeedbackCollector:
 
         logger.info(
             "Feedback collected: output=%s rating=%.1f category=%s",
-            output_id, rating, category,
+            output_id,
+            rating,
+            category,
         )
         return entry
 
@@ -211,10 +213,7 @@ class FeedbackCollector:
             if entry.category:
                 category_ratings.setdefault(entry.category, []).append(entry.rating)
 
-        category_averages = {
-            cat: round(sum(rats) / len(rats), 2)
-            for cat, rats in category_ratings.items()
-        }
+        category_averages = {cat: round(sum(rats) / len(rats), 2) for cat, rats in category_ratings.items()}
 
         # Trend analysis (compare first half to second half)
         trend = "stable"
@@ -291,14 +290,16 @@ class FeedbackCollector:
             # Suggest action based on pattern
             action = self._suggest_action(category, avg, trend, sample_notes)
 
-            weak_areas.append(WeakArea(
-                category=category,
-                avg_rating=round(avg, 2),
-                count=len(entries),
-                recent_trend=trend,
-                sample_notes=sample_notes,
-                suggested_action=action,
-            ))
+            weak_areas.append(
+                WeakArea(
+                    category=category,
+                    avg_rating=round(avg, 2),
+                    count=len(entries),
+                    recent_trend=trend,
+                    sample_notes=sample_notes,
+                    suggested_action=action,
+                )
+            )
 
         # Sort by average rating (worst first)
         weak_areas.sort(key=lambda w: w.avg_rating)
@@ -395,9 +396,7 @@ class FeedbackCollector:
 
     # ── Private helpers ─────────────────────────────────────────────
 
-    def _suggest_action(
-        self, category: str, avg_rating: float, trend: str, sample_notes: List[str]
-    ) -> str:
+    def _suggest_action(self, category: str, avg_rating: float, trend: str, sample_notes: List[str]) -> str:
         """Generate a suggested action for a weak area."""
         if avg_rating < 2.0:
             return (
@@ -429,10 +428,7 @@ class FeedbackCollector:
             with open(self._feedback_path) as f:
                 data = json.load(f)
 
-            self._entries = [
-                FeedbackEntry.from_dict(entry)
-                for entry in data.get("entries", [])
-            ]
+            self._entries = [FeedbackEntry.from_dict(entry) for entry in data.get("entries", [])]
             logger.info("Loaded %d feedback entries", len(self._entries))
         except Exception as exc:
             logger.warning("Failed to load feedback: %s", exc)
@@ -478,8 +474,7 @@ class FeedbackCollector:
             # Escape notes for CSV
             notes_escaped = entry.notes.replace('"', '""')
             lines.append(
-                f'{entry.output_id},{entry.rating},{entry.category},'
-                f'{entry.trigger},{entry.timestamp},"{notes_escaped}"'
+                f'{entry.output_id},{entry.rating},{entry.category},{entry.trigger},{entry.timestamp},"{notes_escaped}"'
             )
 
         path.write_text("\n".join(lines))

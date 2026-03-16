@@ -234,7 +234,9 @@ class CloudflareConnector(BaseConnector):
 
     # ── DNS management ──────────────────────────────────────────────
 
-    def list_dns_records(self, zone_id: Optional[str] = None, record_type: Optional[str] = None) -> List[Dict[str, Any]]:
+    def list_dns_records(
+        self, zone_id: Optional[str] = None, record_type: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """
         List DNS records for a zone.
 
@@ -359,9 +361,7 @@ class CloudflareConnector(BaseConnector):
             The created namespace data (contains id).
         """
         endpoint = f"accounts/{self._account_id}/storage/kv/namespaces"
-        result = self._with_retry(
-            "Create KV namespace", self._api_request, "POST", endpoint, {"title": title}
-        )
+        result = self._with_retry("Create KV namespace", self._api_request, "POST", endpoint, {"title": title})
         return result.get("result", {})
 
     def kv_write(self, namespace_id: str, key: str, value: str, metadata: Optional[Dict[str, str]] = None) -> bool:

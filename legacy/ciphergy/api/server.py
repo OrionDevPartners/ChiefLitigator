@@ -10,7 +10,7 @@ import uuid
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Depends, Security, Query
+from fastapi import Depends, FastAPI, HTTPException, Security
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
@@ -57,6 +57,7 @@ async def verify_api_key(key: Optional[str] = Security(api_key_header)):
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _load_json(path: Path, default=None):
     if default is None:
         default = {}
@@ -71,15 +72,18 @@ def _save_json(path: Path, data):
 
 
 def _load_registry():
-    return _load_json(REGISTRY_PATH, {
-        "version": 1,
-        "files": {},
-        "monitored_files": [],
-        "last_sync": None,
-        "agents": {},
-        "connectors": {},
-        "audit_log": [],
-    })
+    return _load_json(
+        REGISTRY_PATH,
+        {
+            "version": 1,
+            "files": {},
+            "monitored_files": [],
+            "last_sync": None,
+            "agents": {},
+            "connectors": {},
+            "audit_log": [],
+        },
+    )
 
 
 def _save_registry(reg):
@@ -126,6 +130,7 @@ class ConnectorConnectRequest(BaseModel):
 # Endpoints
 # ---------------------------------------------------------------------------
 
+
 @app.get("/health")
 async def health():
     return {"status": "ok", "ts": time.time(), "version": "1.0.0"}
@@ -147,6 +152,7 @@ async def status():
 
 
 # -- Agents -----------------------------------------------------------------
+
 
 @app.get("/agents", dependencies=[Depends(verify_api_key)])
 async def list_agents():
@@ -193,6 +199,7 @@ async def kill_agent(agent_id: str):
 
 # -- Registry ---------------------------------------------------------------
 
+
 @app.get("/registry", dependencies=[Depends(verify_api_key)])
 async def get_registry():
     return _load_registry()
@@ -209,9 +216,11 @@ async def get_registry_file(file_name: str):
 
 # -- Cascade ----------------------------------------------------------------
 
+
 @app.post("/cascade", dependencies=[Depends(verify_api_key)])
 async def trigger_cascade(req: CascadeRequest):
     from ciphergy.version_control.cascade import CascadeEngine
+
     engine = CascadeEngine(base_dir=BASE_DIR)
     result = await engine.execute(trigger=req.trigger, context=req.context)
     return {"cascade": result}
@@ -219,9 +228,11 @@ async def trigger_cascade(req: CascadeRequest):
 
 # -- Sync -------------------------------------------------------------------
 
+
 @app.get("/sync", dependencies=[Depends(verify_api_key)])
 async def sync_status():
     from ciphergy.sync.manager import SyncManager
+
     mgr = SyncManager(base_dir=BASE_DIR)
     stale = mgr.check_stale()
     manifest = mgr.get_manifest()
@@ -235,6 +246,7 @@ async def sync_status():
 @app.post("/sync/push", dependencies=[Depends(verify_api_key)])
 async def sync_push():
     from ciphergy.sync.manager import SyncManager
+
     mgr = SyncManager(base_dir=BASE_DIR)
     path = mgr.create_delta(trigger="api-push")
     return {"delta_path": str(path)}
@@ -243,12 +255,14 @@ async def sync_push():
 @app.post("/sync/mark", dependencies=[Depends(verify_api_key)])
 async def sync_mark(req: SyncMarkRequest):
     from ciphergy.sync.manager import SyncManager
+
     mgr = SyncManager(base_dir=BASE_DIR)
     mgr.mark_synced()
     return {"synced": True, "ts": time.time(), "note": req.note}
 
 
 # -- Alerts -----------------------------------------------------------------
+
 
 @app.get("/alerts", dependencies=[Depends(verify_api_key)])
 async def get_alerts():
@@ -258,6 +272,7 @@ async def get_alerts():
 
 
 # -- Connectors -------------------------------------------------------------
+
 
 @app.get("/connectors", dependencies=[Depends(verify_api_key)])
 async def list_connectors():
@@ -280,6 +295,7 @@ async def connect_connector(name: str, req: ConnectorConnectRequest):
 
 
 # -- Onboarding -------------------------------------------------------------
+
 
 @app.post("/onboard", dependencies=[Depends(verify_api_key)])
 async def start_onboard(req: OnboardRequest):
@@ -312,9 +328,11 @@ async def onboard_status(job_id: str):
 # Entry point
 # ---------------------------------------------------------------------------
 
+
 def serve(host: str = "0.0.0.0", port: int = 8000):
     """Start the API server."""
     import uvicorn
+
     uvicorn.run(app, host=host, port=port)
 
 

@@ -12,24 +12,27 @@ Usage:
 
 import json
 import os
-import sys
 import subprocess
+import sys
 from datetime import datetime
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
 TIMESTAMP = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+
 # Encryption support
 def _get_vault():
     """Load CiphergyVault if key exists. Returns None if no key."""
     try:
         from crypto import CiphergyVault
+
         vault = CiphergyVault()
         _ = vault.key  # Test that key loads
         return vault
     except (ImportError, FileNotFoundError):
         return None
+
 
 # Colors
 RED = "\033[91m"
@@ -39,10 +42,12 @@ BOLD = "\033[1m"
 DIM = "\033[2m"
 RESET = "\033[0m"
 
+
 def load_bus_config():
     """Load agent and bus config from ciphergy.yaml."""
     try:
         import yaml
+
         with open(BASE / "config" / "ciphergy.yaml") as f:
             config = yaml.safe_load(f)
         agents = config.get("agents", {})
@@ -58,6 +63,7 @@ def load_bus_config():
     except (ImportError, FileNotFoundError):
         return None
 
+
 def get_pat(config):
     """Get Asana PAT from environment or source file."""
     pat = os.environ.get(config["pat_env_var"], "")
@@ -71,24 +77,34 @@ def get_pat(config):
                         break
     return pat
 
+
 def curl_get(url, pat):
     """GET from Asana API."""
-    result = subprocess.run(
-        ["curl", "-s", "-H", f"Authorization: Bearer {pat}", url],
-        capture_output=True, text=True
-    )
+    result = subprocess.run(["curl", "-s", "-H", f"Authorization: Bearer {pat}", url], capture_output=True, text=True)
     return json.loads(result.stdout) if result.stdout else {}
+
 
 def curl_post(url, data, pat):
     """POST to Asana API."""
     result = subprocess.run(
-        ["curl", "-s", "-X", "POST",
-         "-H", f"Authorization: Bearer {pat}",
-         "-H", "Content-Type: application/json",
-         "-d", json.dumps(data), url],
-        capture_output=True, text=True
+        [
+            "curl",
+            "-s",
+            "-X",
+            "POST",
+            "-H",
+            f"Authorization: Bearer {pat}",
+            "-H",
+            "Content-Type: application/json",
+            "-d",
+            json.dumps(data),
+            url,
+        ],
+        capture_output=True,
+        text=True,
     )
     return json.loads(result.stdout) if result.stdout else {}
+
 
 def cmd_read():
     """Read latest messages from Agent Cloud's task."""
@@ -108,11 +124,11 @@ def cmd_read():
 
     vault = _get_vault()
 
-    print(f"\n{BOLD}{CYAN}{'='*60}{RESET}")
+    print(f"\n{BOLD}{CYAN}{'=' * 60}{RESET}")
     print(f"{BOLD}{CYAN}  {config['cloud_name']} — Latest Messages{RESET}")
     if vault:
         print(f"{BOLD}{CYAN}  🔐 AES-256-GCM decryption active{RESET}")
-    print(f"{BOLD}{CYAN}{'='*60}{RESET}\n")
+    print(f"{BOLD}{CYAN}{'=' * 60}{RESET}\n")
 
     for c in comments[-3:]:
         text = c.get("text", "(empty)")
@@ -127,6 +143,7 @@ def cmd_read():
             print(f"{DIM}--- {c.get('created_at', 'unknown')} ---{RESET}")
         print(text)
         print()
+
 
 def cmd_write(message, plaintext=False):
     """Post message to Agent Local's task. Auto-encrypts if key exists."""
@@ -151,6 +168,7 @@ def cmd_write(message, plaintext=False):
     created = result.get("data", {}).get("created_at", "ERROR")
     print(f"{GREEN}[{config['local_name']}]{RESET} Posted at {created}")
 
+
 def cmd_status():
     """Show comm channel status."""
     config = load_bus_config()
@@ -164,12 +182,9 @@ def cmd_status():
         return
 
     print(f"\n{BOLD}COMM STATUS{RESET}")
-    print(f"{'─'*60}")
+    print(f"{'─' * 60}")
 
-    for role, task_key, label in [
-        ("cloud", "cloud_task", "reads from"),
-        ("local", "local_task", "writes to")
-    ]:
+    for role, task_key, label in [("cloud", "cloud_task", "reads from"), ("local", "local_task", "writes to")]:
         task_gid = config.get(task_key)
         name = config.get(f"{role}_name", role)
         if task_gid:
@@ -183,6 +198,7 @@ def cmd_status():
                 print(f"  {CYAN}{name} ({label}){RESET}: No messages")
         else:
             print(f"  {CYAN}{name}{RESET}: Not configured")
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:

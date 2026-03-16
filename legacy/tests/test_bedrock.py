@@ -1,9 +1,7 @@
 """Mock tests for Bedrock client integration."""
 
 import json
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import MagicMock
 
 
 class MockBedrockRuntime:
@@ -14,31 +12,41 @@ class MockBedrockRuntime:
         self.last_model_id = None
         self.last_body = None
 
-    def invoke_model(self, modelId: str, body: str, contentType: str = "application/json", accept: str = "application/json"):
+    def invoke_model(
+        self, modelId: str, body: str, contentType: str = "application/json", accept: str = "application/json"
+    ):
         self.invoke_count += 1
         self.last_model_id = modelId
         self.last_body = json.loads(body)
 
         # Simulate different model responses
         if "claude" in modelId.lower() or "anthropic" in modelId.lower():
-            response_body = json.dumps({
-                "content": [{"type": "text", "text": "Mock Claude response for debate consensus."}],
-                "model": modelId,
-                "stop_reason": "end_turn",
-                "usage": {"input_tokens": 100, "output_tokens": 50},
-            })
+            response_body = json.dumps(
+                {
+                    "content": [{"type": "text", "text": "Mock Claude response for debate consensus."}],
+                    "model": modelId,
+                    "stop_reason": "end_turn",
+                    "usage": {"input_tokens": 100, "output_tokens": 50},
+                }
+            )
         elif "mistral" in modelId.lower():
-            response_body = json.dumps({
-                "outputs": [{"text": "Mock Mistral response for debate consensus."}],
-            })
+            response_body = json.dumps(
+                {
+                    "outputs": [{"text": "Mock Mistral response for debate consensus."}],
+                }
+            )
         elif "nova" in modelId.lower():
-            response_body = json.dumps({
-                "output": {"message": {"content": [{"text": "Mock Nova response."}]}},
-            })
+            response_body = json.dumps(
+                {
+                    "output": {"message": {"content": [{"text": "Mock Nova response."}]}},
+                }
+            )
         else:
-            response_body = json.dumps({
-                "generated_text": "Mock generic model response.",
-            })
+            response_body = json.dumps(
+                {
+                    "generated_text": "Mock generic model response.",
+                }
+            )
 
         mock_response = MagicMock()
         mock_response.__getitem__ = lambda self, key: {
@@ -60,11 +68,13 @@ class TestBedrockIntegration:
         client = MockBedrockRuntime()
         response = client.invoke_model(
             modelId="us.anthropic.claude-sonnet-4-6",
-            body=json.dumps({
-                "anthropic_version": "bedrock-2023-05-31",
-                "max_tokens": 1024,
-                "messages": [{"role": "user", "content": "Analyze this legal argument."}],
-            }),
+            body=json.dumps(
+                {
+                    "anthropic_version": "bedrock-2023-05-31",
+                    "max_tokens": 1024,
+                    "messages": [{"role": "user", "content": "Analyze this legal argument."}],
+                }
+            ),
         )
         assert client.invoke_count == 1
         assert "anthropic" in client.last_model_id
@@ -74,10 +84,12 @@ class TestBedrockIntegration:
         client = MockBedrockRuntime()
         response = client.invoke_model(
             modelId="mistral.mistral-large-2407-v1:0",
-            body=json.dumps({
-                "prompt": "Evaluate the following evidence.",
-                "max_tokens": 512,
-            }),
+            body=json.dumps(
+                {
+                    "prompt": "Evaluate the following evidence.",
+                    "max_tokens": 512,
+                }
+            ),
         )
         assert client.invoke_count == 1
         assert "mistral" in client.last_model_id
@@ -86,10 +98,12 @@ class TestBedrockIntegration:
         client = MockBedrockRuntime()
         response = client.invoke_model(
             modelId="amazon.nova-pro-v1:0",
-            body=json.dumps({
-                "messages": [{"role": "user", "content": [{"text": "Summarize findings."}]}],
-                "inferenceConfig": {"maxTokens": 256},
-            }),
+            body=json.dumps(
+                {
+                    "messages": [{"role": "user", "content": [{"text": "Summarize findings."}]}],
+                    "inferenceConfig": {"maxTokens": 256},
+                }
+            ),
         )
         assert client.invoke_count == 1
         assert "nova" in client.last_model_id

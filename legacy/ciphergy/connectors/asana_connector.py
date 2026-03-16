@@ -11,7 +11,6 @@ import logging
 import os
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from ciphergy.connectors.base import BaseConnector, ConnectorConfig, MessageBusMessage
@@ -163,9 +162,7 @@ class AsanaConnector(BaseConnector):
         if tags:
             task_data["tags"] = tags
 
-        result = self._with_retry(
-            "Create task", self._api_request, "POST", "tasks", {"data": task_data}
-        )
+        result = self._with_retry("Create task", self._api_request, "POST", "tasks", {"data": task_data})
         task = result.get("data", {})
         self._logger.info("Created task: %s (GID: %s)", name, task.get("gid"))
         return task
@@ -200,9 +197,7 @@ class AsanaConnector(BaseConnector):
         Returns:
             Task data dict.
         """
-        result = self._with_retry(
-            f"Get task {task_gid}", self._api_request, "GET", f"tasks/{task_gid}"
-        )
+        result = self._with_retry(f"Get task {task_gid}", self._api_request, "GET", f"tasks/{task_gid}")
         return result.get("data", {})
 
     # ── Comment operations ──────────────────────────────────────────
@@ -229,19 +224,19 @@ class AsanaConnector(BaseConnector):
         for story in stories:
             if story.get("resource_subtype") != "comment_added":
                 continue
-            comments.append({
-                "id": story.get("gid", ""),
-                "author": story.get("created_by", {}).get("name", "Unknown"),
-                "text": story.get("text", ""),
-                "created_at": story.get("created_at", ""),
-                "type": self._detect_message_type(story.get("text", "")),
-            })
+            comments.append(
+                {
+                    "id": story.get("gid", ""),
+                    "author": story.get("created_by", {}).get("name", "Unknown"),
+                    "text": story.get("text", ""),
+                    "created_at": story.get("created_at", ""),
+                    "type": self._detect_message_type(story.get("text", "")),
+                }
+            )
 
         return comments
 
-    def post_comment(
-        self, task_gid: str, text: str, is_rich_text: bool = False
-    ) -> Dict[str, Any]:
+    def post_comment(self, task_gid: str, text: str, is_rich_text: bool = False) -> Dict[str, Any]:
         """
         Post a comment to a task.
 
@@ -300,14 +295,10 @@ class AsanaConnector(BaseConnector):
             self._logger.error("No project GID provided")
             return []
 
-        result = self._with_retry(
-            f"List sections {proj}", self._api_request, "GET", f"projects/{proj}/sections"
-        )
+        result = self._with_retry(f"List sections {proj}", self._api_request, "GET", f"projects/{proj}/sections")
         return result.get("data", [])
 
-    def list_tasks(
-        self, project_gid: Optional[str] = None, section_gid: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+    def list_tasks(self, project_gid: Optional[str] = None, section_gid: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         List tasks in a project or section.
 
@@ -355,9 +346,7 @@ class AsanaConnector(BaseConnector):
         if filters:
             payload["data"]["filters"] = filters
 
-        result = self._with_retry(
-            "Register webhook", self._api_request, "POST", "webhooks", payload
-        )
+        result = self._with_retry("Register webhook", self._api_request, "POST", "webhooks", payload)
         webhook = result.get("data", {})
         self._logger.info("Webhook registered: %s -> %s", resource_gid, target_url)
         return webhook
@@ -399,15 +388,17 @@ class AsanaConnector(BaseConnector):
         processed: List[Dict[str, Any]] = []
 
         for event in events:
-            processed.append({
-                "action": event.get("action", ""),
-                "resource_gid": event.get("resource", {}).get("gid", ""),
-                "resource_type": event.get("resource", {}).get("resource_type", ""),
-                "parent_gid": event.get("parent", {}).get("gid", ""),
-                "change": event.get("change", {}),
-                "user_gid": event.get("user", {}).get("gid", ""),
-                "created_at": event.get("created_at", ""),
-            })
+            processed.append(
+                {
+                    "action": event.get("action", ""),
+                    "resource_gid": event.get("resource", {}).get("gid", ""),
+                    "resource_type": event.get("resource", {}).get("resource_type", ""),
+                    "parent_gid": event.get("parent", {}).get("gid", ""),
+                    "change": event.get("change", {}),
+                    "user_gid": event.get("user", {}).get("gid", ""),
+                    "created_at": event.get("created_at", ""),
+                }
+            )
 
         return {"events": processed, "count": len(processed)}
 
@@ -480,9 +471,7 @@ class AsanaConnector(BaseConnector):
 
     # ── Private helpers ─────────────────────────────────────────────
 
-    def _api_request(
-        self, method: str, endpoint: str, data: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+    def _api_request(self, method: str, endpoint: str, data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Make an authenticated Asana API request."""
         url = f"{self.BASE_URL}/{endpoint.lstrip('/')}"
         headers = {

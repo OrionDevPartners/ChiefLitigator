@@ -9,8 +9,6 @@ import fcntl
 import hashlib
 import json
 import logging
-import os
-import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -233,12 +231,14 @@ class Registry:
         """Append an entry to the change history."""
         data = self._ensure_loaded()
         now = datetime.now(timezone.utc).isoformat()
-        data.history.append(HistoryEntry(
-            version=version,
-            timestamp=now,
-            action=action,
-            details=details,
-        ))
+        data.history.append(
+            HistoryEntry(
+                version=version,
+                timestamp=now,
+                action=action,
+                details=details,
+            )
+        )
 
     def get_history(self, limit: int = 50) -> List[HistoryEntry]:
         """Return the most recent history entries."""
@@ -268,7 +268,9 @@ class Registry:
         sha = self.compute_hash(path)
         now = datetime.now(timezone.utc).isoformat()
         data.monitored_files[path] = MonitoredFile(
-            path=path, sha256=sha, last_checked=now,
+            path=path,
+            sha256=sha,
+            last_checked=now,
         )
         self.save()
         logger.debug("Now monitoring: %s (sha256=%s)", path, sha[:16])

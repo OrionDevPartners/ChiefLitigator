@@ -14,7 +14,6 @@ from typing import Optional, Union
 from file_watcher import FileWatcher
 from parsers import (
     extract_percentage,
-    extract_scores,
     parse_action_items,
     parse_alert_blocks,
     parse_all_md_tables,
@@ -191,24 +190,18 @@ class CaseData:
             return None
 
         # Extract name from filename: PERSON_ANALYSIS_REPORT_First_Last_vN.md
-        name_match = re.search(
-            r"PERSON_ANALYSIS_REPORT_(.+?)_v\d+\.md$", pa_file.name
-        )
+        name_match = re.search(r"PERSON_ANALYSIS_REPORT_(.+?)_v\d+\.md$", pa_file.name)
         if name_match:
             name = name_match.group(1).replace("_", " ")
         else:
             # Fallback: try from the title line
-            title_match = re.search(
-                r"#\s+PERSON ANALYSIS REPORT:\s*(.+)", text
-            )
+            title_match = re.search(r"#\s+PERSON ANALYSIS REPORT:\s*(.+)", text)
             name = title_match.group(1).strip() if title_match else pa_file.stem
 
         # Entity score — handles formats like:
         #   > **Entity Score:** 10.00 — MAXIMUM
         #   | **Entity Score** | **10.00 — MAXIMUM** |
-        score_match = re.search(
-            r"Entity\s+Score[:\s|]*\*{0,2}\s*([\d.]+)", text
-        )
+        score_match = re.search(r"Entity\s+Score[:\s|]*\*{0,2}\s*([\d.]+)", text)
         score = float(score_match.group(1)) if score_match else 0.0
 
         # Determine matter from content
@@ -253,7 +246,7 @@ class CaseData:
 
         # Pattern 1: summary table like "| I | Defamation Per Se | **85%** | FILED |"
         table_re = re.compile(
-            r"\|\s*([IVX]+|\w+)\s*\|"      # count number
+            r"\|\s*([IVX]+|\w+)\s*\|"  # count number
             r"\s*\*{0,2}([^|]+?)\*{0,2}\s*\|"  # claim name
             r"\s*\*{0,2}(\d{1,3})%\*{0,2}\s*\|"  # score
         )
@@ -501,19 +494,11 @@ class CaseData:
                 # Extract count identifier
                 count_str = row.get("count", "")
                 claim["count"] = strip_md_formatting(count_str).strip()
-                claim["name"] = strip_md_formatting(
-                    row.get("claim", row.get("col", ""))
-                ).strip(" —-")
-                pct = extract_percentage(
-                    row.get("confidence", row.get("score", ""))
-                )
+                claim["name"] = strip_md_formatting(row.get("claim", row.get("col", ""))).strip(" —-")
+                pct = extract_percentage(row.get("confidence", row.get("score", "")))
                 claim["score"] = pct if pct is not None else 0
-                claim["rating"] = strip_md_formatting(
-                    row.get("rating", "")
-                ).strip()
-                claim["trend"] = strip_md_formatting(
-                    row.get("trend", "")
-                ).strip()
+                claim["rating"] = strip_md_formatting(row.get("rating", "")).strip()
+                claim["trend"] = strip_md_formatting(row.get("trend", "")).strip()
                 result["locked_claims"].append(claim)
 
             # Overall score from the **OVERALL CASE** row or explicit text
@@ -538,24 +523,16 @@ class CaseData:
                     result["overall"]["rating"] = rating_match2.group(2).strip()
 
         # Building claims from threshold monitor
-        threshold_text = self._extract_section_text(
-            text, "BUILDING CLAIM THRESHOLD MONITOR"
-        )
+        threshold_text = self._extract_section_text(text, "BUILDING CLAIM THRESHOLD MONITOR")
         if threshold_text:
             building_table = parse_md_table(threshold_text)
             for row in building_table:
                 bc: dict = {}
                 bc["name"] = strip_md_formatting(row.get("claim", "")).strip()
-                bc["score"] = extract_percentage(
-                    row.get("current", row.get("current_%", ""))
-                ) or 0
-                bc["threshold"] = extract_percentage(
-                    row.get("threshold", "")
-                ) or 75
+                bc["score"] = extract_percentage(row.get("current", row.get("current_%", ""))) or 0
+                bc["threshold"] = extract_percentage(row.get("threshold", "")) or 75
                 bc["gap"] = extract_percentage(row.get("gap", "")) or 0
-                bc["trigger"] = strip_md_formatting(
-                    row.get("projected_trigger", "")
-                ).strip()
+                bc["trigger"] = strip_md_formatting(row.get("projected_trigger", "")).strip()
                 result["building_claims"].append(bc)
 
         # Evidence collection sections
@@ -648,12 +625,14 @@ class CaseData:
                         size_kb = round(f.stat().st_size / 1024, 1)
                     except OSError:
                         size_kb = 0
-                    phase["files"].append({
-                        "name": f.stem,
-                        "path": str(f),
-                        "ext": f.suffix.lstrip("."),
-                        "size_kb": size_kb,
-                    })
+                    phase["files"].append(
+                        {
+                            "name": f.stem,
+                            "path": str(f),
+                            "ext": f.suffix.lstrip("."),
+                            "size_kb": size_kb,
+                        }
+                    )
 
             phases.append(phase)
 
@@ -695,34 +674,38 @@ class CaseData:
             for f in sorted(stat_dir.glob("*.md")):
                 # Extract statute number from filename: FL_415.1111.md
                 num_match = re.search(r"FL_(.+)\.md$", f.name)
-                result["statutes"].append({
-                    "name": f.stem.replace("_", " "),
-                    "path": str(f),
-                    "statute_number": num_match.group(1) if num_match else "",
-                })
+                result["statutes"].append(
+                    {
+                        "name": f.stem.replace("_", " "),
+                        "path": str(f),
+                        "statute_number": num_match.group(1) if num_match else "",
+                    }
+                )
 
         # Case law
         case_dir = law_dir / "CASE_LAW"
         if case_dir.is_dir():
             for f in sorted(case_dir.glob("*.md")):
-                result["case_law"].append({
-                    "name": f.stem.replace("_", " "),
-                    "path": str(f),
-                    "case_name": f.stem.replace("_", " "),
-                })
+                result["case_law"].append(
+                    {
+                        "name": f.stem.replace("_", " "),
+                        "path": str(f),
+                        "case_name": f.stem.replace("_", " "),
+                    }
+                )
 
         # Bar rules
         bar_dir = law_dir / "BAR_RULES"
         if bar_dir.is_dir():
             for f in sorted(bar_dir.glob("*.md")):
                 num_match = re.search(r"Rule_(.+)\.md$", f.name)
-                result["bar_rules"].append({
-                    "name": f.stem.replace("_", " "),
-                    "path": str(f),
-                    "rule_number": num_match.group(1).replace("_", "-")
-                    if num_match
-                    else "",
-                })
+                result["bar_rules"].append(
+                    {
+                        "name": f.stem.replace("_", " "),
+                        "path": str(f),
+                        "rule_number": num_match.group(1).replace("_", "-") if num_match else "",
+                    }
+                )
 
         # Claims (per-matter)
         claims_dir = law_dir / "CLAIMS"
@@ -731,10 +714,12 @@ class CaseData:
                 if matter_dir.is_dir():
                     matter_files: list[dict] = []
                     for f in sorted(matter_dir.glob("*.md")):
-                        matter_files.append({
-                            "name": f.stem.replace("_", " "),
-                            "path": str(f),
-                        })
+                        matter_files.append(
+                            {
+                                "name": f.stem.replace("_", " "),
+                                "path": str(f),
+                            }
+                        )
                     if matter_files:
                         result["claims"][matter_dir.name] = matter_files
 
@@ -742,10 +727,12 @@ class CaseData:
         proc_dir = law_dir / "PROCEDURES"
         if proc_dir.is_dir():
             for f in sorted(proc_dir.glob("*.md")):
-                result["procedures"].append({
-                    "name": f.stem.replace("_", " "),
-                    "path": str(f),
-                })
+                result["procedures"].append(
+                    {
+                        "name": f.stem.replace("_", " "),
+                        "path": str(f),
+                    }
+                )
 
         return result
 
@@ -775,13 +762,15 @@ class CaseData:
             table = parse_md_table(section_text)
             items: list[dict] = []
             for row in table:
-                items.append({
-                    "number": strip_md_formatting(row.get("#", row.get("col", ""))).strip(),
-                    "action": strip_md_formatting(row.get("action", "")).strip(),
-                    "matter": strip_md_formatting(row.get("matter", "")).strip(),
-                    "deadline": strip_md_formatting(row.get("deadline", "")).strip(),
-                    "status": strip_md_formatting(row.get("status", "")).strip(),
-                })
+                items.append(
+                    {
+                        "number": strip_md_formatting(row.get("#", row.get("col", ""))).strip(),
+                        "action": strip_md_formatting(row.get("action", "")).strip(),
+                        "matter": strip_md_formatting(row.get("matter", "")).strip(),
+                        "deadline": strip_md_formatting(row.get("deadline", "")).strip(),
+                        "status": strip_md_formatting(row.get("status", "")).strip(),
+                    }
+                )
             return items
 
         return self._cached("action_items", rel, loader)
@@ -809,29 +798,19 @@ class CaseData:
                 # Detect priority from the section heading context
                 priority = "MEDIUM"
                 q_text = q.get("question", "")
-                if "CRITICAL" in text[
-                    : text.find(q_text) if q_text in text else 0
-                ].split("##")[-1] if q_text else "":
+                if "CRITICAL" in text[: text.find(q_text) if q_text in text else 0].split("##")[-1] if q_text else "":
                     priority = "CRITICAL"
 
-                results.append({
-                    "number": strip_md_formatting(
-                        q.get("#", q.get("col", ""))
-                    ).strip(),
-                    "question": strip_md_formatting(
-                        q.get("question", "")
-                    ).strip(),
-                    "context": strip_md_formatting(
-                        q.get("context", "")
-                    ).strip(),
-                    "deadline": strip_md_formatting(
-                        q.get("deadline", "")
-                    ).strip(),
-                    "status": strip_md_formatting(
-                        q.get("status", "")
-                    ).strip(),
-                    "priority": priority,
-                })
+                results.append(
+                    {
+                        "number": strip_md_formatting(q.get("#", q.get("col", ""))).strip(),
+                        "question": strip_md_formatting(q.get("question", "")).strip(),
+                        "context": strip_md_formatting(q.get("context", "")).strip(),
+                        "deadline": strip_md_formatting(q.get("deadline", "")).strip(),
+                        "status": strip_md_formatting(q.get("status", "")).strip(),
+                        "priority": priority,
+                    }
+                )
             return results
 
         return self._cached("open_questions", rel, loader)
@@ -861,31 +840,31 @@ class CaseData:
             tables = parse_all_md_tables(text)
             for table in tables:
                 for row in table:
-                    signals.append({
-                        "timestamp": row.get("timestamp", row.get("date", "")),
-                        "type": row.get("type", row.get("signal", "")),
-                        "message": row.get(
-                            "message", row.get("description", row.get("detail", ""))
-                        ),
-                        "source": row.get("source", ""),
-                    })
+                    signals.append(
+                        {
+                            "timestamp": row.get("timestamp", row.get("date", "")),
+                            "type": row.get("type", row.get("signal", "")),
+                            "message": row.get("message", row.get("description", row.get("detail", ""))),
+                            "source": row.get("source", ""),
+                        }
+                    )
 
             if signals:
                 return signals
 
             # Try line-based format: [SIGNAL] TYPE | key: value
-            signal_re = re.compile(
-                r"\[SIGNAL\]\s*(\w+)\s*\|\s*(.+)", re.MULTILINE
-            )
+            signal_re = re.compile(r"\[SIGNAL\]\s*(\w+)\s*\|\s*(.+)", re.MULTILINE)
             for m in signal_re.finditer(text):
                 sig_type = m.group(1)
                 payload = m.group(2)
-                signals.append({
-                    "timestamp": "",
-                    "type": sig_type,
-                    "message": payload.strip(),
-                    "source": "signal_log",
-                })
+                signals.append(
+                    {
+                        "timestamp": "",
+                        "type": sig_type,
+                        "message": payload.strip(),
+                        "source": "signal_log",
+                    }
+                )
 
             return signals
 
@@ -912,27 +891,20 @@ class CaseData:
             alerts = parse_alert_blocks(text)
 
             # Also parse the below-threshold tracking table
-            below_text = self._extract_section_text(
-                text, "BELOW-THRESHOLD"
-            )
+            below_text = self._extract_section_text(text, "BELOW-THRESHOLD")
             if below_text:
                 below_table = parse_md_table(below_text)
                 for row in below_table:
-                    alerts.append({
-                        "claim": strip_md_formatting(
-                            row.get("claim", "")
-                        ).strip(),
-                        "confidence_pct": extract_percentage(
-                            row.get("current", row.get("current_%", ""))
-                        )
-                        or 0,
-                        "threshold": row.get("threshold", "75%"),
-                        "status": "BELOW THRESHOLD",
-                        "alert_status": "monitoring",
-                        "watch_for": strip_md_formatting(
-                            row.get("watch_for", "")
-                        ).strip(),
-                    })
+                    alerts.append(
+                        {
+                            "claim": strip_md_formatting(row.get("claim", "")).strip(),
+                            "confidence_pct": extract_percentage(row.get("current", row.get("current_%", ""))) or 0,
+                            "threshold": row.get("threshold", "75%"),
+                            "status": "BELOW THRESHOLD",
+                            "alert_status": "monitoring",
+                            "watch_for": strip_md_formatting(row.get("watch_for", "")).strip(),
+                        }
+                    )
 
             return alerts
 

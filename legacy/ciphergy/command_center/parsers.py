@@ -204,8 +204,8 @@ def extract_scores(text: str) -> list[tuple[str, int]]:
     # | label | ... | NN% | ...
     table_row_re = re.compile(
         r"\|\s*\*{0,2}([^|*]+?)\*{0,2}\s*\|"  # first cell (label)
-        r"(?:[^|]*\|)*?"                         # skip intermediate cells
-        r"\s*\*{0,2}(\d{1,3})%\*{0,2}\s*\|"     # cell with NN%
+        r"(?:[^|]*\|)*?"  # skip intermediate cells
+        r"\s*\*{0,2}(\d{1,3})%\*{0,2}\s*\|"  # cell with NN%
     )
     for m in table_row_re.finditer(text):
         label = m.group(1).strip()
@@ -293,10 +293,12 @@ def parse_action_items(text: str) -> list[dict]:
     checklist_re = re.compile(r"^[-*]\s+\[([ xX])\]\s+(.+)$", re.MULTILINE)
     for m in checklist_re.finditer(text):
         done = m.group(1).lower() == "x"
-        items.append({
-            "action": m.group(2).strip(),
-            "status": "DONE" if done else "OPEN",
-        })
+        items.append(
+            {
+                "action": m.group(2).strip(),
+                "status": "DONE" if done else "OPEN",
+            }
+        )
 
     return items
 

@@ -12,7 +12,6 @@ Usage:
 """
 
 import json
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -36,10 +35,12 @@ BOLD = "\033[1m"
 DIM = "\033[2m"
 RESET = "\033[0m"
 
+
 def load_config():
     """Load ciphergy.yaml config. Falls back to defaults if yaml not available."""
     try:
         import yaml
+
         with open(CONFIG_FILE) as f:
             return yaml.safe_load(f)
     except ImportError:
@@ -51,11 +52,12 @@ def load_config():
                 "auto_update_dashboard": True,
                 "auto_log_diffs": True,
                 "auto_check_deadlines": True,
-                "auto_read_comms": True
-            }
+                "auto_read_comms": True,
+            },
         }
     except FileNotFoundError:
         return {"project": {"name": "Ciphergy"}, "domain": "default"}
+
 
 def load_domain_vocab(config):
     """Load domain vocabulary from the active domain profile."""
@@ -63,6 +65,7 @@ def load_domain_vocab(config):
     profile_path = BASE / "config" / "domain_profiles" / f"{domain}.yaml"
     try:
         import yaml
+
         with open(profile_path) as f:
             profile = yaml.safe_load(f)
             return profile.get("vocabulary", {})
@@ -72,8 +75,9 @@ def load_domain_vocab(config):
             "hypothesis": "Hypothesis",
             "evidence": "Evidence",
             "milestone": "Milestone",
-            "confidence_monitor": "Confidence Monitor"
+            "confidence_monitor": "Confidence Monitor",
         }
+
 
 def load_milestones():
     """Load milestones from manifest if it exists."""
@@ -84,6 +88,7 @@ def load_milestones():
             return data.get("milestones", [])
     return []
 
+
 def days_until(date_str):
     """Calculate days from today to a date string."""
     try:
@@ -92,6 +97,7 @@ def days_until(date_str):
         return (target - today).days
     except ValueError:
         return 999
+
 
 def log_diff(message):
     """Append a diff entry to today's diff log."""
@@ -107,9 +113,11 @@ def log_diff(message):
 
     print(f"{GREEN}[DIFF]{RESET} Logged: {message}")
 
+
 # ================================================================
 # COMMANDS
 # ================================================================
+
 
 def cmd_startup():
     """Full session startup."""
@@ -117,10 +125,10 @@ def cmd_startup():
     vocab = load_domain_vocab(config)
     project_name = config.get("project", {}).get("name", "Ciphergy")
 
-    print(f"\n{BOLD}{CYAN}{'='*60}{RESET}")
+    print(f"\n{BOLD}{CYAN}{'=' * 60}{RESET}")
     print(f"{BOLD}{CYAN}  {project_name} — NERVE CENTER STARTUP{RESET}")
     print(f"{BOLD}{CYAN}  Domain: {config.get('domain', 'default')} | {TIMESTAMP}{RESET}")
-    print(f"{BOLD}{CYAN}{'='*60}{RESET}\n")
+    print(f"{BOLD}{CYAN}{'=' * 60}{RESET}\n")
 
     # 1. Check milestones
     cmd_deadlines()
@@ -133,6 +141,7 @@ def cmd_startup():
 
     print(f"\n{GREEN}[STARTUP COMPLETE]{RESET}\n")
 
+
 def cmd_deadlines():
     """Check all milestones."""
     vocab = load_domain_vocab(load_config())
@@ -140,7 +149,7 @@ def cmd_deadlines():
     milestones = load_milestones()
 
     print(f"\n{BOLD}{milestone_word.upper()} CHECK{RESET}")
-    print(f"{'─'*60}")
+    print(f"{'─' * 60}")
 
     if not milestones:
         print(f"  {YELLOW}No {milestone_word.lower()}s configured.{RESET}")
@@ -172,6 +181,7 @@ def cmd_deadlines():
 
     return alerts
 
+
 def cmd_intake():
     """Check intake folder for new data."""
     config = load_config()
@@ -180,7 +190,7 @@ def cmd_intake():
     intake_dir = BASE / intake_name
 
     print(f"\n{BOLD}INTAKE CHECK ({intake_name}/){RESET}")
-    print(f"{'─'*60}")
+    print(f"{'─' * 60}")
 
     if not intake_dir.exists():
         print(f"  {DIM}Intake folder not found. Creating {intake_name}/{RESET}")
@@ -195,8 +205,7 @@ def cmd_intake():
                 if "→" in line or "->" in line:
                     processed_list.add(line.split("→")[0].split("->")[0].strip())
 
-    all_files = [f.name for f in intake_dir.iterdir()
-                 if f.is_file() and not f.name.startswith(".")]
+    all_files = [f.name for f in intake_dir.iterdir() if f.is_file() and not f.name.startswith(".")]
 
     unprocessed = [f for f in all_files if f not in processed_list]
 
@@ -207,13 +216,14 @@ def cmd_intake():
     else:
         print(f"  {GREEN}✓{RESET} All files processed")
 
+
 def cmd_dashboard():
     """Quick dashboard summary."""
     config = load_config()
     project_name = config.get("project", {}).get("name", "Ciphergy")
 
     print(f"\n{BOLD}SITUATION DASHBOARD{RESET}")
-    print(f"{'─'*60}")
+    print(f"{'─' * 60}")
     print(f"  Project: {project_name}")
     print(f"  Domain: {config.get('domain', 'default')}")
 
@@ -227,6 +237,7 @@ def cmd_dashboard():
             print(f"    Status: {matter.get('status', 'unknown')} | Phase: {matter.get('phase', 'unknown')}")
     else:
         print(f"  {YELLOW}No project manifest found. Run onboarding.{RESET}")
+
 
 # ================================================================
 # MAIN

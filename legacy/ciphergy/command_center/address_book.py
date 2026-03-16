@@ -241,13 +241,15 @@ class AddressBook:
         results = []
 
         for contact in contacts:
-            searchable = " ".join([
-                contact.get("name", ""),
-                contact.get("company", ""),
-                contact.get("role", ""),
-                contact.get("matter", ""),
-                contact.get("notes", ""),
-            ]).lower()
+            searchable = " ".join(
+                [
+                    contact.get("name", ""),
+                    contact.get("company", ""),
+                    contact.get("role", ""),
+                    contact.get("matter", ""),
+                    contact.get("notes", ""),
+                ]
+            ).lower()
             if query_lower in searchable:
                 results.append(contact)
 
@@ -268,10 +270,7 @@ class AddressBook:
         """
         contacts = self._load()
         matter_lower = matter.lower()
-        return [
-            c for c in contacts
-            if matter_lower in c.get("matter", "").lower()
-        ]
+        return [c for c in contacts if matter_lower in c.get("matter", "").lower()]
 
     # ------------------------------------------------------------------
     # Persistence

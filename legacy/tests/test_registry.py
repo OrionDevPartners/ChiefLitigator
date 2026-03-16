@@ -2,12 +2,10 @@
 
 import json
 import time
-from pathlib import Path
 
 import pytest
-
-from ciphergy.version_control.tracker import VersionTracker
 from ciphergy.sync.manager import SyncManager
+from ciphergy.version_control.tracker import VersionTracker
 
 
 @pytest.fixture

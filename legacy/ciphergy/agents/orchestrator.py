@@ -9,11 +9,10 @@ timeout management, progress tracking, and lifecycle control.
 import asyncio
 import logging
 import time
-import uuid
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Callable, Dict, List, Optional
 
 from ciphergy.agents.agent import Agent, AgentResult, AgentStatus, AgentType
 from ciphergy.models.bedrock import BedrockClient
@@ -91,7 +90,8 @@ class AgentOrchestrator:
 
         logger.info(
             "AgentOrchestrator initialized: max_agents=%d, default_timeout=%.0fs",
-            max_agents, default_timeout,
+            max_agents,
+            default_timeout,
         )
 
     # ------------------------------------------------------------------
@@ -201,7 +201,10 @@ class AgentOrchestrator:
 
         logger.info(
             "Spawned agent: id=%s name='%s' type=%s model=%s",
-            agent.agent_id[:8], name, agent_type.value, model,
+            agent.agent_id[:8],
+            name,
+            agent_type.value,
+            model,
         )
         return agent.agent_id
 
@@ -239,7 +242,10 @@ class AgentOrchestrator:
 
         logger.info(
             "Agent done: id=%s name='%s' status=%s duration=%.1fs",
-            agent_id[:8], handle.agent.name, result.status, result.duration_seconds,
+            agent_id[:8],
+            handle.agent.name,
+            result.status,
+            result.duration_seconds,
         )
 
     # ------------------------------------------------------------------
@@ -387,10 +393,7 @@ class AgentOrchestrator:
 
     def _active_count(self) -> int:
         """Count agents whose futures are not yet done."""
-        return sum(
-            1 for h in self._agents.values()
-            if h.future is not None and not h.future.done()
-        )
+        return sum(1 for h in self._agents.values() if h.future is not None and not h.future.done())
 
     @property
     def status(self) -> OrchestratorStatus:
@@ -505,7 +508,8 @@ async def async_spawn_and_wait(
     agent_ids: List[str] = []
     for cfg in agents_config:
         aid = await loop.run_in_executor(
-            None, lambda c=cfg: orchestrator.spawn_agent(**c),
+            None,
+            lambda c=cfg: orchestrator.spawn_agent(**c),
         )
         agent_ids.append(aid)
 

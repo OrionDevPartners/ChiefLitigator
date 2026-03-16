@@ -49,12 +49,14 @@ class SyncManager:
             if full_path.exists():
                 mtime = full_path.stat().st_mtime
                 if mtime > last_sync:
-                    stale.append({
-                        "path": file_path,
-                        "mtime": mtime,
-                        "last_sync": last_sync,
-                        "delta_seconds": mtime - last_sync,
-                    })
+                    stale.append(
+                        {
+                            "path": file_path,
+                            "mtime": mtime,
+                            "last_sync": last_sync,
+                            "delta_seconds": mtime - last_sync,
+                        }
+                    )
 
         return stale
 
@@ -85,19 +87,19 @@ class SyncManager:
             "files_copied": copied,
             "stale_count": len(stale),
         }
-        (version_dir / "delta_manifest.json").write_text(
-            json.dumps(manifest, indent=2)
-        )
+        (version_dir / "delta_manifest.json").write_text(json.dumps(manifest, indent=2))
 
         # Update registry version
         reg["version"] = new_version
-        reg.setdefault("audit_log", []).append({
-            "action": "create_delta",
-            "version": new_version,
-            "trigger": trigger,
-            "ts": time.time(),
-            "files": copied,
-        })
+        reg.setdefault("audit_log", []).append(
+            {
+                "action": "create_delta",
+                "version": new_version,
+                "trigger": trigger,
+                "ts": time.time(),
+                "files": copied,
+            }
+        )
         self._save_registry(reg)
 
         return version_dir
@@ -106,10 +108,12 @@ class SyncManager:
         """Update registry with current timestamp as last sync."""
         reg = self._load_registry()
         reg["last_sync"] = time.time()
-        reg.setdefault("audit_log", []).append({
-            "action": "mark_synced",
-            "ts": reg["last_sync"],
-        })
+        reg.setdefault("audit_log", []).append(
+            {
+                "action": "mark_synced",
+                "ts": reg["last_sync"],
+            }
+        )
         self._save_registry(reg)
 
     def get_manifest(self) -> dict:
@@ -137,15 +141,15 @@ class SyncManager:
                 if manifest_path.exists():
                     manifest = json.loads(manifest_path.read_text())
                 files = [
-                    str(f.relative_to(vdir))
-                    for f in vdir.rglob("*")
-                    if f.is_file() and f.name != "delta_manifest.json"
+                    str(f.relative_to(vdir)) for f in vdir.rglob("*") if f.is_file() and f.name != "delta_manifest.json"
                 ]
-                history.append({
-                    "version": vdir.name,
-                    "path": str(vdir),
-                    "manifest": manifest,
-                    "files": files,
-                })
+                history.append(
+                    {
+                        "version": vdir.name,
+                        "path": str(vdir),
+                        "manifest": manifest,
+                        "files": files,
+                    }
+                )
 
         return history
