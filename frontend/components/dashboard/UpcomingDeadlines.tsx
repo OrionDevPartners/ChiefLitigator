@@ -14,60 +14,10 @@ interface Deadline {
   court?: string
 }
 
-const deadlines: Deadline[] = [
-  {
-    id: "d1",
-    title: "Motion to Compel — Discovery Response",
-    type: "Motion",
-    date: "Mar 19, 2026",
-    daysLeft: 3,
-    assignee: "J. Mercer",
-    court: "SDNY",
-  },
-  {
-    id: "d2",
-    title: "Expert Witness Disclosure",
-    type: "Disclosure",
-    date: "Mar 23, 2026",
-    daysLeft: 7,
-    assignee: "A. Voss",
-  },
-  {
-    id: "d3",
-    title: "Deposition of R. Hartwell",
-    type: "Deposition",
-    date: "Mar 26, 2026",
-    daysLeft: 10,
-    assignee: "J. Mercer",
-  },
-  {
-    id: "d4",
-    title: "Mediation Session — Pre-Trial",
-    type: "Hearing",
-    date: "Mar 28, 2026",
-    daysLeft: 12,
-    assignee: "Full Team",
-    court: "SDNY",
-  },
-  {
-    id: "d5",
-    title: "Summary Judgment Response Brief",
-    type: "Filing",
-    date: "Apr 2, 2026",
-    daysLeft: 17,
-    assignee: "A. Voss",
-    court: "SDNY",
-  },
-  {
-    id: "d6",
-    title: "Pretrial Conference",
-    type: "Hearing",
-    date: "Apr 14, 2026",
-    daysLeft: 29,
-    assignee: "J. Mercer",
-    court: "SDNY",
-  },
-]
+/**
+ * Deadlines are loaded from the case context via props.
+ * No hardcoded data — empty state shown when no deadlines exist.
+ */
 
 function urgencyConfig(days: number) {
   if (days <= 3) return {
@@ -96,7 +46,11 @@ function urgencyConfig(days: number) {
   }
 }
 
-export function UpcomingDeadlines() {
+interface UpcomingDeadlinesProps {
+  deadlines?: Deadline[]
+}
+
+export function UpcomingDeadlines({ deadlines = [] }: UpcomingDeadlinesProps) {
   return (
     <Card className="flex flex-col gap-0 border-border bg-card">
       <CardHeader className="pb-3 flex-row items-center justify-between">
@@ -125,6 +79,13 @@ export function UpcomingDeadlines() {
       </CardHeader>
 
       <CardContent className="flex flex-col gap-2 p-4 pt-0">
+        {deadlines.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground text-xs">
+            <Calendar className="w-8 h-8 mx-auto mb-2 opacity-40" />
+            <p>No deadlines yet</p>
+            <p className="mt-1">Add a case to start tracking deadlines</p>
+          </div>
+        )}
         {deadlines.map((d) => {
           const urg = urgencyConfig(d.daysLeft)
           return (
