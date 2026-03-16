@@ -14,7 +14,7 @@ import logging
 import os
 from contextlib import asynccontextmanager
 from datetime import date
-from typing import AsyncIterator
+from typing import AsyncIterator, Optional
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -199,6 +199,17 @@ configure_cors(app)
 # 4. Auth router (signup + login endpoints — public, no JWT required)
 from src.auth import auth_router  # noqa: E402
 app.include_router(auth_router)
+
+# 5. Admin router (admin-only endpoints — requires admin JWT)
+from src.admin.routes import admin_router  # noqa: E402
+app.include_router(admin_router)
+
+# 6. Beta gate middleware (IP enforcement — after JWT, before request handlers)
+if os.getenv("BETA_GATE_ENABLED", "true").lower() == "true":
+    from src.beta.middleware import BetaGateMiddleware  # noqa: E402
+    from src.database.engine import get_db as _get_db  # noqa: E402
+
+    app.add_middleware(BetaGateMiddleware, db_factory=_get_db)
 
 
 # ---------------------------------------------------------------------------
@@ -663,6 +674,50 @@ async def compute_deadline(
                 request_id=request_id,
             ).model_dump(),
         )
+
+
+# ---------------------------------------------------------------------------
+# Jurisdiction container endpoints
+# ---------------------------------------------------------------------------
+
+
+@app.post(
+    "/api/v1/jurisdiction/query",
+    tags=["jurisdiction"],
+    summary="Query a jurisdiction container's dual-brain system",
+)
+async def query_jurisdiction(
+    jurisdiction: str,
+    question: str,
+    practice_area: Optional[str] = None,
+    sub_area: Optional[str] = None,
+):
+    """Route a legal question to the dual-brain system for a specific jurisdiction.
+
+    All three models (Opus, Llama Scout, Cohere) must agree before output
+    is certified. Disagreements are flagged for human review.
+    """
+    from src.containers import ContainerRegistry
+
+    registry = ContainerRegistry()
+    result = await registry.query(jurisdiction, question)
+    return result
+
+
+@app.get(
+    "/api/v1/jurisdictions",
+    tags=["jurisdiction"],
+    summary="List all available jurisdictions",
+)
+async def list_jurisdictions():
+    """Return the full list of supported jurisdictions (57 total).
+
+    Includes 50 states, federal, DC, and 5 US territories.
+    """
+    from src.containers import ContainerRegistry
+
+    registry = ContainerRegistry()
+    return {"jurisdictions": registry.list_jurisdictions(), "total": registry.total_count}
 
 
 # ---------------------------------------------------------------------------

@@ -17,6 +17,19 @@ indexed. The catalog grows with every interaction.
 from src.knowledge.case_catalog import CaseCatalog, CatalogEntry
 from src.knowledge.statute_index import StatuteIndex, StatuteEntry
 from src.knowledge.crawler import CaseLawCrawler, CaseLawEntry, CrawlState
+from src.knowledge.holding_extractor import (
+    HoldingExtractor,
+    ExtractedHolding,
+    ExtractionResult,
+    HoldingType,
+    extract_and_catalog,
+)
+from src.knowledge.argument_graph import (
+    ArgumentGraph,
+    ArgumentChain,
+    GraphEdge,
+    CaseRelationship,
+)
 
 __all__ = [
     "CaseCatalog",
@@ -26,4 +39,13 @@ __all__ = [
     "CaseLawCrawler",
     "CaseLawEntry",
     "CrawlState",
+    "HoldingExtractor",
+    "ExtractedHolding",
+    "ExtractionResult",
+    "HoldingType",
+    "extract_and_catalog",
+    "ArgumentGraph",
+    "ArgumentChain",
+    "GraphEdge",
+    "CaseRelationship",
 ]
