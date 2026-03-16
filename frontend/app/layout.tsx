@@ -7,8 +7,8 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Cyphergy — Legal AI',
-  description: 'AI-powered legal assistance. Get expert guidance on lawsuits, documents, and ongoing cases.',
+  title: 'Cyphergy — Deadline Manager',
+  description: 'Track court deadlines, filings, and procedural dates with Cyphergy legal AI.',
   generator: 'v0.app',
   icons: {
     icon: [
