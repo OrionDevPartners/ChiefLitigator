@@ -56,6 +56,155 @@ class JurisdictionType(str, Enum):
     MILITARY = "military"
 
 
+class PracticeArea(str, Enum):
+    """Practice area classifications within a jurisdiction.
+
+    Each jurisdiction container holds law across all practice areas,
+    but the dual-brain consensus routes to specialized knowledge
+    based on the practice area of the query.
+
+    CIVIL: Contract disputes, torts, property, family law, employment
+    CRIMINAL: Felonies, misdemeanors, traffic, DUI, white collar
+    OVERLAP: Where civil meets criminal — punitive damages, RICO,
+             fraud, conversion, restitution, contempt
+
+    Example — Florida punitive damages:
+      Civil claim filed → Fla. Stat. § 768.72 requires leave of court
+      before punitive damages can be pled → this is OVERLAP law because
+      punitive damages are civil remedies that require proof of criminal-
+      level misconduct (intentional, grossly negligent, or fraudulent).
+      The gate (leave of court) is the bridge from civil to criminal
+      standards of proof.
+    """
+
+    CIVIL = "civil"
+    CRIMINAL = "criminal"
+    OVERLAP = "overlap"          # Civil-criminal bridge (punitive, RICO, fraud)
+    ADMINISTRATIVE = "administrative"  # Agency proceedings, licensing, regulatory
+    APPELLATE = "appellate"      # Appellate procedure (distinct from trial)
+    BANKRUPTCY = "bankruptcy"    # Federal + state exemptions
+
+
+class PracticeSubArea(str, Enum):
+    """Specific sub-areas within practice areas."""
+
+    # Civil
+    CONTRACT = "contract"
+    TORT = "tort"
+    PROPERTY = "property"
+    FAMILY = "family"
+    EMPLOYMENT = "employment"
+    INSURANCE = "insurance"
+    CONSTRUCTION = "construction"
+    CONSUMER_PROTECTION = "consumer_protection"
+
+    # Criminal
+    FELONY = "felony"
+    MISDEMEANOR = "misdemeanor"
+    WHITE_COLLAR = "white_collar"
+    DUI = "dui"
+    DRUG = "drug"
+    DOMESTIC_VIOLENCE = "domestic_violence"
+
+    # Overlap (civil-criminal bridge)
+    PUNITIVE_DAMAGES = "punitive_damages"    # Civil remedy, criminal-level proof
+    RICO = "rico"                            # Civil + criminal statutes
+    FRAUD = "fraud"                          # Civil fraud + criminal fraud
+    CONVERSION = "conversion"                # Civil tort with criminal theft overlap
+    RESTITUTION = "restitution"              # Criminal sentence + civil remedy
+    CONTEMPT = "contempt"                    # Civil + criminal contempt
+    FORFEITURE = "forfeiture"                # Civil + criminal asset forfeiture
+    QUI_TAM = "qui_tam"                      # False Claims Act — civil/criminal
+    TREBLE_DAMAGES = "treble_damages"        # Antitrust, LUTPA, consumer protection
+
+    # Administrative
+    LICENSING = "licensing"
+    REGULATORY = "regulatory"
+    IMMIGRATION = "immigration"
+    TAX = "tax"
+    WORKERS_COMP = "workers_comp"
+
+
+# ---------------------------------------------------------------------------
+# Jurisdiction-specific overlap rules
+# ---------------------------------------------------------------------------
+
+# These are the "bridge laws" — where civil procedure requires
+# criminal-level proof or vice versa. Each jurisdiction has unique gates.
+
+OVERLAP_RULES: dict[str, list[dict[str, str]]] = {
+    "FL": [
+        {
+            "area": PracticeSubArea.PUNITIVE_DAMAGES.value,
+            "rule": "Fla. Stat. § 768.72 — Punitive damages require leave of court. "
+                    "Plaintiff must proffer reasonable evidence showing basis for recovery. "
+                    "Court acts as gatekeeper before jury sees punitive claim. "
+                    "Standard: clear and convincing evidence of intentional misconduct or gross negligence.",
+            "gate_type": "judicial_leave",
+            "proof_standard": "clear_and_convincing",
+        },
+    ],
+    "CA": [
+        {
+            "area": PracticeSubArea.PUNITIVE_DAMAGES.value,
+            "rule": "Cal. Civ. Code § 3294 — Punitive damages require clear and convincing evidence "
+                    "of oppression, fraud, or malice. No pre-filing gate (unlike FL), but defendant can "
+                    "move to strike under CCP § 435.",
+            "gate_type": "motion_to_strike",
+            "proof_standard": "clear_and_convincing",
+        },
+    ],
+    "TX": [
+        {
+            "area": PracticeSubArea.PUNITIVE_DAMAGES.value,
+            "rule": "Tex. Civ. Prac. & Rem. Code § 41.003 — Exemplary damages require clear and convincing "
+                    "evidence of fraud, malice, or gross negligence. Capped at greater of 2x economic + "
+                    "non-economic up to $750K, or $200K.",
+            "gate_type": "cap",
+            "proof_standard": "clear_and_convincing",
+        },
+    ],
+    "LA": [
+        {
+            "area": PracticeSubArea.PUNITIVE_DAMAGES.value,
+            "rule": "La. C.C. art. 2315.4 — Punitive (exemplary) damages generally NOT available in Louisiana "
+                    "EXCEPT by specific statute (e.g., child pornography, drunk driving, domestic violence). "
+                    "Louisiana is a civil law jurisdiction — punitive damages are the exception, not the rule.",
+            "gate_type": "statutory_exception_only",
+            "proof_standard": "statutory",
+        },
+    ],
+    "NY": [
+        {
+            "area": PracticeSubArea.PUNITIVE_DAMAGES.value,
+            "rule": "No statutory cap. Punitive damages available when defendant's conduct is 'aimed at the public generally' "
+                    "or involves 'high moral culpability.' Standard: gross, wanton, or willful fraud or other "
+                    "morally culpable conduct. Rocanova v. Equitable Life Assur. Soc., 83 N.Y.2d 603 (1994).",
+            "gate_type": "none",
+            "proof_standard": "preponderance_with_moral_culpability",
+        },
+    ],
+    "FED": [
+        {
+            "area": PracticeSubArea.RICO.value,
+            "rule": "18 U.S.C. §§ 1961-1968 — RICO provides both criminal penalties (imprisonment, fines, forfeiture) "
+                    "and civil remedies (treble damages + attorney fees under § 1964(c)). "
+                    "Civil RICO requires pattern of racketeering activity (minimum 2 predicate acts).",
+            "gate_type": "predicate_acts",
+            "proof_standard": "preponderance_civil_brd_criminal",
+        },
+        {
+            "area": PracticeSubArea.QUI_TAM.value,
+            "rule": "31 U.S.C. §§ 3729-3733 — False Claims Act. Civil action brought by relator on behalf of US. "
+                    "Treble damages + $11K-$23K per false claim. DOJ can intervene or decline. "
+                    "Criminal false claims under 18 U.S.C. § 287 carry imprisonment.",
+            "gate_type": "doj_intervention",
+            "proof_standard": "preponderance_civil_brd_criminal",
+        },
+    ],
+}
+
+
 class JurisdictionConfig(BaseModel):
     """Configuration for a jurisdiction container."""
 
@@ -89,6 +238,12 @@ class JurisdictionConfig(BaseModel):
     cohere_model: str = Field(
         default="",
         description="Override cohere model (env: MODEL_JURISDICTION_{CODE}_COHERE)",
+    )
+
+    # Practice areas supported
+    practice_areas: list[str] = Field(
+        default_factory=lambda: [PracticeArea.CIVIL.value, PracticeArea.CRIMINAL.value, PracticeArea.OVERLAP.value],
+        description="Practice areas this container covers",
     )
 
     # Training state
@@ -212,24 +367,56 @@ class JurisdictionContainer:
     def memory(self) -> ContainerMemory:
         return self._memory
 
-    async def query(self, question: str) -> DualBrainResult:
+    async def query(
+        self,
+        question: str,
+        practice_area: Optional[str] = None,
+        sub_area: Optional[str] = None,
+    ) -> DualBrainResult:
         """Query this jurisdiction's dual-brain system.
 
         All 3 models (Opus + Llama Scout + Cohere) answer independently.
         If they disagree on law/statutes/case law, consensus=False and
         the output requires human review.
+
+        The practice area and sub-area are injected into the system prompt
+        so the dual-brain focuses on the correct body of law. Overlap
+        rules (e.g., Florida punitive damages gate) are automatically
+        included when relevant.
         """
+        # Build jurisdiction-aware context
+        jurisdiction_label = f"{self._config.name} ({self._config.code})"
+        context_parts = [jurisdiction_label]
+
+        if practice_area:
+            context_parts.append(f"Practice area: {practice_area}")
+        if sub_area:
+            context_parts.append(f"Sub-area: {sub_area}")
+
+        # Inject overlap rules if this is an overlap query
+        overlap_rules = OVERLAP_RULES.get(self._config.code, [])
+        if sub_area and overlap_rules:
+            matching = [r for r in overlap_rules if r["area"] == sub_area]
+            if matching:
+                context_parts.append("OVERLAP RULES (civil-criminal bridge):")
+                for rule in matching:
+                    context_parts.append(f"  {rule['rule']}")
+                    context_parts.append(f"  Gate: {rule['gate_type']}, Proof: {rule['proof_standard']}")
+
+        jurisdiction_context = "\n".join(context_parts)
+
         result = await run_dual_brain_check(
             question=question,
-            jurisdiction=f"{self._config.name} ({self._config.code})",
+            jurisdiction=jurisdiction_context,
             router=self._router,
             provider=self._provider,
         )
 
-        # Log the query for training pipeline
         logger.info(
-            "jurisdiction_query | code=%s consensus=%s confidence=%.2f",
+            "jurisdiction_query | code=%s area=%s sub=%s consensus=%s confidence=%.2f",
             self._config.code,
+            practice_area or "general",
+            sub_area or "none",
             result.consensus,
             result.confidence,
         )
