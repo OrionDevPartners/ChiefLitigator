@@ -23,7 +23,6 @@ from sqlalchemy.types import JSON, TypeDecorator
 
 from src.database.engine import Base
 
-
 # ---------------------------------------------------------------------------
 # Cross-dialect UUID type
 # ---------------------------------------------------------------------------

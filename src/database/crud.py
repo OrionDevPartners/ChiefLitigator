@@ -15,9 +15,9 @@ from datetime import date
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from src.database.models import Case, Deadline, Message, User
-
 
 # ---------------------------------------------------------------------------
 # User CRUD
@@ -165,6 +165,31 @@ async def get_case_by_id(
         The Case if found, otherwise None.
     """
     stmt = select(Case).where(Case.id == case_id)
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def get_case_with_messages(
+    db: AsyncSession,
+    *,
+    case_id: uuid.UUID,
+    user_id: uuid.UUID,
+) -> Case | None:
+    """Return a single case with eagerly loaded messages, scoped to user.
+
+    Args:
+        db: Active database session.
+        case_id: The case UUID.
+        user_id: The owning user's UUID (for access control).
+
+    Returns:
+        The Case with messages if found and owned by user, otherwise None.
+    """
+    stmt = (
+        select(Case)
+        .options(selectinload(Case.messages))
+        .where(Case.id == case_id, Case.user_id == user_id)
+    )
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 

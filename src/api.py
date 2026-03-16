@@ -31,12 +31,7 @@ from src.api_models import (
     VerifyCitationResponse,
 )
 from src.auth.middleware import JWTAuthMiddleware
-from src.legal.deadline_calc import (
-    DeadlineCalculator,
-    DeadlineType,
-    Jurisdiction,
-    ServiceMethod,
-)
+from src.cases import router as cases_router
 from src.errors import (
     AgentError,
     AuthenticationError,
@@ -44,6 +39,12 @@ from src.errors import (
     CyphergyError,
     LLMProviderError,
     RateLimitExceeded,
+)
+from src.legal.deadline_calc import (
+    DeadlineCalculator,
+    DeadlineType,
+    Jurisdiction,
+    ServiceMethod,
 )
 from src.security.middleware import SecurityMiddleware, configure_cors
 from src.security.rate_limiter import RateLimiter, RateLimitResult  # noqa: I001
@@ -182,6 +183,9 @@ app = FastAPI(
     redoc_url="/redoc" if os.getenv("APP_ENV", "development") != "production" else None,
     lifespan=lifespan,
 )
+
+# --- Case persistence router ---
+app.include_router(cases_router)
 
 # --- Middleware stack (order matters: last added = first executed) ---
 # 1. Security headers + request tracing (outermost)
