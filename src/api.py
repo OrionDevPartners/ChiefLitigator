@@ -192,6 +192,10 @@ if os.getenv("JWT_SECRET_KEY"):
 # 3. CORS (must be before SecurityMiddleware in execution order)
 configure_cors(app)
 
+# 4. Auth router (signup + login endpoints — public, no JWT required)
+from src.auth import auth_router  # noqa: E402
+app.include_router(auth_router)
+
 
 # ---------------------------------------------------------------------------
 # Rate limiting middleware (applied as a dependency-free middleware)
