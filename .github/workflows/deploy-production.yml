@@ -88,7 +88,7 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: https://api.cyphergy.ai
         run: |
-          npm ci
+          npm install
           npm run build
           # CPAA: purge source maps — users cannot see source code
           find .next/ out/ -name "*.map" -delete 2>/dev/null || true
@@ -118,7 +118,7 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: https://api.cyphergy.ai
         run: |
-          npm ci
+          npm install
           npm run build
           find .next/ out/ -name "*.map" -delete 2>/dev/null || true
 
