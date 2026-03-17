@@ -102,10 +102,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     logger.info("cyphergy_starting | validating environment")
 
-    # Required env vars — service cannot operate without these
-    required_vars = [
-        "ANTHROPIC_API_KEY",
-    ]
+    # Required env vars — depends on provider (CPAA)
+    llm_provider = os.getenv("LLM_PROVIDER", "anthropic")
+    required_vars: list[str] = []
+    if llm_provider == "anthropic":
+        required_vars.append("ANTHROPIC_API_KEY")
+    # Bedrock uses task role — no API key needed
 
     # Warn-only vars — service can start but features will be degraded
     recommended_vars = [
@@ -303,8 +305,11 @@ async def health_ready() -> ReadinessResponse:
     for the agent system to function). Used by load balancers for
     readiness probes — traffic is not routed until this returns ready=true.
     """
-    api_key_set = bool(os.getenv("ANTHROPIC_API_KEY"))
     llm_provider = os.getenv("LLM_PROVIDER", "anthropic")
+    # Bedrock uses task role — no API key check needed
+    api_key_set = (
+        bool(os.getenv("ANTHROPIC_API_KEY")) if llm_provider == "anthropic" else True
+    )
 
     if api_key_set:
         return ReadinessResponse(

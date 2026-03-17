@@ -1,7 +1,20 @@
 # CIPHERGY — CLAUDE CODE PROJECT INSTRUCTIONS
 # Owner: Bo Pennington | bo@symio.ai
-# Last Updated: 2026-03-15
+# Last Updated: 2026-03-16
 # Loaded automatically by Claude Code for this project
+
+## CRITICAL RULE: FILE LOCATION
+NEVER create files or folders outside the CIPHERGY/ repo directory.
+`pwd` must ALWAYS show the CIPHERGY repo root before any file operation.
+If `pwd` shows `Cyphergy-Legal/` instead of `Cyphergy-Legal/CIPHERGY/`,
+`cd` into CIPHERGY/ first. No exceptions.
+
+**Repo root:** `/Users/bopennington/LOCAL ONLY /DEV-OPS/Cyphergy-Legal/CIPHERGY/`
+**Never write to:** `/Users/bopennington/LOCAL ONLY /DEV-OPS/Cyphergy-Legal/` (parent)
+
+## CRITICAL RULE: NO DELETIONS — ARCHIVE ONLY
+NEVER delete files. Always archive to `ARCHIVE_YYYY-MM-DD/` folder.
+This is enforced by hook. No exceptions.
 
 ---
 
