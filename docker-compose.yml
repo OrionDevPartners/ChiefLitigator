@@ -81,11 +81,29 @@ services:
       - cyphergy-net
     restart: unless-stopped
 
+  # ── n8n Workflow Automation (dev only — prod uses Step Functions) ────────
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: cyphergy-n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=admin
+    volumes:
+      - cyphergy-n8n-data:/home/node/.n8n
+    networks:
+      - cyphergy-net
+    restart: unless-stopped
+
 # ── Volumes ───────────────────────────────────────────────────────────────
 volumes:
   cyphergy-pgdata:
     driver: local
   cyphergy-redis-data:
+    driver: local
+  cyphergy-n8n-data:
     driver: local
 
 # ── Network ───────────────────────────────────────────────────────────────
