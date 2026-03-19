@@ -30,7 +30,7 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
       - name: Check for protected file deletions
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const files = await github.rest.pulls.listFiles({
@@ -83,7 +83,7 @@ jobs:
       github.event.pull_request.base.ref == 'dev'
     steps:
       - name: Post review reminder
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const pr = context.payload.pull_request;
@@ -138,7 +138,7 @@ jobs:
       (github.event_name == 'issue_comment' && github.event.issue.pull_request)
     steps:
       - name: Require WDC approval for staging
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const WDC_THRESHOLD = 7.5;
@@ -231,7 +231,7 @@ jobs:
       (github.event_name == 'issue_comment' && github.event.issue.pull_request)
     steps:
       - name: Require WDC approval for main
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const WDC_THRESHOLD = 7.5;
@@ -299,7 +299,7 @@ jobs:
 
       - name: Verify source is staging
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const head = context.payload.pull_request.head.ref;
