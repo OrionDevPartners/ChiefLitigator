@@ -1,0 +1,142 @@
+{
+  "_comment": "Cloudflare WAF rules for Cyphergy API. Deploy via Cloudflare API or dashboard. All rules are defense-in-depth layers protecting legal data endpoints.",
+
+  "zone_settings": {
+    "_comment": "Zone-level security settings applied globally.",
+    "ssl": "strict",
+    "min_tls_version": "1.2",
+    "automatic_https_rewrites": true,
+    "always_use_https": true,
+    "security_level": "high",
+    "browser_integrity_check": true,
+    "hotlink_protection": true
+  },
+
+  "firewall_rules": [
+    {
+      "id": "cyphergy-waf-001",
+      "description": "Block SQL injection attempts in query parameters and request body. Legal APIs accept structured JSON only -- SQL syntax in input is always malicious.",
+      "action": "block",
+      "priority": 1,
+      "expression": "(http.request.uri.query contains \"UNION SELECT\") or (http.request.uri.query contains \"OR 1=1\") or (http.request.uri.query contains \"DROP TABLE\") or (http.request.uri.query contains \"--\") or (http.request.uri.query contains \";\") or (http.request.uri.query contains \"xp_cmdshell\") or (lower(http.request.uri.query) contains \"union%20select\") or (lower(http.request.uri.query) contains \"or%201%3D1\")",
+      "enabled": true
+    },
+    {
+      "id": "cyphergy-waf-002",
+      "description": "Block XSS attempts. Legal document content should never contain script tags or event handlers in API requests.",
+      "action": "block",
+      "priority": 2,
+      "expression": "(http.request.uri.query contains \"<script\") or (http.request.uri.query contains \"javascript:\") or (http.request.uri.query contains \"onerror=\") or (http.request.uri.query contains \"onload=\") or (http.request.uri.query contains \"eval(\") or (lower(http.request.uri.query) contains \"%3Cscript\")",
+      "enabled": true
+    },
+    {
+      "id": "cyphergy-waf-003",
+      "description": "Block path traversal attempts. Prevents access to files outside the application root (e.g., /etc/passwd, ../ sequences).",
+      "action": "block",
+      "priority": 3,
+      "expression": "(http.request.uri.path contains \"..\") or (http.request.uri.path contains \"/etc/\") or (http.request.uri.path contains \"/proc/\") or (http.request.uri.path contains \"/.env\") or (http.request.uri.path contains \"/.git\")",
+      "enabled": true
+    },
+    {
+      "id": "cyphergy-waf-004",
+      "description": "Block common vulnerability scanners and exploit tools by User-Agent. These tools never make legitimate requests to a legal API.",
+      "action": "block",
+      "priority": 4,
+      "expression": "(lower(http.request.headers[\"user-agent\"]) contains \"sqlmap\") or (lower(http.request.headers[\"user-agent\"]) contains \"nikto\") or (lower(http.request.headers[\"user-agent\"]) contains \"nessus\") or (lower(http.request.headers[\"user-agent\"]) contains \"masscan\") or (lower(http.request.headers[\"user-agent\"]) contains \"zgrab\") or (lower(http.request.headers[\"user-agent\"]) contains \"dirbuster\")",
+      "enabled": true
+    },
+    {
+      "id": "cyphergy-waf-005",
+      "description": "Rate limit API endpoints to 100 requests per minute per IP. Prevents brute force, credential stuffing, and API abuse. Health check endpoints are excluded.",
+      "action": "challenge",
+      "priority": 10,
+      "expression": "(http.request.uri.path matches \"^/api/.*\") and not (http.request.uri.path eq \"/api/health\") and not (http.request.uri.path eq \"/api/health/ready\")",
+      "ratelimit": {
+        "requests_per_period": 100,
+        "period": 60,
+        "mitigation_timeout": 600,
+        "counting_expression": "http.request.uri.path matches \"^/api/.*\"",
+        "characteristics": ["ip.src"]
+      },
+      "enabled": true
+    },
+    {
+      "id": "cyphergy-waf-006",
+      "description": "Strict rate limit on authentication endpoints. 10 requests per minute per IP prevents credential stuffing and brute force attacks.",
+      "action": "block",
+      "priority": 5,
+      "expression": "(http.request.uri.path matches \"^/api/auth/.*\") or (http.request.uri.path eq \"/api/login\") or (http.request.uri.path eq \"/api/token\")",
+      "ratelimit": {
+        "requests_per_period": 10,
+        "period": 60,
+        "mitigation_timeout": 3600,
+        "counting_expression": "(http.request.uri.path matches \"^/api/auth/.*\")",
+        "characteristics": ["ip.src"]
+      },
+      "enabled": true
+    },
+    {
+      "id": "cyphergy-waf-007",
+      "description": "Challenge suspicious traffic patterns. Requests without standard headers or with anomalous characteristics get a JS challenge before proceeding.",
+      "action": "js_challenge",
+      "priority": 20,
+      "expression": "(not http.request.headers[\"accept\"] contains \"application/json\" and http.request.uri.path matches \"^/api/.*\" and not http.request.uri.path eq \"/api/health\") or (http.request.headers[\"user-agent\"] eq \"\") or (not any(http.request.headers[\"accept-language\"][*] ne \"\"))",
+      "enabled": true
+    },
+    {
+      "id": "cyphergy-waf-008",
+      "description": "Allow-list health check endpoints. These must be accessible for load balancer health probes and uptime monitoring without WAF interference.",
+      "action": "allow",
+      "priority": 0,
+      "expression": "(http.request.uri.path eq \"/api/health\") or (http.request.uri.path eq \"/api/health/ready\") or (http.request.uri.path eq \"/api/health/live\")",
+      "enabled": true
+    },
+    {
+      "id": "cyphergy-waf-009",
+      "description": "Geographic restriction: US-only access. Legal data is subject to US jurisdiction. Enable this rule for production deployments with US-only client base. Disable if serving international clients.",
+      "action": "block",
+      "priority": 50,
+      "expression": "(not ip.geoip.country in {\"US\" \"PR\" \"GU\" \"VI\" \"AS\" \"MP\"}) and (http.request.uri.path matches \"^/api/.*\") and not (http.request.uri.path eq \"/api/health\")",
+      "enabled": false,
+      "_note": "Disabled by default. Enable for US-only deployments. Includes US territories (PR, GU, VI, AS, MP)."
+    },
+    {
+      "id": "cyphergy-waf-010",
+      "description": "Block requests with excessively large payloads. Legal documents have a practical size limit. Payloads over 50MB are likely attacks or misconfigured clients.",
+      "action": "block",
+      "priority": 6,
+      "expression": "(http.request.body.size gt 52428800)",
+      "enabled": true
+    }
+  ],
+
+  "managed_rulesets": {
+    "_comment": "Cloudflare managed rulesets provide continuously updated protection against known vulnerabilities.",
+    "owasp_core_ruleset": {
+      "enabled": true,
+      "sensitivity": "high",
+      "_comment": "OWASP Core Rule Set catches broad classes of web attacks. High sensitivity appropriate for legal data."
+    },
+    "cloudflare_managed_ruleset": {
+      "enabled": true,
+      "_comment": "Cloudflare's own threat intelligence rules, updated automatically."
+    },
+    "cloudflare_exposed_credentials_check": {
+      "enabled": true,
+      "_comment": "Checks login requests against known credential breaches."
+    }
+  },
+
+  "page_rules": [
+    {
+      "description": "Force HTTPS and set security headers for all API traffic.",
+      "targets": [{"target": "url", "constraint": {"operator": "matches", "value": "*cyphergy.com/api/*"}}],
+      "actions": [
+        {"id": "always_use_https"},
+        {"id": "security_level", "value": "high"},
+        {"id": "browser_check", "value": "on"},
+        {"id": "cache_level", "value": "bypass"}
+      ]
+    }
+  ]
+}

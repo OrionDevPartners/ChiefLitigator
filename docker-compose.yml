@@ -1,0 +1,113 @@
+# =============================================================================
+# Cyphergy — Local Development Stack
+# FastAPI + PostgreSQL 16 (pgvector) + Redis 7
+# ISOLATION: All containers, volumes, networks prefixed with cyphergy-
+# Per MULTI_PROJECT_DOCKER_ISOLATION.md — Cyphergy ports: 8000, 5432, 6379, 5173
+# =============================================================================
+
+name: cyphergy
+
+services:
+
+  # ── FastAPI Application ───────────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cyphergy-api
+    ports:
+      - "${API_PORT:-8000}:8000"
+    env_file:
+      - .env
+    environment:
+      - APP_ENV=development
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-cyphergy}:${POSTGRES_PASSWORD:-cyphergy_dev}@postgres:5432/${POSTGRES_DB:-cyphergy}
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./src:/app/src:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    networks:
+      - cyphergy-net
+    restart: unless-stopped
+
+  # ── PostgreSQL 16 with pgvector ───────────────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: cyphergy-postgres
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cyphergy}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cyphergy_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-cyphergy}
+    volumes:
+      - cyphergy-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cyphergy}"]
+      interval: 10s
+      timeout: 5s
+      start_period: 15s
+      retries: 5
+    networks:
+      - cyphergy-net
+    restart: unless-stopped
+
+  # ── Redis 7 ───────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: cyphergy-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - cyphergy-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+    networks:
+      - cyphergy-net
+    restart: unless-stopped
+
+  # ── n8n Workflow Automation (dev only — prod uses Step Functions) ────────
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: cyphergy-n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=admin
+    volumes:
+      - cyphergy-n8n-data:/home/node/.n8n
+    networks:
+      - cyphergy-net
+    restart: unless-stopped
+
+# ── Volumes ───────────────────────────────────────────────────────────────
+volumes:
+  cyphergy-pgdata:
+    driver: local
+  cyphergy-redis-data:
+    driver: local
+  cyphergy-n8n-data:
+    driver: local
+
+# ── Network ───────────────────────────────────────────────────────────────
+networks:
+  cyphergy-net:
+    name: cyphergy-network
+    driver: bridge

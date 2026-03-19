@@ -1,0 +1,19 @@
+{
+  "project_name": "CIPHERGY_PIPELINE",
+  "priority_order": [
+    "detect",
+    "classify",
+    "update_files",
+    "re_score",
+    "check_thresholds",
+    "sync_check",
+    "notify"
+  ],
+  "thresholds": {
+    "min_score": 0.5,
+    "max_stale_hours": 24
+  },
+  "notify": {
+    "enabled": false
+  }
+}

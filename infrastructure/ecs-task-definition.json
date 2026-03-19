@@ -1,0 +1,110 @@
+{
+  "family": "cyphergy-api",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "arn:aws:iam::role/cyphergy-ecs-execution-role",
+  "taskRoleArn": "arn:aws:iam::role/cyphergy-ecs-task-role",
+  "containerDefinitions": [
+    {
+      "name": "cyphergy-api",
+      "image": "<AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/cyphergy-api:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8000,
+          "protocol": "tcp"
+        }
+      ],
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 15
+      },
+      "secrets": [
+        {
+          "name": "ANTHROPIC_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:<AWS_REGION>:<AWS_ACCOUNT_ID>:secret:cyphergy/anthropic-api-key"
+        },
+        {
+          "name": "DATABASE_URL",
+          "valueFrom": "arn:aws:secretsmanager:<AWS_REGION>:<AWS_ACCOUNT_ID>:secret:cyphergy/database-url"
+        },
+        {
+          "name": "REDIS_URL",
+          "valueFrom": "arn:aws:secretsmanager:<AWS_REGION>:<AWS_ACCOUNT_ID>:secret:cyphergy/redis-url"
+        },
+        {
+          "name": "COURTLISTENER_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:<AWS_REGION>:<AWS_ACCOUNT_ID>:secret:cyphergy/courtlistener-api-key"
+        }
+      ],
+      "environment": [
+        {
+          "name": "APP_ENV",
+          "value": "production"
+        },
+        {
+          "name": "LOG_LEVEL",
+          "value": "INFO"
+        },
+        {
+          "name": "LLM_PROVIDER",
+          "value": "anthropic"
+        },
+        {
+          "name": "LLM_MODEL",
+          "value": "claude-opus-4-6"
+        },
+        {
+          "name": "LLM_TEMPERATURE",
+          "value": "0.0"
+        },
+        {
+          "name": "EXTERNAL_RETRIEVAL_REQUIRED",
+          "value": "true"
+        },
+        {
+          "name": "WDC_CERTIFICATION_THRESHOLD",
+          "value": "8.5"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/cyphergy-api",
+          "awslogs-region": "<AWS_REGION>",
+          "awslogs-stream-prefix": "cyphergy"
+        }
+      },
+      "linuxParameters": {
+        "initProcessEnabled": true
+      },
+      "readonlyRootFilesystem": false,
+      "ulimits": [
+        {
+          "name": "nofile",
+          "softLimit": 65536,
+          "hardLimit": 65536
+        }
+      ]
+    }
+  ],
+  "tags": [
+    {
+      "key": "Project",
+      "value": "Cyphergy"
+    },
+    {
+      "key": "Environment",
+      "value": "production"
+    },
+    {
+      "key": "ManagedBy",
+      "value": "ecs-task-definition"
+    }
+  ]
+}

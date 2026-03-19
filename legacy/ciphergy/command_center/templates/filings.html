@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- SUMMARY -->
+<div class="summary-strip">
+    <div class="summary-card">
+        <div class="summary-value">{{ filings|length }}</div>
+        <div class="summary-label">Filing Phases</div>
+    </div>
+    <div class="summary-card">
+        {% set ns = namespace(total=0) %}
+        {% for pkg in filings %}{% set ns.total = ns.total + pkg.files|length %}{% endfor %}
+        <div class="summary-value">{{ ns.total }}</div>
+        <div class="summary-label">Total Documents</div>
+    </div>
+</div>
+
+<section class="section">
+    <h2 class="section-heading">Filing Packages by Phase</h2>
+
+    {% if filings %}
+        {% for pkg in filings %}
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <div class="card-title">{{ pkg.phase }}</div>
+            <div class="card-body">
+                {% if pkg.files %}
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Document Name</th>
+                            <th>Type</th>
+                            <th>Size (KB)</th>
+                            <th>Path</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for f in pkg.files %}
+                        <tr>
+                            <td>{{ f.name }}</td>
+                            <td><span class="badge-{% if f.ext in ['pdf', 'docx'] %}green{% elif f.ext == 'md' %}yellow{% else %}muted{% endif %}">{{ f.ext|upper }}</span></td>
+                            <td class="mono">{{ f.size_kb }}</td>
+                            <td class="mono" style="font-size: 0.8rem; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ f.path }}">{{ f.path|replace(data_dir|default(''), '') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="empty-state">No documents in this phase yet.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+    <div class="card">
+        <p class="empty-state">No filing packages found. Add documents to 01_ACTIVE_FILINGS/ subdirectories to populate.</p>
+    </div>
+    {% endif %}
+</section>
+
+<!-- UPLOAD SEQUENCE -->
+<section class="section">
+    <h2 class="section-heading">Filing Upload Sequence</h2>
+    <div class="card">
+        <ol class="upload-sequence">
+            <li>Finalize document content and apply all QA corrections</li>
+            <li>Generate PDF with proper formatting (margins, page numbers, caption)</li>
+            <li>Verify all exhibits are attached and cross-referenced</li>
+            <li>Complete Certificate of Service</li>
+            <li>Sign all required signature blocks</li>
+            <li>Upload to court e-filing system (if available)</li>
+            <li>Print and prepare certified mail copies</li>
+            <li>Send certified mail to all parties -- retain tracking numbers</li>
+            <li>File proof of service with the court</li>
+        </ol>
+    </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- COMPOSE + PREVIEW TWO-COLUMN -->
+<div class="two-col">
+
+    <!-- COMPOSE FORM -->
+    <section class="section col-left">
+        <h2 class="section-heading">Compose Certified Mail</h2>
+        <div class="card">
+            <form id="mail-compose-form" onsubmit="return false;">
+
+                <!-- Recipient -->
+                <fieldset style="border:1px solid var(--border, #e0e0e0);padding:1rem;border-radius:4px;margin-bottom:1rem;">
+                    <legend style="font-weight:bold;padding:0 0.5rem;">Recipient</legend>
+                    <div class="form-group">
+                        <label class="form-label">Select from Address Book</label>
+                        <select id="recipient-select" class="form-select">
+                            <option value="">-- Select recipient or enter manually --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Name</label>
+                        <input type="text" id="recipient-name" name="name" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Address Line 1</label>
+                        <input type="text" id="recipient-addr1" name="address_line1" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Address Line 2</label>
+                        <input type="text" id="recipient-addr2" name="address_line2" class="form-input">
+                    </div>
+                    <div style="display:flex;gap:0.5rem;">
+                        <div class="form-group" style="flex:2;">
+                            <label class="form-label">City</label>
+                            <input type="text" id="recipient-city" name="city" class="form-input" required>
+                        </div>
+                        <div class="form-group" style="flex:0.5;">
+                            <label class="form-label">State</label>
+                            <input type="text" id="recipient-state" name="state" class="form-input" maxlength="2" required>
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label class="form-label">ZIP</label>
+                            <input type="text" id="recipient-zip" name="zip" class="form-input" maxlength="10" required>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <!-- Document -->
+                <fieldset style="border:1px solid var(--border, #e0e0e0);padding:1rem;border-radius:4px;margin-bottom:1rem;">
+                    <legend style="font-weight:bold;padding:0 0.5rem;">Document</legend>
+                    <div class="form-group">
+                        <label class="form-label">Select Filing</label>
+                        <select id="document-select" class="form-select">
+                            <option value="">-- Select a document --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Or Upload PDF</label>
+                        <input type="file" id="document-upload" class="form-input" accept=".pdf">
+                    </div>
+                    <div id="document-info" class="info-box" style="display:none;">
+                        <span id="document-name"></span>
+                    </div>
+                </fieldset>
+
+                <!-- Options -->
+                <fieldset style="border:1px solid var(--border, #e0e0e0);padding:1rem;border-radius:4px;margin-bottom:1rem;">
+                    <legend style="font-weight:bold;padding:0 0.5rem;">Mail Options</legend>
+                    <div class="form-group">
+                        <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                            <input type="checkbox" id="opt-certified" name="certified" checked>
+                            USPS Certified Mail
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                            <input type="checkbox" id="opt-return-receipt" name="return_receipt" checked>
+                            Return Receipt Requested
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                            <input type="checkbox" id="opt-color" name="color">
+                            Color Printing
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                            <input type="checkbox" id="opt-double-sided" name="double_sided">
+                            Double-Sided
+                        </label>
+                    </div>
+                </fieldset>
+
+                <!-- Cost Estimate -->
+                <div class="card" id="cost-estimate" style="background:var(--bg-alt, #f9f9f9);">
+                    <table class="data-table" style="margin:0;">
+                        <tbody>
+                            <tr>
+                                <td>Base letter</td>
+                                <td class="mono" style="text-align:right;" id="cost-base">$1.50</td>
+                            </tr>
+                            <tr id="cost-certified-row">
+                                <td>Certified mail</td>
+                                <td class="mono" style="text-align:right;" id="cost-certified">$4.85</td>
+                            </tr>
+                            <tr id="cost-return-row">
+                                <td>Return receipt</td>
+                                <td class="mono" style="text-align:right;" id="cost-return">$3.35</td>
+                            </tr>
+                            <tr style="font-weight:bold;border-top:2px solid var(--border, #e0e0e0);">
+                                <td>Estimated Total</td>
+                                <td class="mono" style="text-align:right;" id="cost-total">$9.70</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="form-actions" style="margin-top:1rem;">
+                    <button type="button" class="btn btn-primary" id="send-mail-btn">Send Certified Mail</button>
+                    <button type="button" class="btn btn-outline" id="save-draft-btn">Save Draft</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- PREVIEW PANEL -->
+    <section class="section col-right">
+        <h2 class="section-heading">Preview</h2>
+        <div class="card">
+            <div id="mail-preview" style="font-family:monospace;">
+                <!-- Envelope preview -->
+                <div style="border:2px solid var(--border, #ccc);border-radius:4px;padding:1.5rem;margin-bottom:1rem;position:relative;min-height:200px;">
+                    <div style="margin-bottom:1.5rem;">
+                        <div style="font-size:0.7rem;text-transform:uppercase;opacity:0.6;margin-bottom:0.25rem;">FROM:</div>
+                        <div id="preview-from-text" style="font-size:0.85rem;">Configure return address in settings</div>
+                    </div>
+                    <div style="margin-left:40%;margin-top:1rem;">
+                        <div style="font-size:0.7rem;text-transform:uppercase;opacity:0.6;margin-bottom:0.25rem;">TO:</div>
+                        <div id="preview-to-text" style="font-size:0.85rem;white-space:pre-line;">Select or enter recipient</div>
+                    </div>
+                    <div style="position:absolute;top:0.75rem;right:0.75rem;display:flex;gap:0.25rem;">
+                        <span id="preview-certified-stamp" class="badge-critical" style="font-size:0.65rem;">CERTIFIED</span>
+                        <span id="preview-return-stamp" class="badge-warning" style="font-size:0.65rem;">RR</span>
+                    </div>
+                </div>
+
+                <!-- Document info -->
+                <div id="document-preview">
+                    <p class="empty-state">Document preview will appear here after selection.</p>
+                </div>
+            </div>
+
+            <!-- Send confirmation -->
+            <div id="send-confirmation" style="display:none;text-align:center;padding:2rem;">
+                <div style="font-size:2rem;color:var(--green, #27ae60);">&#10003;</div>
+                <h3>Mail Queued Successfully</h3>
+                <p>Tracking Number: <strong class="mono" id="confirm-tracking"></strong></p>
+                <p>Expected Delivery: <strong id="confirm-delivery"></strong></p>
+                <p>Cost: <strong class="mono" id="confirm-cost"></strong></p>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<!-- MAIL TRACKING HISTORY -->
+<section class="section">
+    <h2 class="section-heading">
+        Mail Tracking History
+        <button id="refresh-tracking-btn" class="btn btn-sm" style="float:right;">Refresh Status</button>
+    </h2>
+    <div class="card">
+        <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
+            <button class="btn btn-sm filter-btn filter-active" data-filter="all">All</button>
+            <button class="btn btn-sm filter-btn" data-filter="pending">Pending</button>
+            <button class="btn btn-sm filter-btn" data-filter="in_transit">In Transit</button>
+            <button class="btn btn-sm filter-btn" data-filter="delivered">Delivered</button>
+        </div>
+        <table class="data-table" id="tracking-table">
+            <thead>
+                <tr>
+                    <th>Tracking #</th>
+                    <th>Recipient</th>
+                    <th>Document</th>
+                    <th>Sent</th>
+                    <th>Expected Delivery</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="tracking-body">
+                <tr><td colspan="6" class="empty-state">No mail tracked yet</td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+{% block page_scripts %}
+<script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/mail_compose.min.js') }}"></script>
+{% endblock %}
+
+{% endblock %}

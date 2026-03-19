@@ -1,0 +1,229 @@
+# ============================================
+# CIPHERGY — GITIGNORE
+# CRITICAL: Case files and secrets NEVER enter version control
+# ============================================
+
+# === SECRETS & CREDENTIALS ===
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+credentials.json
+token.json
+client_secret*.json
+service-account*.json
+
+# === CASE FILES (NEVER COMMIT CLIENT DATA) ===
+case_structure/01-Pleadings/**/*.docx
+case_structure/01-Pleadings/**/*.pdf
+case_structure/02-Motions/**/*
+case_structure/03-Discovery/**/*
+case_structure/04-Depositions/**/*
+case_structure/05-Correspondence/**/*
+case_structure/06-Court-Orders/**/*
+case_structure/07-Evidence/**/*
+case_structure/08-Research-Memos/**/*.docx
+case_structure/08-Research-Memos/**/*.pdf
+case_structure/09-Trial-Preparation/**/*
+case_structure/10-Settlement/**/*
+case_structure/11-Administrative/**/*
+!case_structure/**/.gitkeep
+
+# === PYTHON ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# === NODE ===
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.next/
+
+# === IDE ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# === OS ===
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# === AWS ===
+.aws/credentials
+.aws/config
+
+# === DOCKER ===
+*.log
+
+# === TERRAFORM (if used later) ===
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Project-specific
+.DS_Store
+Ciphergy-extraction/
+ciphergy-os-prompt/
+CIPHERGY-REPO/
+*.docx
+*.zip
+*.pdf
+
+# === SENSITIVE DIRECTORIES (never commit) ===
+.keys/
+.ciphergy/
+New-Data/
+
+# === SESSION CONTINUATION FILES (ephemeral, large) ===
+2026-*.txt
+
+# === BINARY / PIPELINE DOCS ===
+DualAI_PIPELINE.docx
+.env.development
+.env.production

@@ -1,0 +1,72 @@
+# ================================================================
+# INVESTIGATION DOMAIN PROFILE — Intel / OSINT / Special Ops / PI
+# ================================================================
+
+domain:
+  name: "investigation"
+  display_name: "Intelligence & Investigation"
+  description: "Signal extraction for intelligence analysis, OSINT, investigations, threat assessment"
+
+vocabulary:
+  entity: "Subject / Person of Interest"
+  entity_plural: "Subjects"
+  hypothesis: "Theory of the Case / Intelligence Assessment"
+  hypothesis_plural: "Assessments"
+  evidence: "Intelligence / Evidence / SIGINT / HUMINT"
+  evidence_plural: "Intelligence Collection"
+  adversary: "Target / Threat Actor / Counter-Intel"
+  adversary_plural: "Threat Actors"
+  advocate: "Asset / Cooperative Source"
+  advocate_plural: "Assets"
+  source: "Informant / Witness / Collection Source"
+  source_plural: "Sources"
+  deliverable: "Intelligence Brief / Report / Assessment"
+  deliverable_plural: "Deliverables"
+  milestone: "Operational Deadline / Collection Window"
+  milestone_plural: "Milestones"
+  standard: "Legal Authority / ROE / Policy"
+  standard_plural: "Authorities"
+  impact: "Threat Level / Harm Assessment"
+  output_discipline: "Operational Security"
+  review_panel: "Red Team / Blue Team"
+  review_agent_1: "Lead Analyst"
+  review_agent_2: "Red Cell (Counter-Hypothesis)"
+  review_agent_3: "Collection Manager (Source Quality)"
+  intake_folder: "New-Data"
+  confidence_monitor: "Intelligence Confidence Monitor"
+
+scoring:
+  weights:
+    review_agent_1: 0.35
+    review_agent_2: 0.40  # Red Cell gets more weight in intel
+    review_agent_3: 0.25
+  scale: "percentage"
+  labels:
+    90_100: "Confirmed. Multiple independent sources corroborate."
+    75_89: "Highly likely. Strong evidence from reliable sources."
+    60_74: "Likely. Some evidence, needs corroboration."
+    45_59: "Possible. Single source or circumstantial."
+    below_45: "Low confidence. Unverified or speculative."
+
+quality_gates:
+  - name: "Classify"
+    description: "SIGINT, HUMINT, OSINT, physical evidence, or analysis?"
+  - name: "Source Evaluation"
+    description: "Source reliability? Access level? History of accuracy?"
+  - name: "Corroboration Check"
+    description: "Independent sources confirm? Or single-source?"
+  - name: "OPSEC Check"
+    description: "Does this output compromise sources or methods?"
+  - name: "Compartmentation"
+    description: "Need-to-know separation maintained?"
+  - name: "Legal Authority"
+    description: "Collection/action within legal authority?"
+  - name: "Threat Update"
+    description: "Does new intel change threat assessment?"
+
+features:
+  jurisdiction_aware: false
+  link_analysis: true
+  timeline_reconstruction: true
+  pattern_of_life: true
+  threat_matrix: true

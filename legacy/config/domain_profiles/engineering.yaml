@@ -1,0 +1,72 @@
+# ================================================================
+# ENGINEERING DOMAIN PROFILE — Construction / Systems / QA / RCA
+# ================================================================
+
+domain:
+  name: "engineering"
+  display_name: "Engineering & Construction"
+  description: "Signal extraction for defect analysis, code compliance, RCA, construction disputes"
+
+vocabulary:
+  entity: "Component / Vendor / System"
+  entity_plural: "Components"
+  hypothesis: "Failure Mode / Root Cause"
+  hypothesis_plural: "Failure Modes"
+  evidence: "Test Result / Inspection / Measurement"
+  evidence_plural: "Test Data"
+  adversary: "Opposing Expert / Regulatory Inspector / Insurance Adjuster"
+  adversary_plural: "Adversaries"
+  advocate: "Design Engineer / SME"
+  advocate_plural: "Subject Matter Experts"
+  source: "Inspector / Technician / Field Observer"
+  source_plural: "Sources"
+  deliverable: "RCA Report / Engineering Memo / Compliance Filing"
+  deliverable_plural: "Deliverables"
+  milestone: "Inspection Date / Permit Deadline / Warranty Expiration"
+  milestone_plural: "Milestones"
+  standard: "Building Code / Specification / Industry Standard"
+  standard_plural: "Codes and Standards"
+  impact: "Safety Impact / Cost Impact / Schedule Impact"
+  output_discipline: "Engineering Rigor"
+  review_panel: "Design Review Board"
+  review_agent_1: "Lead Engineer"
+  review_agent_2: "Independent Reviewer (Adversarial)"
+  review_agent_3: "Code Official (Compliance)"
+  intake_folder: "New-Data"
+  confidence_monitor: "Defect Confidence Monitor"
+
+scoring:
+  weights:
+    review_agent_1: 0.35
+    review_agent_2: 0.35
+    review_agent_3: 0.30  # Code compliance gets more weight
+  scale: "percentage"
+  labels:
+    90_100: "Root cause confirmed. Corrective action ready."
+    75_89: "Probable cause identified. Testing supports conclusion."
+    60_74: "Likely contributing factor. Additional testing recommended."
+    45_59: "Possible factor. Insufficient data for conclusion."
+    below_45: "Speculative. Cannot support engineering conclusion."
+
+quality_gates:
+  - name: "Classify"
+    description: "Design defect, material failure, installation error, or environmental?"
+  - name: "Data Check"
+    description: "Test data adequate? Measurements calibrated? Sample size sufficient?"
+  - name: "Code Verification"
+    description: "Applicable codes identified and verified current?"
+  - name: "Precision Check"
+    description: "Quantitative where possible? Units correct? Tolerances stated?"
+  - name: "Scope Check"
+    description: "Analysis bounded correctly? Adjacent systems considered?"
+  - name: "Safety Check"
+    description: "Life safety implications identified?"
+  - name: "Threshold Check"
+    description: "Code limits exceeded? Warranty triggered? Recall criteria met?"
+
+features:
+  jurisdiction_aware: true  # Building codes vary by jurisdiction
+  code_verification: true
+  defect_taxonomy: true
+  warranty_tracking: true
+  rca_methodology: true
