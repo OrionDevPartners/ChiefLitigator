@@ -1,6 +1,6 @@
 # ChiefLitigator: Strategic Build Plan to Dominate the Legal AI Market
 
-**Prepared for:** ChiefLitigator / OrionDevPartners
+**Prepared for:** ChiefLitigator.com / ChiefLitigator.ai
 **Date:** March 19, 2026
 
 ---
@@ -13,28 +13,23 @@ The goal is to replace the need for an attorney in 80% of legal situations—not
 
 ---
 
-## 2. Current State Assessment
+## 2. Core Architecture: AWS Bedrock & The Dual-Panel WDC
 
-An audit of the `OrionDevPartners/ChiefLitigator` repository reveals a highly advanced, production-ready foundation:
+ChiefLitigator is built on **AWS Bedrock Core**, utilizing the highest-context LLMs available to process massive case files, transcripts, and evidence dumps without losing fidelity.
 
-*   **What Exists:**
-    *   **5-Agent WDC Architecture:** Lead, Research, Drafting, Red Team, and Compliance Counsel agents with weighted scoring and absolute veto power.
-    *   **Citation Chain Verification:** A 5-step deterministic verification engine that eliminates hallucination risk.
-    *   **Jurisdiction Containers:** Data-resident AI units for all 57 jurisdictions (50 states, federal, DC, territories) with dual-brain consensus (Opus + Llama Scout).
-    *   **Deadline Sentinel:** Jurisdiction-aware deadline calculation (FRCP and state-specific).
-    *   **Infrastructure:** AWS ECS Fargate deployment, PostgreSQL with pgvector, Redis, and a Next.js frontend.
+### The Simulated Courtroom (WDC Engine v3.0)
+The Weighted Debate Consensus (WDC) engine is not a simple scoring mechanism; it is a simulated courtroom. When the dual-brain operator (Opus + Llama Scout + Cohere) produces initial legal work product, it is submitted to two distinct panels:
 
-*   **What is Missing (The Gaps to Close):**
-    *   **Context-to-Law Matching Engine:** The translation layer that maps a user's plain-English story to specific statutes and causes of action.
-    *   **Universal Court Portal Integration:** The API layer that connects the drafted documents to PACER, state ECF systems, and agency portals (e.g., USCIS).
-    *   **Consumer-Facing UX:** The "mystery-removing" frontend that guides the user step-by-step without exposing them to raw legal jargon.
-    *   **Universal Practice Area Expansion:** Extending the existing civil litigation framework to handle immigration, eviction, and administrative law.
+1.  **The Advocacy Panel (Lead Counsel + Research Counsel):** Argues *for* the strategy and drafts. They find the strongest interpretations, the most favorable precedent, and the best framing of the facts.
+2.  **The Stress-Test Panel (Red Team + Compliance Counsel):** Argues *against* the strategy. They act as simulated opposing counsel and a skeptical judge. They attack citations, challenge logic, find procedural traps, and identify weaknesses.
+
+**The 90% Confidence Gate:** The panels engage in iterative debate. The strategy and drafts go through this adversarial fire until they emerge hardened. Nothing leaves the system for filing unless it achieves a **90% confidence score**. If it falls short, the system tells the user exactly what evidence or facts are missing to cross the threshold.
 
 ---
 
 ## 3. Strategic Build Plan: The Four Pillars
 
-To achieve market dominance, we must execute on four concurrent pillars. Following the preferred non-linear, agile methodology, these pillars will be deployed as parallel "runners."
+To achieve market dominance, we must execute on four concurrent pillars. Following the preferred non-linear, agile methodology, these pillars will be deployed as parallel "runners" powered by AWS Bedrock agents.
 
 ### Pillar 1: The Context-to-Law Matching Engine
 
@@ -42,10 +37,8 @@ This is the core translation layer. It must take a messy, emotional user narrati
 
 *   **Action Item 1.1: Build the `Intake & Strategy Agent` (The Assessor).**
     *   *Function:* Ingests user narrative, extracts facts, identifies entities, and maps the facts to specific causes of action or affirmative defenses within the relevant Jurisdiction Container.
-    *   *Implementation:* Create `src/agents/intake_counsel.py`. This agent will sit in front of the Lead Counsel and act as the primary translator.
 *   **Action Item 1.2: Implement the `Statute Indexer`.**
     *   *Function:* A vector database mapping common layperson complaints (e.g., "landlord changed locks") to specific statutory codes (e.g., "Florida Statute 83.67 - Prohibited practices").
-    *   *Implementation:* Expand `src/knowledge/statute_index.py` to include semantic mapping for non-legal terminology.
 *   **Action Item 1.3: Develop the `Predictive Outcome Generator`.**
     *   *Function:* Analyzes the matched claims against historical case data in the Jurisdiction Container to provide a probability of success.
 
@@ -55,13 +48,10 @@ Drafting a document is only half the battle; filing it is the other half. ChiefL
 
 *   **Action Item 2.1: Federal Integration (PACER/NextGen CM/ECF).**
     *   *Function:* Connect to the PACER Case Locator API and NextGen CM/ECF for federal docket monitoring and e-filing.
-    *   *Implementation:* Create `src/integrations/pacer.py`. Implement authentication, docket polling, and PDF/A submission.
 *   **Action Item 2.2: State Integration (Tyler Technologies Odyssey / File & Serve).**
     *   *Function:* Connect to the dominant state-level e-filing managers (EFMs) like Tyler Technologies, which powers e-filing in states like Texas, Illinois, and California.
-    *   *Implementation:* Create `src/integrations/tyler_efm.py`. Implement the API message catalog for state-level submissions.
 *   **Action Item 2.3: Agency Integration (USCIS / EOIR).**
     *   *Function:* Connect to the EOIR Courts & Appeals System (ECAS) for immigration court filings and the USCIS API for administrative tracking.
-    *   *Implementation:* Create `src/integrations/eoir_ecas.py`.
 
 ### Pillar 3: The "Mystery-Removing" UX (Consumer Tier)
 
@@ -69,10 +59,8 @@ The user interface must shield the user from the complexity of the backend while
 
 *   **Action Item 3.1: The Plain-Language Dashboard.**
     *   *Function:* A centralized view showing the user exactly where they are in the process, what the system is doing, and what is required from them next.
-    *   *Implementation:* Expand `frontend/components/dashboard/` to include a "Case Journey" timeline that translates legal phases (e.g., "Discovery") into plain English (e.g., "Gathering Evidence").
 *   **Action Item 3.2: The Approval Routing Interface.**
     *   *Function:* Before any document is filed, the system presents it to the user with a plain-English explanation of what it says and what its strategic purpose is.
-    *   *Implementation:* Build a document review component in Next.js that highlights legal text and provides side-by-side layperson translations.
 *   **Action Item 3.3: The Evidence Coach UI.**
     *   *Function:* An interactive upload portal where users drop documents, and the system immediately scores them against the active claims (e.g., "This text message increases your breach of contract claim strength by 15%").
 
@@ -82,23 +70,20 @@ The system must scale beyond civil litigation to handle the most common legal is
 
 *   **Action Item 4.1: Immigration Module.**
     *   *Function:* Support for asylum applications, deportation defense, and visa adjustments.
-    *   *Implementation:* Create a specialized `JurisdictionContainer` for Federal Immigration Law, loaded with INA statutes and BIA precedent.
 *   **Action Item 4.2: Landlord-Tenant Module (Evictions).**
     *   *Function:* Support for eviction defense (tenant) and lawful eviction execution (landlord).
-    *   *Implementation:* Load state-specific property codes into the respective state Jurisdiction Containers.
 *   **Action Item 4.3: Small Business Module (Liens & Contracts).**
     *   *Function:* Support for mechanic's liens, breach of contract, and debt collection.
-    *   *Implementation:* Implement automated statutory notice requirements (e.g., Notice of Intent to Lien) tied to the Deadline Sentinel.
 
 ---
 
 ## 4. Execution Strategy (100% Agentic)
 
-In accordance with the mandated non-linear, 100% agentic execution methodology, we will not use a traditional Gantt chart. Instead, we will deploy parallel agentic runners to build these pillars simultaneously.
+In accordance with the mandated non-linear, 100% agentic execution methodology, we will deploy parallel agentic runners to build these pillars simultaneously on AWS Bedrock.
 
-1.  **Runner A (Backend/AI):** Implement the `Intake & Strategy Agent` and integrate it into the existing Orchestrator flow.
+1.  **Runner A (Backend/AI):** Implement the Dual-Panel WDC Courtroom and the `Intake & Strategy Agent`.
 2.  **Runner B (Integration):** Build the abstract `CourtPortalConnector` base class and begin the PACER/ECF implementation.
-3.  **Runner C (Frontend):** Overhaul the Next.js application to implement the "Mystery-Removing" dashboard and plain-language chat interface.
+3.  **Runner C (Frontend):** Overhaul the Next.js application to implement the "Mystery-Removing" dashboard for ChiefLitigator.com.
 4.  **Runner D (Knowledge):** Expand the `JurisdictionContainer` data models to support Immigration and Landlord-Tenant specific schemas.
 
 By executing these runners concurrently, ChiefLitigator will rapidly evolve from a powerful backend engine into a complete, market-dominating platform that fundamentally stabilizes the legal system for the unrepresented.
