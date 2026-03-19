@@ -17,13 +17,27 @@ The goal is to replace the need for an attorney in 80% of legal situations—not
 
 ChiefLitigator is built on **AWS Bedrock Core**, utilizing the highest-context LLMs available to process massive case files, transcripts, and evidence dumps without losing fidelity.
 
-### The Simulated Courtroom (WDC Engine v3.0)
-The Weighted Debate Consensus (WDC) engine is not a simple scoring mechanism; it is a simulated courtroom. When the dual-brain operator (Opus + Llama Scout + Cohere) produces initial legal work product, it is submitted to two distinct panels:
+### The Simulated Courtroom (WDC Engine v3.0) — Featuring "The Galvanizer"
 
-1.  **The Advocacy Panel (Lead Counsel + Research Counsel):** Argues *for* the strategy and drafts. They find the strongest interpretations, the most favorable precedent, and the best framing of the facts.
-2.  **The Stress-Test Panel (Red Team + Compliance Counsel):** Argues *against* the strategy. They act as simulated opposing counsel and a skeptical judge. They attack citations, challenge logic, find procedural traps, and identify weaknesses.
+The Weighted Debate Consensus (WDC) engine is not a simple scoring mechanism; it is a simulated courtroom. When the dual-brain operator (Opus + Llama Scout + Cohere) produces initial legal work product, it is submitted to two distinct panels for a process called **The Galvanizer** — the adversarial iteration cycle that shock-strengthens every piece of legal output before it reaches the user.
 
-**The 90% Confidence Gate:** The panels engage in iterative debate. The strategy and drafts go through this adversarial fire until they emerge hardened. Nothing leaves the system for filing unless it achieves a **90% confidence score**. If it falls short, the system tells the user exactly what evidence or facts are missing to cross the threshold.
+> **Galvanizer** *(noun)*: The process by which raw legal strategy and drafts are subjected to iterative adversarial debate between the Advocacy Panel and the Stress-Test Panel, hardening the output until it achieves a 90% or higher confidence score. Named for the metallurgical process of coating steel to make it corrosion-resistant. Nothing leaves the system until it has been galvanized.
+
+The Galvanizer operates through two opposing panels:
+
+1.  **The Advocacy Panel (Lead Counsel + Research Counsel):** Argues *for* the strategy and drafts. They find the strongest interpretations, the most favorable precedent, and the best framing of the facts. Their job is to make the argument as strong as it can possibly be.
+2.  **The Stress-Test Panel (Red Team + Compliance Counsel):** Argues *against* the strategy. They act as simulated opposing counsel and a skeptical judge. They attack citations, challenge logic, find procedural traps, and identify weaknesses. Their job is to break the argument before a real adversary does.
+
+The Galvanizer runs in iterative rounds:
+
+| Round | Process | Outcome |
+|-------|---------|--------|
+| Round 1 | Dual-brain operator produces initial work product. Both panels score independently. | Baseline confidence score established. |
+| Round 2 | Stress-Test Panel delivers attacks. Advocacy Panel responds with rebuttals and strengthening amendments. | Score recalculated. Weak points identified. |
+| Round 3 | Stress-Test Panel escalates — targeting the weakest surviving arguments. Advocacy Panel fortifies or concedes. | Score recalculated. Conceded points flagged for user. |
+| Round N | Iteration continues until score crosses 90% or the system determines the gap cannot be closed with available evidence. | Final galvanized output delivered, or gap report presented to user. |
+
+**The 90% Confidence Gate:** Nothing leaves the system for filing unless it achieves a **90% confidence score** through The Galvanizer. If the score cannot reach 90%, the system tells the user exactly what evidence or facts are missing to cross the threshold — turning a rejection into an actionable roadmap.
 
 ---
 
@@ -81,7 +95,7 @@ The system must scale beyond civil litigation to handle the most common legal is
 
 In accordance with the mandated non-linear, 100% agentic execution methodology, we will deploy parallel agentic runners to build these pillars simultaneously on AWS Bedrock.
 
-1.  **Runner A (Backend/AI):** Implement the Dual-Panel WDC Courtroom and the `Intake & Strategy Agent`.
+1.  **Runner A (Backend/AI):** Implement **The Galvanizer** (Dual-Panel WDC adversarial iteration engine) and the `Intake & Strategy Agent`.
 2.  **Runner B (Integration):** Build the abstract `CourtPortalConnector` base class and begin the PACER/ECF implementation.
 3.  **Runner C (Frontend):** Overhaul the Next.js application to implement the "Mystery-Removing" dashboard for ChiefLitigator.com.
 4.  **Runner D (Knowledge):** Expand the `JurisdictionContainer` data models to support Immigration and Landlord-Tenant specific schemas.
