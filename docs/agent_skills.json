@@ -1,0 +1,320 @@
+{
+  "system": "Agentic Law Sandbox",
+  "version": "1.0.0",
+  "target_audience": ["Pro Se Litigants", "Small Businesses"],
+  "agents": [
+    {
+      "id": "agent_orchestrator",
+      "name": "Orchestrator Agent",
+      "role": "Managing Partner",
+      "description": "Central coordinator that translates plain English into legal workflows, assigns tasks to sub-agents, and manages the global case state.",
+      "skills": [
+        {
+          "name": "plain_language_translation",
+          "description": "Translates user narratives into structured legal data.",
+          "parameters": {
+            "input_type": "string",
+            "output_type": "json",
+            "schema": ["facts", "entities", "dates", "potential_claims"]
+          }
+        },
+        {
+          "name": "workflow_decomposition",
+          "description": "Breaks down a high-level legal goal into a sequence of agent tasks.",
+          "parameters": {
+            "goal": "string",
+            "jurisdiction": "string",
+            "output_type": "array_of_tasks"
+          }
+        },
+        {
+          "name": "case_state_management",
+          "description": "Maintains the global state of the case, including deadlines, filed documents, and current phase.",
+          "parameters": {
+            "action": ["update", "retrieve", "archive"],
+            "case_id": "string"
+          }
+        },
+        {
+          "name": "user_approval_routing",
+          "description": "Presents finalized, verified documents to the user in plain English for final approval before filing.",
+          "parameters": {
+            "document_id": "string",
+            "explanation_level": "layperson"
+          }
+        }
+      ]
+    },
+    {
+      "id": "agent_intake_strategy",
+      "name": "Intake & Strategy Agent",
+      "role": "Case Assessor",
+      "description": "Evaluates case merits, identifies claims/defenses, calculates statutes of limitations, and generates predictive outcomes.",
+      "skills": [
+        {
+          "name": "claim_identification",
+          "description": "Maps facts to specific causes of action or affirmative defenses.",
+          "parameters": {
+            "facts": "array",
+            "jurisdiction": "string",
+            "output_type": "array_of_claims"
+          }
+        },
+        {
+          "name": "statute_of_limitations_calculator",
+          "description": "Calculates the deadline to file a claim based on the date of the incident and jurisdiction.",
+          "parameters": {
+            "incident_date": "date",
+            "claim_type": "string",
+            "jurisdiction": "string"
+          }
+        },
+        {
+          "name": "jurisdiction_assessor",
+          "description": "Determines proper subject matter and personal jurisdiction.",
+          "parameters": {
+            "plaintiff_location": "string",
+            "defendant_location": "string",
+            "amount_in_controversy": "number"
+          }
+        },
+        {
+          "name": "predictive_outcome_generator",
+          "description": "Generates a probability report of success based on historical case data.",
+          "parameters": {
+            "claim_type": "string",
+            "jurisdiction": "string",
+            "judge_id": "string_optional"
+          }
+        }
+      ]
+    },
+    {
+      "id": "agent_research",
+      "name": "Research Agent",
+      "role": "Law Clerk",
+      "description": "Conducts deep legal research in primary databases and synthesizes findings into structured memos.",
+      "skills": [
+        {
+          "name": "primary_law_search",
+          "description": "Executes complex boolean and semantic searches across case law and statutes.",
+          "parameters": {
+            "query": "string",
+            "jurisdiction": "string",
+            "date_range": "string"
+          }
+        },
+        {
+          "name": "precedent_identification",
+          "description": "Identifies the most controlling and factually similar cases.",
+          "parameters": {
+            "search_results": "array",
+            "target_facts": "array"
+          }
+        },
+        {
+          "name": "negative_treatment_flag",
+          "description": "Checks if a case has been overruled, distinguished, or criticized.",
+          "parameters": {
+            "citation": "string",
+            "output_type": "boolean_with_explanation"
+          }
+        },
+        {
+          "name": "memo_synthesis",
+          "description": "Compiles research into a structured legal memo with verified citations.",
+          "parameters": {
+            "research_data": "array",
+            "format": "IRAC"
+          }
+        }
+      ]
+    },
+    {
+      "id": "agent_drafting",
+      "name": "Drafting Agent",
+      "role": "Litigator",
+      "description": "Generates pleadings, motions, and discovery requests formatted to specific local rules.",
+      "skills": [
+        {
+          "name": "pleading_generator",
+          "description": "Drafts Complaints and Answers based on structured case data.",
+          "parameters": {
+            "case_data": "json",
+            "document_type": ["complaint", "answer"]
+          }
+        },
+        {
+          "name": "motion_generator",
+          "description": "Drafts procedural and dispositive motions.",
+          "parameters": {
+            "motion_type": "string",
+            "research_memo": "string"
+          }
+        },
+        {
+          "name": "discovery_generator",
+          "description": "Drafts Interrogatories, Requests for Production, and Requests for Admission.",
+          "parameters": {
+            "target_party": "string",
+            "claim_elements": "array"
+          }
+        },
+        {
+          "name": "local_rule_formatter",
+          "description": "Applies specific court formatting (margins, fonts, caption style).",
+          "parameters": {
+            "document": "string",
+            "court_id": "string"
+          }
+        }
+      ]
+    },
+    {
+      "id": "agent_review_reflection",
+      "name": "Review & Reflection Agent",
+      "role": "Adversary",
+      "description": "Adversarially tests drafted documents for logical flaws and missing counterarguments.",
+      "skills": [
+        {
+          "name": "logical_consistency_check",
+          "description": "Ensures all elements of a claim are addressed and supported by facts.",
+          "parameters": {
+            "document": "string",
+            "claim_requirements": "array"
+          }
+        },
+        {
+          "name": "counterargument_simulation",
+          "description": "Simulates the opposing counsel's likely response to identify weaknesses.",
+          "parameters": {
+            "document": "string",
+            "opposing_party_type": "string"
+          }
+        },
+        {
+          "name": "pleading_deficiency_scan",
+          "description": "Checks if an Answer properly admits, denies, or claims lack of knowledge for every paragraph of a Complaint.",
+          "parameters": {
+            "complaint": "string",
+            "answer": "string"
+          }
+        }
+      ]
+    },
+    {
+      "id": "agent_citation_verification",
+      "name": "Citation Verification Agent",
+      "role": "Cite Checker",
+      "description": "Deterministically verifies every citation against primary databases to eliminate hallucinations.",
+      "skills": [
+        {
+          "name": "citation_extraction",
+          "description": "Extracts all legal citations from a document.",
+          "parameters": {
+            "document": "string",
+            "output_type": "array_of_citations"
+          }
+        },
+        {
+          "name": "deterministic_case_verification",
+          "description": "Queries the primary database to confirm the case exists and the holding matches.",
+          "parameters": {
+            "citation": "string",
+            "proposition": "string",
+            "strict_mode": true
+          }
+        },
+        {
+          "name": "bluebook_formatter",
+          "description": "Formats citations according to the Bluebook or state-specific style guides.",
+          "parameters": {
+            "citation_data": "json",
+            "style_guide": "string"
+          }
+        }
+      ]
+    },
+    {
+      "id": "agent_docket_efiling",
+      "name": "Docket & E-Filing Agent",
+      "role": "Paralegal",
+      "description": "Monitors court dockets, extracts deadlines, and executes electronic filing.",
+      "skills": [
+        {
+          "name": "docket_monitor",
+          "description": "Polls court APIs (e.g., PACER) for new filings on a specific case.",
+          "parameters": {
+            "case_number": "string",
+            "court_id": "string",
+            "frequency": "hourly"
+          }
+        },
+        {
+          "name": "deadline_extractor",
+          "description": "Parses court orders to extract specific deadlines and updates the calendar.",
+          "parameters": {
+            "court_order_text": "string",
+            "action": "update_calendar"
+          }
+        },
+        {
+          "name": "efiling_preparer",
+          "description": "Converts documents to PDF/A, adds bookmarks, and applies OCR as required by courts.",
+          "parameters": {
+            "document_files": "array",
+            "court_id": "string"
+          }
+        },
+        {
+          "name": "efiling_executor",
+          "description": "Submits the prepared package to the court's e-filing portal via API.",
+          "parameters": {
+            "prepared_package": "binary",
+            "credentials": "vault_reference"
+          }
+        }
+      ]
+    },
+    {
+      "id": "agent_discovery_evidence",
+      "name": "Discovery & Evidence Agent",
+      "role": "Document Reviewer",
+      "description": "Ingests user evidence, extracts themes, and manages discovery responses.",
+      "skills": [
+        {
+          "name": "evidence_ingestion",
+          "description": "Processes uploaded files (PDFs, emails, images) and extracts text via OCR.",
+          "parameters": {
+            "files": "array",
+            "output_type": "searchable_database"
+          }
+        },
+        {
+          "name": "entity_theme_extraction",
+          "description": "Identifies key people, dates, and recurring themes in the evidence.",
+          "parameters": {
+            "database_id": "string",
+            "target_themes": "array"
+          }
+        },
+        {
+          "name": "privilege_log_generator",
+          "description": "Flags potentially privileged documents (e.g., attorney-client, spousal) and generates a log.",
+          "parameters": {
+            "database_id": "string",
+            "privilege_rules": "array"
+          }
+        },
+        {
+          "name": "discovery_response_drafter",
+          "description": "Drafts responses to opposing counsel's requests based on the ingested evidence.",
+          "parameters": {
+            "opposing_requests": "string",
+            "database_id": "string"
+          }
+        }
+      ]
+    }
+  ]
+}
