@@ -1,0 +1,49 @@
+{
+  "algorithm_name": "Portwave_Cascade_Execution_Loop",
+  "version": "1.0.0",
+  "global_constraints": {
+    "max_retries_per_node": 3,
+    "allow_code_deletion": false,
+    "require_journal_entry": true
+  },
+  "execution_tree": {
+    "Step_1_State_Initialization": {
+      "condition": "if missing('TODO.md') or missing('EXECUTION_JOURNAL.md')",
+      "then": "Initialize tracking files with current repository state.",
+      "else": "Parse 'TODO.md' to determine current operational phase."
+    },
+    "Step_2_Dependency_And_Concept_Check": {
+      "condition": "if dependencies.broken() or concept.missing(Bedrock, Galvanizer, DualBrain)",
+      "then": {
+        "action": "Compile WDC (Working Data Context) for missing element.",
+        "spawn_sub_agent": "Build missing logic using append/refactor only.",
+        "log": "Write execution plan to EXECUTION_JOURNAL.md"
+      },
+      "else": "Proceed to Step 3 (Verification & Wiring)."
+    },
+    "Step_3_Militant_Loop_Closing": {
+      "condition": "if test.run() == 'failed'",
+      "then": {
+        "if": "retry_count < max_retries_per_node",
+        "then_sub": "Retrieve ground-truth WDC, correct code, re-test.",
+        "else_sub": "HALT cascade. Escalate to human operator for review."
+      },
+      "else": "Wire new concept into architecture, update catalog, and mark TODO item complete."
+    },
+    "Step_4_Infrastructure_And_Containerization": {
+      "condition": "if docker.build() == 'failed'",
+      "then": "Dispatch sub-agent to fix Dockerfile constraints.",
+      "else": "Verify isolated Admin panel UI toggle and user-facing frontend boundaries."
+    },
+    "Step_5_Deployment_Pipeline": {
+      "condition": "if git.status() == 'clean' and tests.all() == 'passed'",
+      "then": {
+        "action_1": "Push to Git main branch.",
+        "action_2": "Trigger CI/CD pipeline.",
+        "action_3": "Deploy backend to AWS via Bedrock configurations.",
+        "action_4": "Route frontend and isolated Admin subdomains through Cloudflare."
+      },
+      "else": "Halt deployment. Return to Step 2."
+    }
+  }
+}

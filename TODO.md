@@ -1,7 +1,7 @@
 # CYPHERGY — MASTER TODO (A to Z)
 # Novel architecture by Bo Pennington
 # Format: [ ] pending | [~] in-progress | [x] done | [!] blocked
-# Last Updated: 2026-03-16
+# Last Updated: 2026-03-19
 
 ---
 
@@ -16,6 +16,10 @@
 - [x] Error handling + graceful degradation (failed agents don't block pipeline)
 - [ ] Wire model_router.py into orchestrator (replace single-model with 3-tier)
 - [ ] First real Bedrock API call through full pipeline (end-to-end proof)
+- [ ] `src/providers/bedrock_agentcore.py` — AgentCore runtime: session mgmt, 8-hr sessions, multi-agent orchestration
+- [ ] `src/providers/bedrock_tools.py` — Tool-use / function-calling layer via Converse API toolConfig
+- [ ] `src/providers/bedrock_embeddings.py` — Titan Embeddings V2 for pgvector (1536-dim)
+- [ ] `src/providers/bedrock_guardrails.py` — Bedrock Guardrails: content filtering + PII redaction
 
 ### API + Auth
 - [x] FastAPI entrypoint (5 endpoints: health, chat, verify-citation, compute-deadline)
@@ -58,6 +62,41 @@
 - [x] V0: Deadline manager component
 - [ ] V0: Admin dashboard (login, users, agents, deploy, chat)
 - [ ] V0: Mobile app shell (Expo)
+
+### The Galvanizer (Adversarial Panel Engine)
+- [ ] `src/orchestrator/galvanizer.py` — Advocacy Panel vs Stress-Test Panel, iterative rounds, 90% confidence gate
+- [ ] Integrate Galvanizer into WDC scoring pipeline
+- [ ] Galvanizer debate transcript logging to DynamoDB
+- [ ] Round-by-round confidence escalation tracking
+
+### Intake Agent (Context-to-Law Matching)
+- [ ] `src/agents/intake_agent.py` — NLP intake: extract facts, identify legal issues, route to matching engine
+- [ ] Wire intake agent to If-Then Matching Engine (`src/matching/if_then_engine.py`)
+- [ ] Plain-language response generation for pro se users
+- [ ] Guided intake flow (eviction, immigration, liens, contract disputes, etc.)
+
+### Document Generator
+- [ ] `src/agents/document_generator.py` — Court-ready docs: Complaints, Answers, Motions, Notices, Liens, Immigration forms
+- [ ] `src/templates/` — Court document templates per jurisdiction per document type
+- [ ] PDF generation with court-specific formatting (margins, fonts, caption blocks)
+- [ ] Document versioning with Galvanizer confidence scores
+
+### Court Portal Connector
+- [ ] `src/integrations/court_portal.py` — Universal e-filing abstraction layer
+- [ ] `src/integrations/pacer_client.py` — PACER NextGen CM/ECF API client
+- [ ] `src/integrations/efsp_router.py` — State EFSP routing (Tyler Odyssey, eFileTexas, etc.)
+- [ ] Filing status tracking and confirmation
+
+### Evidence Scorer
+- [ ] `src/agents/evidence_scorer.py` — Score evidence strength, identify gaps, recommend additional evidence
+- [ ] Hypothesis tracking with confidence scoring
+- [ ] Evidence-to-claim mapping matrix
+- [ ] Document OCR + privilege detection
+
+### Docket Monitor
+- [ ] `src/agents/docket_monitor.py` — Real-time docket monitoring via PACER RSS + CourtListener webhooks
+- [ ] Auto-triggered workflows on new docket entries
+- [ ] Deadline recalculation on docket changes
 
 ### Admin + Beta
 - [x] Admin panel backend (separate auth, routes, internal chat agent, audit log)
@@ -195,7 +234,13 @@
 7. All CI quality gates enforced — no continue-on-error
 8. All UI via V0 — no hand-written components
 9. Dual-brain consensus required for legal holdings
-10. Perpetual crawler runs until ALL case law cataloged
+12. Perpetual crawler runs until ALL case law cataloged
+13. No hardcoded secrets — all via env vars / AWS Secrets Manager / Parameter Store
+14. Deploy pipeline: Git → CI/CD → AWS (Bedrock backend) → Cloudflare (frontend/admin)
+15. TODO.md and EXECUTION_JOURNAL.md updated after every QAD loop
+16. No code deletion — append/refactor only
+17. Persistent chat visible on ALL screens (consumer UI mandate)
+18. 90% Galvanizer confidence gate — nothing filed below threshold
 
 ---
 
