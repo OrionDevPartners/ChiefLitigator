@@ -1,5 +1,5 @@
 # =============================================================================
-# Cyphergy — Production Dockerfile
+# ChiefLitigator — Production Dockerfile
 # Multi-stage build | Python 3.11 | Non-root | CPAA-compliant
 # =============================================================================
 
@@ -39,7 +39,7 @@ RUN pip install --no-cache-dir .
 FROM python:3.11-slim AS runtime
 
 LABEL maintainer="bo@symio.ai"
-LABEL description="Cyphergy — AI-powered legal document analysis and motion drafting"
+LABEL description="ChiefLitigator — AGI-grade agentic litigation platform"
 
 # Runtime system dependencies only
 RUN apt-get update && \
@@ -56,11 +56,11 @@ COPY src/ ./src/
 COPY pyproject.toml ./
 
 # Create non-root user for security
-RUN groupadd --gid 1001 cyphergy && \
-    useradd --uid 1001 --gid 1001 --shell /bin/false --create-home cyphergy && \
-    chown -R cyphergy:cyphergy /app
+RUN groupadd --gid 1001 chieflitigator && \
+    useradd --uid 1001 --gid 1001 --shell /bin/false --create-home chieflitigator && \
+    chown -R chieflitigator:chieflitigator /app
 
-USER cyphergy
+USER chieflitigator
 
 # CPAA: All configuration comes from environment variables at runtime.
 # No secrets, API keys, or provider details are baked into the image.
@@ -71,10 +71,10 @@ EXPOSE 8000
 
 # Health check — hits the /health endpoint
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -sf http://localhost:8000/health || exit 1
+    CMD curl -sf http://localhost:8000/api/v1/system/health || exit 1
 
 # Run with uvicorn — production settings
-CMD ["uvicorn", "src.api:app", \
+CMD ["uvicorn", "src.api.main_app:create_app", \
      "--host", "0.0.0.0", \
      "--port", "8000", \
      "--workers", "2", \

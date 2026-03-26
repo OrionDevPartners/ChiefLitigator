@@ -1,0 +1,67 @@
+{
+  "Description": "ChiefLitigator Auto-Siphon Pipeline Schedules",
+  "Schedules": [
+    {
+      "Name": "chieflitigator-siphon-courtlistener-daily",
+      "Description": "Daily incremental case law ingestion from CourtListener",
+      "ScheduleExpression": "rate(1 day)",
+      "Target": {
+        "Arn": "<ECS_CLUSTER_ARN>",
+        "RoleArn": "<EVENTBRIDGE_ROLE_ARN>",
+        "EcsParameters": {
+          "TaskDefinitionArn": "<SIPHON_TASK_DEF_ARN>",
+          "TaskCount": 1,
+          "LaunchType": "FARGATE",
+          "NetworkConfiguration": {
+            "AwsvpcConfiguration": {
+              "Subnets": ["<PRIVATE_SUBNET_1>", "<PRIVATE_SUBNET_2>"],
+              "SecurityGroups": ["<SIPHON_SG>"],
+              "AssignPublicIp": "DISABLED"
+            }
+          }
+        },
+        "Input": "{\"worker\": \"courtlistener\", \"mode\": \"incremental\"}"
+      }
+    },
+    {
+      "Name": "chieflitigator-siphon-uscode-weekly",
+      "Description": "Weekly US Code refresh from OLRC",
+      "ScheduleExpression": "rate(7 days)",
+      "Target": {
+        "Input": "{\"worker\": \"uscode\", \"mode\": \"incremental\"}"
+      }
+    },
+    {
+      "Name": "chieflitigator-siphon-legiscan-weekly",
+      "Description": "Weekly state statute updates from LegiScan",
+      "ScheduleExpression": "rate(7 days)",
+      "Target": {
+        "Input": "{\"worker\": \"legiscan\", \"mode\": \"incremental\"}"
+      }
+    },
+    {
+      "Name": "chieflitigator-siphon-scotus-daily",
+      "Description": "Daily SCOTUS opinion check",
+      "ScheduleExpression": "rate(1 day)",
+      "Target": {
+        "Input": "{\"worker\": \"scotus\", \"mode\": \"incremental\"}"
+      }
+    },
+    {
+      "Name": "chieflitigator-siphon-rules-monthly",
+      "Description": "Monthly federal and state rules refresh",
+      "ScheduleExpression": "rate(30 days)",
+      "Target": {
+        "Input": "{\"worker\": \"rules\", \"mode\": \"full\"}"
+      }
+    },
+    {
+      "Name": "chieflitigator-xref-builder-weekly",
+      "Description": "Weekly cross-reference builder (statute ↔ case ↔ rule linkage)",
+      "ScheduleExpression": "rate(7 days)",
+      "Target": {
+        "Input": "{\"worker\": \"xref_builder\", \"mode\": \"incremental\"}"
+      }
+    }
+  ]
+}

@@ -1,15 +1,15 @@
 {
-  "family": "cyphergy-api",
+  "family": "chieflitigator-api",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
-  "cpu": "1024",
-  "memory": "2048",
-  "executionRoleArn": "arn:aws:iam::role/cyphergy-ecs-execution-role",
-  "taskRoleArn": "arn:aws:iam::role/cyphergy-ecs-task-role",
+  "cpu": "2048",
+  "memory": "4096",
+  "executionRoleArn": "arn:aws:iam::role/chieflitigator-ecs-execution-role",
+  "taskRoleArn": "arn:aws:iam::role/chieflitigator-ecs-task-role",
   "containerDefinitions": [
     {
-      "name": "cyphergy-api",
-      "image": "<AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/cyphergy-api:latest",
+      "name": "chieflitigator-api",
+      "image": "<AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/chieflitigator-api:latest",
       "essential": true,
       "portMappings": [
         {
@@ -18,93 +18,112 @@
         }
       ],
       "healthCheck": {
-        "command": ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"],
+        "command": ["CMD-SHELL", "curl -sf http://localhost:8000/api/v1/system/health || exit 1"],
         "interval": 30,
         "timeout": 5,
         "retries": 3,
-        "startPeriod": 15
+        "startPeriod": 30
       },
       "secrets": [
         {
           "name": "ANTHROPIC_API_KEY",
-          "valueFrom": "arn:aws:secretsmanager:<AWS_REGION>:<AWS_ACCOUNT_ID>:secret:cyphergy/anthropic-api-key"
+          "valueFrom": "arn:aws:secretsmanager:<AWS_REGION>:<AWS_ACCOUNT_ID>:secret:chieflitigator/anthropic-api-key"
         },
         {
           "name": "DATABASE_URL",
-          "valueFrom": "arn:aws:secretsmanager:<AWS_REGION>:<AWS_ACCOUNT_ID>:secret:cyphergy/database-url"
+          "valueFrom": "arn:aws:secretsmanager:<AWS_REGION>:<AWS_ACCOUNT_ID>:secret:chieflitigator/database-url"
+        },
+        {
+          "name": "AURORA_DSN",
+          "valueFrom": "arn:aws:secretsmanager:<AWS_REGION>:<AWS_ACCOUNT_ID>:secret:chieflitigator/aurora-dsn"
         },
         {
           "name": "REDIS_URL",
-          "valueFrom": "arn:aws:secretsmanager:<AWS_REGION>:<AWS_ACCOUNT_ID>:secret:cyphergy/redis-url"
+          "valueFrom": "arn:aws:secretsmanager:<AWS_REGION>:<AWS_ACCOUNT_ID>:secret:chieflitigator/redis-url"
         },
         {
           "name": "COURTLISTENER_API_KEY",
-          "valueFrom": "arn:aws:secretsmanager:<AWS_REGION>:<AWS_ACCOUNT_ID>:secret:cyphergy/courtlistener-api-key"
+          "valueFrom": "arn:aws:secretsmanager:<AWS_REGION>:<AWS_ACCOUNT_ID>:secret:chieflitigator/courtlistener-api-key"
+        },
+        {
+          "name": "PACER_USERNAME",
+          "valueFrom": "arn:aws:secretsmanager:<AWS_REGION>:<AWS_ACCOUNT_ID>:secret:chieflitigator/pacer-username"
+        },
+        {
+          "name": "PACER_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:<AWS_REGION>:<AWS_ACCOUNT_ID>:secret:chieflitigator/pacer-password"
+        },
+        {
+          "name": "ADMIN_JWT_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:<AWS_REGION>:<AWS_ACCOUNT_ID>:secret:chieflitigator/admin-jwt-secret"
+        },
+        {
+          "name": "ADMIN_PASSWORD_HASH",
+          "valueFrom": "arn:aws:secretsmanager:<AWS_REGION>:<AWS_ACCOUNT_ID>:secret:chieflitigator/admin-password-hash"
+        },
+        {
+          "name": "EFILE_TEXAS_KEY",
+          "valueFrom": "arn:aws:secretsmanager:<AWS_REGION>:<AWS_ACCOUNT_ID>:secret:chieflitigator/efile-texas-key"
+        },
+        {
+          "name": "NYSCEF_KEY",
+          "valueFrom": "arn:aws:secretsmanager:<AWS_REGION>:<AWS_ACCOUNT_ID>:secret:chieflitigator/nyscef-key"
+        },
+        {
+          "name": "TRUEFILING_KEY",
+          "valueFrom": "arn:aws:secretsmanager:<AWS_REGION>:<AWS_ACCOUNT_ID>:secret:chieflitigator/truefiling-key"
+        },
+        {
+          "name": "LEGISCAN_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:<AWS_REGION>:<AWS_ACCOUNT_ID>:secret:chieflitigator/legiscan-api-key"
         }
       ],
       "environment": [
-        {
-          "name": "APP_ENV",
-          "value": "production"
-        },
-        {
-          "name": "LOG_LEVEL",
-          "value": "INFO"
-        },
-        {
-          "name": "LLM_PROVIDER",
-          "value": "anthropic"
-        },
-        {
-          "name": "LLM_MODEL",
-          "value": "claude-opus-4-6"
-        },
-        {
-          "name": "LLM_TEMPERATURE",
-          "value": "0.0"
-        },
-        {
-          "name": "EXTERNAL_RETRIEVAL_REQUIRED",
-          "value": "true"
-        },
-        {
-          "name": "WDC_CERTIFICATION_THRESHOLD",
-          "value": "8.5"
-        }
+        { "name": "APP_ENV", "value": "production" },
+        { "name": "APP_VERSION", "value": "1.0.0" },
+        { "name": "ENVIRONMENT", "value": "production" },
+        { "name": "LOG_LEVEL", "value": "INFO" },
+        { "name": "LLM_PROVIDER", "value": "bedrock" },
+        { "name": "AWS_DEFAULT_REGION", "value": "us-east-1" },
+        { "name": "BEDROCK_TIER1_MODEL", "value": "anthropic.claude-opus-4-6-v1:0" },
+        { "name": "BEDROCK_TIER2_MODEL", "value": "anthropic.claude-sonnet-4-6-20260301-v1:0" },
+        { "name": "BEDROCK_TIER3_MODEL", "value": "anthropic.claude-haiku-3-6-20250401-v1:0" },
+        { "name": "BEDROCK_DEFAULT_MODEL", "value": "anthropic.claude-sonnet-4-6-20260301-v1:0" },
+        { "name": "BEDROCK_MAX_TOKENS", "value": "200000" },
+        { "name": "BEDROCK_TEMPERATURE", "value": "0.0" },
+        { "name": "BEDROCK_EMBEDDING_MODEL", "value": "amazon.titan-embed-text-v2:0" },
+        { "name": "BEDROCK_EMBEDDING_DIMENSIONS", "value": "1536" },
+        { "name": "GALVANIZER_CONFIDENCE_GATE", "value": "0.90" },
+        { "name": "GALVANIZER_MAX_ROUNDS", "value": "5" },
+        { "name": "GALVANIZER_ESCALATION_DELTA", "value": "0.03" },
+        { "name": "WDC_CERTIFICATION_THRESHOLD", "value": "8.5" },
+        { "name": "EXTERNAL_RETRIEVAL_REQUIRED", "value": "true" },
+        { "name": "CORS_ORIGINS", "value": "https://chieflitigator.com,https://www.chieflitigator.com,https://chieflitigator.ai,https://www.chieflitigator.ai" },
+        { "name": "DYNAMO_SESSIONS_TABLE", "value": "ChiefLitigator_Sessions" },
+        { "name": "DYNAMO_CASES_TABLE", "value": "ChiefLitigator_Cases" },
+        { "name": "DYNAMO_GALVANIZER_TABLE", "value": "ChiefLitigator_GalvanizerLogs" },
+        { "name": "COURTLISTENER_API_URL", "value": "https://www.courtlistener.com/api/rest/v4" },
+        { "name": "PACER_API_URL", "value": "https://pcl.uscourts.gov/pcl-public-api/rest" },
+        { "name": "BETA_GATE_ENABLED", "value": "true" }
       ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/ecs/cyphergy-api",
+          "awslogs-group": "/ecs/chieflitigator-api",
           "awslogs-region": "<AWS_REGION>",
-          "awslogs-stream-prefix": "cyphergy"
+          "awslogs-stream-prefix": "chieflitigator"
         }
       },
-      "linuxParameters": {
-        "initProcessEnabled": true
-      },
+      "linuxParameters": { "initProcessEnabled": true },
       "readonlyRootFilesystem": false,
       "ulimits": [
-        {
-          "name": "nofile",
-          "softLimit": 65536,
-          "hardLimit": 65536
-        }
+        { "name": "nofile", "softLimit": 65536, "hardLimit": 65536 }
       ]
     }
   ],
   "tags": [
-    {
-      "key": "Project",
-      "value": "Cyphergy"
-    },
-    {
-      "key": "Environment",
-      "value": "production"
-    },
-    {
-      "key": "ManagedBy",
-      "value": "ecs-task-definition"
-    }
+    { "key": "Project", "value": "ChiefLitigator" },
+    { "key": "Environment", "value": "production" },
+    { "key": "ManagedBy", "value": "ecs-task-definition" }
   ]
 }

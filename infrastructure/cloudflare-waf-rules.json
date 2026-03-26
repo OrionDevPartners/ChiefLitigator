@@ -1,5 +1,5 @@
 {
-  "_comment": "Cloudflare WAF rules for Cyphergy API. Deploy via Cloudflare API or dashboard. All rules are defense-in-depth layers protecting legal data endpoints.",
+  "_comment": "Cloudflare WAF rules for ChiefLitigator API (chieflitigator.com / chieflitigator.ai). Deploy via Cloudflare API or dashboard. All rules are defense-in-depth layers protecting legal data endpoints.",
 
   "zone_settings": {
     "_comment": "Zone-level security settings applied globally.",
@@ -15,7 +15,7 @@
   "firewall_rules": [
     {
       "id": "cyphergy-waf-001",
-      "description": "Block SQL injection attempts in query parameters and request body. Legal APIs accept structured JSON only -- SQL syntax in input is always malicious.",
+      "description": "Block SQL injection attempts in query parameters and request body. ChiefLitigator APIs accept structured JSON only -- SQL syntax in input is always malicious.",
       "action": "block",
       "priority": 1,
       "expression": "(http.request.uri.query contains \"UNION SELECT\") or (http.request.uri.query contains \"OR 1=1\") or (http.request.uri.query contains \"DROP TABLE\") or (http.request.uri.query contains \"--\") or (http.request.uri.query contains \";\") or (http.request.uri.query contains \"xp_cmdshell\") or (lower(http.request.uri.query) contains \"union%20select\") or (lower(http.request.uri.query) contains \"or%201%3D1\")",
@@ -130,7 +130,7 @@
   "page_rules": [
     {
       "description": "Force HTTPS and set security headers for all API traffic.",
-      "targets": [{"target": "url", "constraint": {"operator": "matches", "value": "*cyphergy.com/api/*"}}],
+      "targets": [{"target": "url", "constraint": {"operator": "matches", "value": "*chieflitigator.com/api/*"}}],
       "actions": [
         {"id": "always_use_https"},
         {"id": "security_level", "value": "high"},
