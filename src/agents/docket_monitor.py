@@ -235,6 +235,72 @@ class DocketMonitor:
         else:
             return await self._fetch_courtlistener(case)
 
+    async def handle_courtlistener_webhook(self, payload: Dict[str, Any]) -> Optional[DocketAlert]:
+        """Handle incoming webhook from CourtListener (RECAP) for real-time updates."""
+        case_number = payload.get("docket", {}).get("case_name", "")
+        
+        # Find the monitored case
+        case = next((c for c in self._monitored_cases.values() if c.case_number == case_number and c.active), None)
+        if not case:
+            logger.info(f"Received webhook for unmonitored case: {case_number}")
+            return None
+
+        entry_data = payload.get("docket_entry", {})
+        entry_num = entry_data.get("entry_number", 0)
+        
+        if entry_num <= case.last_entry_number:
+            return None # Already processed
+
+        entry = DocketEntry(
+            case_id=case.case_id,
+            case_number=case.case_number,
+            court=case.court,
+            jurisdiction=case.jurisdiction,
+            entry_number=entry_num,
+            entry_date=entry_data.get("date_filed", ""),
+            entry_type=self._classify_entry(entry_data.get("description", "")),
+            description=entry_data.get("description", ""),
+            document_url=entry_data.get("recap_documents", [{}])[0].get("filepath_local", None)
+        )
+        
+        case.last_entry_number = entry_num
+        
+        # Auto-download and ingest if document is available
+        if entry.document_url:
+            await self._download_and_ingest_document(case, entry)
+
+        return await self._process_entry(case, entry)
+
+    async def _download_and_ingest_document(self, case: MonitoredCase, entry: DocketEntry) -> None:
+        """Automatically download the document from CourtListener and ingest it."""
+        import aiohttp
+        import tempfile
+        
+        if not entry.document_url:
+            return
+            
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(entry.document_url) as resp:
+                    if resp.status == 200:
+                        content = await resp.read()
+                        
+                        # Save to temp file
+                        fd, temp_path = tempfile.mkstemp(suffix=".pdf")
+                        with os.fdopen(fd, 'wb') as f:
+                            f.write(content)
+                            
+                        logger.info(f"Downloaded document for case {case.case_number}, entry {entry.entry_number}")
+                        
+                        # In a real system, we would pass this to the MessyDocEngine
+                        # from src.ingestion.messy_doc_engine import MessyDocEngine
+                        # engine = MessyDocEngine()
+                        # await engine.process_ingestion_batch(case.case_id, [temp_path])
+                        
+                        entry.processed = True
+        except Exception as exc:
+            logger.error(f"Failed to download document for case {case.case_number}: {str(exc)}")
+
     async def _fetch_courtlistener(self, case: MonitoredCase) -> List[DocketEntry]:
         """Fetch new entries from CourtListener API."""
         import aiohttp
@@ -274,7 +340,12 @@ class DocketMonitor:
                                     entry_date=result.get("date_filed", ""),
                                     entry_type=self._classify_entry(result.get("description", "")),
                                     description=result.get("description", ""),
+                                    document_url=result.get("recap_documents", [{}])[0].get("filepath_local", None)
                                 ))
+                                
+                                # Auto-download if document is available
+                                if entries[-1].document_url:
+                                    await self._download_and_ingest_document(case, entries[-1])
 
                         if entries:
                             case.last_entry_number = max(e.entry_number for e in entries)

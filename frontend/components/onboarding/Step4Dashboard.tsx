@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import { ClioPlusWarRoom } from "../dashboard/ClioPlusWarRoom"
 
 const TASKS = [
   { id: 1, label: "Review complaint for jurisdiction issues", priority: "High", status: "pending" },
@@ -151,6 +152,9 @@ export function Step4Dashboard({ onNext, onBack }: Step4Props) {
           ))}
         </div>
       </div>
+
+      {/* Clio-Plus War Room */}
+      <ClioPlusWarRoom caseId="case-123" jurisdiction="USDC SDFL" />
 
       {/* Task list */}
       <div className="rounded-xl bg-surface-1 border border-border p-4">
