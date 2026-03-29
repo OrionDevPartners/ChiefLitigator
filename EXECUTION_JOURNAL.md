@@ -91,3 +91,27 @@
 **ROLLBACK RECEIPT**: N/A (initialization only)
 
 ---
+
+## QAD Loop #004 — 2026-03-29
+
+**QUERY**: Bridge ALL gaps from ChiefLitigator Advantage Matrix. Build Messy-Doc Ingestion, Headless Court Filing, Certified Mail API, CourtListener auto-ingest, and Clio-Plus War Room dashboard.
+
+**ASSESS**:
+- QAD #001-003 delivered: Full Bedrock layer, Galvanizer, 6 agents, 4 API routers, 5 siphon workers, infrastructure, tests
+- Gaps identified in Advantage Matrix: Multi-modal OCR for messy docs, email thread reconstruction, autonomous court filing via headless browser, certified mail for service of process, CourtListener webhook auto-ingestion, Clio-Plus dashboard with war room view
+- No competitor has all 6 of these capabilities combined
+
+**DEPLOY**:
+- Sub-Agent 1: `messy_doc_engine.py` — Full rewrite with Bedrock multi-modal OCR (Claude Sonnet vision), email thread reconstruction (In-Reply-To/References header chaining + deduplication), context-to-fact extraction, S3 storage, Aurora metadata persistence
+- Sub-Agent 2: `headless_filer.py` — Autonomous court filing via Playwright headless browser. Portal-specific adapters for PACER CM/ECF, Tyler Odyssey, NYSCEF, TrueFiling. Pre-filing validation, filing confirmation capture, receipt archival
+- Sub-Agent 3: `certified_mail.py` — Lob API integration for USPS Certified Mail with Return Receipt. Address verification (CASS), PDF rendering, tracking webhook receiver, service of process proof generation
+- Sub-Agent 4: `docket_monitor.py` — Updated with `handle_courtlistener_webhook()` and `_download_and_ingest_document()`. Auto-downloads PDFs from CourtListener RECAP when opposing counsel or judge files docs. Routes to MessyDocEngine for ingestion
+- Sub-Agent 5: `webhook_router.py` — New FastAPI router at `/api/v1/webhooks/courtlistener`. Token-verified, background-processed, wired into main_app.py
+- Sub-Agent 6: `ClioPlusWarRoom.tsx` — Frontend dashboard component with 3 panels: Messy-Doc upload zone, Court Portal direct access with CourtListener monitor status, Certified Mail service of process with deadline alerts
+- Sub-Agent 7: `Step4Dashboard.tsx` — Updated to import and render ClioPlusWarRoom in the case dashboard
+
+**STATUS**: COMPLETE — 8 files changed, 604 insertions. Pushed as commit `2247a7f`.
+
+**ROLLBACK RECEIPT**: Branch `feature/strategic-build-plan` — revert to `2175a4e` if cascade fails.
+
+---
